@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+debian/eduka-customizer/
+debian/.debhelper/
+debian/files
+debian/*.substvars
+debian/*.log
+debian/debhelper-build-stamp
+*.tar.xz
+/dist/

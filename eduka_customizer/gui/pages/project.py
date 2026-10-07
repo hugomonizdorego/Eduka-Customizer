@@ -1,0 +1,233 @@
+"""Start page: create/open projects and choose the source of the image."""
+
+import os
+from pathlib import Path
+
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QFileDialog, QInputDialog, QLineEdit, QListWidget, QMessageBox,
+                             QTabWidget, QVBoxLayout, QWidget)
+
+from eduka_customizer.core.config import settings
+from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, label
+
+
+class ProjectPage(Page):
+    title = "Start"
+    nav_title = "Start / Project"
+    subtitle = ("Build Edukasaun OS from a Debian live ISO, an existing Edukasaun OS ISO, a fresh "
+                "Debian base or this computer. Only Debian stable, testing and sid are supported.")
+    icon_names = ("go-home", "user-home")
+    needs_rootfs = False
+
+    def build(self):
+        a, b = self.row(self.card("New project", "Every project keeps its own root filesystem, "
+                                                 "ISO tree, cache and build output."),
+                        self.card("Open project", "Continue working on an earlier project."))
+        f = a.form()
+        self.name = QLineEdit("Edukasaun OS")
+        f.addRow("Name:", self.name)
+        self.folder = FilePicker("Project folder", directory=True)
+        base = settings().get("general", "projects_dir")
+        self.folder.setText(os.path.join(base, "edukasaun-os"))
+        f.addRow("Folder:", self.folder)
+        a.add(hbox(None, button("Create project", self.create, "primary", ("folder-new",))))
+
+        self.recent = QListWidget()
+        self.recent.setMinimumHeight(110)
+        self.recent.itemDoubleClicked.connect(lambda it: self.main.open_project(it.text()))
+        b.add(self.recent)
+        b.add(hbox(None, button("Open selected", self.open_selected),
+                   button("Browse...", self.browse, icon_names=("document-open",))))
+
+        self.source = self.card("Source of the image",
+                                "Choose where the root filesystem comes from. Replacing the source "
+                                "deletes the current root filesystem of this project.")
+        tabs = QTabWidget()
+        self.source.add(tabs)
+
+        # ISO ------------------------------------------------------------------
+        t = QWidget()
+        v = QVBoxLayout(t)
+        v.addWidget(label("Debian live images (debian-live-*.iso) and Edukasaun OS ISOs are "
+                          "accepted. Ubuntu, Linux Mint and other Ubuntu-based images are refused.",
+                          "muted"))
+        self.iso = FilePicker("Choose ISO image", "ISO images (*.iso)")
+        v.addWidget(self.iso)
+        v.addWidget(hbox(None, button("Extract ISO", self.extract, "primary", ("media-optical",))))
+        tabs.addTab(t, "Edukasaun / Debian ISO")
+
+        # Download ----------------------------------------------------------------
+        t = QWidget()
+        v = QVBoxLayout(t)
+        v.addWidget(label("Download an official Debian live image (verified with SHA256SUMS). "
+                          "Debian has no live images for sid: start from testing, then switch "
+                          "the repositories to sid.", "muted"))
+        self.dl_suite = combo([("stable", "Debian stable"), ("testing", "Debian testing (weekly)")])
+        self.dl_image = combo([])
+        v.addWidget(hbox(self.dl_suite, button("Refresh list", self.refresh_images), self.dl_image))
+        v.addWidget(hbox(None, button("Download and extract", self.download, "primary",
+                                      ("download", "go-down"))))
+        tabs.addTab(t, "Download Debian")
+
+        # Bootstrap ----------------------------------------------------------------
+        t = QWidget()
+        v = QVBoxLayout(t)
+        v.addWidget(label("Create a minimal Debian system with mmdebstrap and add your desktop "
+                          "afterwards. The boot menu is generated (BIOS + UEFI, Secure Boot when "
+                          "shim-signed is installed).", "muted"))
+        self.bs_suite = combo([("stable", "Debian stable"), ("testing", "Debian testing"),
+                               ("sid", "Debian sid (unstable)")])
+        self.bs_arch = combo(["amd64", "i386", "arm64"])
+        self.bs_variant = combo([("important", "Important (recommended)"), ("standard", "Standard"),
+                                 ("minbase", "Minimal")])
+        v.addWidget(hbox(self.bs_suite, self.bs_arch, self.bs_variant))
+        v.addWidget(hbox(None, button("Bootstrap new base", self.bootstrap, "primary",
+                                      ("system-run",))))
+        tabs.addTab(t, "New Debian base")
+
+        # Snapshot -------------------------------------------------------------------
+        t = QWidget()
+        v = QVBoxLayout(t)
+        v.addWidget(label("Experimental (remastersys / penguins-eggs style): copy the running "
+                          "Edukasaun OS or Debian system. 'Distribution' removes personal "
+                          "accounts and /home; 'Backup' keeps them - never share a backup ISO.",
+                          "muted"))
+        self.snap_mode = combo([("dist", "Distribution (no personal data)"),
+                                ("backup", "Backup (keeps /home and users)")])
+        v.addWidget(hbox(self.snap_mode, None, button("Snapshot this computer", self.snapshot,
+                                                      "primary")))
+        tabs.addTab(t, "This computer")
+
+        self.status = self.card("Project status")
+        self.status_text = label("", wrap=True)
+        self.status.add(self.status_text)
+        self.history = QListWidget()
+        self.history.setMaximumHeight(160)
+        self.status.add(self.history)
+
+    # Helpers -----------------------------------------------------------------
+    def refresh(self):
+        self.recent.clear()
+        for p in settings().recent_projects():
+            self.recent.addItem(p)
+        has = self.project is not None
+        self.source.setEnabled(has)
+        self.status.setVisible(has)
+        if not has:
+            return
+        p = self.project
+        d = p.distro
+        src = p.state.get("source", {})
+        lines = ["<b>Folder:</b> {}".format(p.path),
+                 "<b>Source:</b> {} {}".format(src.get("kind") or "none yet", src.get("path") or ""),
+                 "<b>System:</b> {}".format(d.summary() if d.id else "no root filesystem yet"),
+                 "<b>Boot mode:</b> {}".format({"replay": "reuse boot setup of the source ISO",
+                                                "generate": "generated by Eduka-Customizer"}.get(
+                                                   src.get("boot_mode"), "-")),
+                 "<b>Last ISO:</b> {}".format(p.state.get("last_iso") or "not built yet")]
+        self.status_text.setText("<br>".join(lines))
+        self.history.clear()
+        for h in reversed(p.state.get("history", [])[-30:]):
+            self.history.addItem("{}  {}  {}".format(h["time"].replace("T", " "), h["action"], h["detail"]))
+
+    def project_changed(self):
+        self.refresh()
+
+    def create(self):
+        folder = self.folder.text()
+        if not folder:
+            return
+        if Path(folder, "project.json").exists():
+            self.main.open_project(folder)
+        elif self.main.open_project(folder, create=True, name=self.name.text().strip() or "Edukasaun OS"):
+            self.project.state["name"] = self.name.text().strip() or "Edukasaun OS"
+            self.project.save()
+        self.refresh()
+
+    def open_selected(self):
+        it = self.recent.currentItem()
+        if it:
+            self.main.open_project(it.text())
+            self.refresh()
+
+    def browse(self):
+        d = QFileDialog.getExistingDirectory(self, "Open project folder",
+                                             settings().get("general", "projects_dir"))
+        if d:
+            self.main.open_project(d)
+            self.refresh()
+
+    def _confirm_replace(self):
+        if self.project.has_rootfs():
+            r = QMessageBox.question(self, "Replace root filesystem",
+                                     "This project already has a root filesystem. Replace it? "
+                                     "All customizations in it will be lost.")
+            return r == QMessageBox.StandardButton.Yes
+        return True
+
+    def _done(self, info):
+        self.main.update_state()
+        self.refresh()
+        QMessageBox.information(self, "Ready", "The image is ready to customize:\n{}".format(info.summary()))
+
+    def extract(self):
+        iso_path = self.iso.text()
+        if not iso_path or not self._confirm_replace():
+            return
+        from eduka_customizer.core import iso
+        proj = self.project
+        self.task("Extract ISO", lambda t: iso.extract(proj, iso_path, t.set_progress), self._done)
+
+    def refresh_images(self):
+        from eduka_customizer.core import download
+        suite = self.dl_suite.currentData()
+
+        def done(images):
+            self.dl_image.clear()
+            for name, _sha in images:
+                self.dl_image.addItem(name, name)
+            lxqt = self.dl_image.findText("lxqt", Qt.MatchFlag.MatchContains)
+            if lxqt >= 0:
+                self.dl_image.setCurrentIndex(lxqt)
+        self.task("List Debian images", lambda t: download.list_images(suite), done)
+
+    def download(self):
+        from eduka_customizer.core import download, iso
+        name = self.dl_image.currentData()
+        if not name:
+            QMessageBox.information(self, "Download", "Refresh the list and choose an image first.")
+            return
+        if not self._confirm_replace():
+            return
+        suite = self.dl_suite.currentData()
+        proj = self.project
+
+        def work(t):
+            t.set_stage("Downloading " + name)
+            path = download.download(suite, name, proj.path / "downloads", t.set_progress)
+            t.set_stage("Extracting")
+            return iso.extract(proj, path, t.set_progress)
+        self.task("Download Debian live image", work, self._done)
+
+    def bootstrap(self):
+        if not self._confirm_replace():
+            return
+        from eduka_customizer.core import bootstrap
+        proj = self.project
+        suite, arch, variant = self.bs_suite.currentData(), self.bs_arch.currentData(), self.bs_variant.currentData()
+        self.task("Bootstrap Debian " + suite,
+                  lambda t: bootstrap.bootstrap(proj, suite, arch, variant), self._done)
+
+    def snapshot(self):
+        if not self._confirm_replace():
+            return
+        mode = self.snap_mode.currentData()
+        if mode == "backup":
+            text, ok = QInputDialog.getText(self, "Backup snapshot",
+                                            "A backup ISO contains your personal files and passwords.\n"
+                                            "Type BACKUP to continue:")
+            if not ok or text != "BACKUP":
+                return
+        from eduka_customizer.core import snapshot
+        proj = self.project
+        self.task("Snapshot this computer", lambda t: snapshot.snapshot(proj, mode), self._done)

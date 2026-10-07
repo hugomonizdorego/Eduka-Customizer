@@ -1,0 +1,25 @@
+#!/bin/sh
+# Start the Eduka-Customizer GUI as administrator through polkit while
+# keeping access to the user's X11 or Wayland display.
+set -e
+if [ "$1" = "--as-root" ]; then
+    shift
+    while [ $# -gt 0 ] && [ "$1" != "--" ]; do
+        case "$1" in
+            WAYLAND_DISPLAY=*|XDG_RUNTIME_DIR=*|XDG_SESSION_TYPE=*|QT_QPA_PLATFORM=*|\
+            QT_SCALE_FACTOR=*|QT_SCREEN_SCALE_FACTORS=*|LANG=*|LANGUAGE=*|XDG_CURRENT_DESKTOP=*)
+                export "$1" ;;
+        esac
+        shift
+    done
+    [ "$1" = "--" ] && shift
+    exec @PREFIX@/bin/eduka-customizer gui "$@"
+fi
+if [ "$(id -u)" = 0 ]; then
+    exec @PREFIX@/bin/eduka-customizer gui "$@"
+fi
+exec pkexec @PREFIX@/bin/eduka-customizer-pkexec --as-root \
+    "WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}" "XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-}" \
+    "XDG_SESSION_TYPE=${XDG_SESSION_TYPE:-}" "QT_QPA_PLATFORM=${QT_QPA_PLATFORM:-}" \
+    "QT_SCALE_FACTOR=${QT_SCALE_FACTOR:-}" "LANG=${LANG:-C.UTF-8}" "LANGUAGE=${LANGUAGE:-}" \
+    "XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-}" -- "$@"

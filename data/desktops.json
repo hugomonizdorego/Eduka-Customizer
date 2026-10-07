@@ -1,0 +1,47 @@
+{
+  "desktops": [
+    {"id": "eduka", "name": "Eduka-Desktop", "kind": "de",
+     "description": "Edukasaun OS desktop: Eduka-Panel and Eduka-Menu on top of LXQt. Light, accessible and made for schools.",
+     "packages": ["lxqt-core", "lxqt-session", "openbox", "pcmanfm-qt", "qterminal", "featherpad", "lximage-qt", "pavucontrol-qt", "network-manager-gnome", "papirus-icon-theme", "xorg"],
+     "eduka_desktop": true, "session": "edukasaun-desktop", "dm": "lightdm", "task": ""},
+    {"id": "lxqt", "name": "LXQt", "kind": "de", "description": "Lightweight Qt desktop (base of Eduka-Desktop).",
+     "packages": ["task-lxqt-desktop"], "session": "lxqt", "dm": "sddm", "task": "task-lxqt-desktop"},
+    {"id": "xfce", "name": "Xfce", "kind": "de", "description": "Fast, traditional GTK desktop.",
+     "packages": ["task-xfce-desktop"], "session": "xfce", "dm": "lightdm", "task": "task-xfce-desktop"},
+    {"id": "kde", "name": "KDE Plasma", "kind": "de", "description": "Full-featured, modern Qt desktop.",
+     "packages": ["task-kde-desktop"], "session": "plasma", "dm": "sddm", "task": "task-kde-desktop"},
+    {"id": "gnome", "name": "GNOME", "kind": "de", "description": "Debian's default desktop. Needs more RAM.",
+     "packages": ["task-gnome-desktop"], "session": "gnome", "dm": "gdm3", "task": "task-gnome-desktop"},
+    {"id": "mate", "name": "MATE", "kind": "de", "description": "Classic GNOME 2 style desktop.",
+     "packages": ["task-mate-desktop"], "session": "mate", "dm": "lightdm", "task": "task-mate-desktop"},
+    {"id": "cinnamon", "name": "Cinnamon", "kind": "de", "description": "Familiar desktop from Linux Mint.",
+     "packages": ["task-cinnamon-desktop"], "session": "cinnamon", "dm": "lightdm", "task": "task-cinnamon-desktop"},
+    {"id": "lxde", "name": "LXDE", "kind": "de", "description": "Very light GTK2 desktop for old computers.",
+     "packages": ["task-lxde-desktop"], "session": "LXDE", "dm": "lightdm", "task": "task-lxde-desktop"},
+    {"id": "budgie", "name": "Budgie", "kind": "de", "description": "Simple and elegant desktop.",
+     "packages": ["budgie-desktop", "xorg"], "session": "budgie-desktop", "dm": "lightdm", "task": ""},
+
+    {"id": "openbox", "name": "Openbox", "kind": "wm", "description": "Minimal stacking window manager.",
+     "packages": ["openbox", "obconf", "tint2", "xorg"], "session": "openbox", "dm": "lightdm"},
+    {"id": "i3", "name": "i3", "kind": "wm", "description": "Tiling window manager.",
+     "packages": ["i3", "i3status", "dmenu", "xorg"], "session": "i3", "dm": "lightdm"},
+    {"id": "fluxbox", "name": "Fluxbox", "kind": "wm", "description": "Light stacking window manager.",
+     "packages": ["fluxbox", "xorg"], "session": "fluxbox", "dm": "lightdm"},
+    {"id": "icewm", "name": "IceWM", "kind": "wm", "description": "Windows-like window manager with taskbar.",
+     "packages": ["icewm", "xorg"], "session": "icewm-session", "dm": "lightdm"},
+    {"id": "awesome", "name": "awesome", "kind": "wm", "description": "Configurable tiling window manager.",
+     "packages": ["awesome", "xorg"], "session": "awesome", "dm": "lightdm"},
+    {"id": "sway", "name": "Sway (Wayland)", "kind": "wm", "description": "i3-compatible Wayland compositor.",
+     "packages": ["sway", "swaybg", "swayidle", "swaylock", "foot"], "session": "sway", "dm": "lightdm"},
+    {"id": "labwc", "name": "labwc (Wayland)", "kind": "wm", "description": "Openbox-like Wayland compositor.",
+     "packages": ["labwc", "foot"], "session": "labwc", "dm": "lightdm"}
+  ],
+  "display_managers": [
+    {"id": "lightdm", "name": "LightDM (GTK greeter)", "packages": ["lightdm", "lightdm-gtk-greeter"], "binary": "/usr/sbin/lightdm"},
+    {"id": "lightdm-slick", "name": "LightDM (Slick greeter)", "packages": ["lightdm", "slick-greeter"], "binary": "/usr/sbin/lightdm", "service": "lightdm"},
+    {"id": "sddm", "name": "SDDM", "packages": ["sddm"], "binary": "/usr/bin/sddm"},
+    {"id": "gdm3", "name": "GDM", "packages": ["gdm3"], "binary": "/usr/sbin/gdm3"},
+    {"id": "lxdm", "name": "LXDM", "packages": ["lxdm"], "binary": "/usr/sbin/lxdm"}
+  ],
+  "window_managers_for_lxqt": ["openbox", "xfwm4", "kwin-x11", "labwc"]
+}
