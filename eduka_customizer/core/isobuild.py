@@ -253,6 +253,10 @@ class Builder:
             splash = p.state.get("boot", {}).get("splash")
             if splash and Path(splash).exists():
                 bootloader.set_splash(p.isodir, splash)
+        from eduka_customizer.core import bootedit
+        from eduka_customizer.core.language import Language
+        Language(p).apply_boot_menu(self.opts.title)
+        bootedit.apply_overrides(p)
         info = p.distro
         disk_info = p.isodir / ".disk/info"
         disk_info.parent.mkdir(parents=True, exist_ok=True)
@@ -386,5 +390,27 @@ class Builder:
         return out
 
 
+    def quick(self):
+        """Rebuild the ISO with the existing filesystem.squashfs: boot menu and kernel only."""
+        p = self.project
+        if not (p.isodir / "live/filesystem.squashfs").exists():
+            raise RuntimeError("There is no compressed system yet: build the ISO once first.")
+        self.stage("Rebuilding the ISO (boot files only, the system is not recompressed)")
+        self.opts.reuse_squashfs = True
+        runner.require("xorriso")
+        self.boot_files()
+        self.tree_checksums()
+        out = self.xorriso()
+        self.iso_checksums(out)
+        p.state["last_iso"] = str(out)
+        p.record("quick-build", out.name)
+        log.info("Done: %s (%.1f s)", out, time.time() - self.started)
+        return out
+
+
 def build(project, opts=None, progress=None, stage=None):
     return Builder(project, opts, progress, stage).run()
+
+
+def quick_build(project, opts=None, progress=None, stage=None):
+    return Builder(project, opts, progress, stage).quick()

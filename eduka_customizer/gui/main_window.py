@@ -150,14 +150,16 @@ class MainWindow(QMainWindow):
         return s
 
     def _build_pages(self):
-        from eduka_customizer.gui.pages import (appearance, branding, build, desktop, flatpak,
-                                                identity, packages, project, settings_page, sources,
-                                                terminal, themes, wizard, workshop)
+        from eduka_customizer.gui.pages import (appearance, bootmenu, branding, build, calamares, desktop,
+                                                flatpak, identity, kernel, language, packages, plymouth,
+                                                project, settings_page, sources, terminal, themes, wizard,
+                                                workshop)
         self.pages = []
-        for cls in (project.ProjectPage, wizard.WizardPage, identity.IdentityPage,
+        for cls in (project.ProjectPage, wizard.WizardPage, identity.IdentityPage, language.LanguagePage,
                     branding.BrandingPage, sources.SourcesPage, packages.PackagesPage,
-                    flatpak.FlatpakPage, desktop.DesktopPage, themes.ThemesPage,
-                    appearance.AppearancePage, workshop.WorkshopPage, terminal.TerminalPage,
+                    flatpak.FlatpakPage, kernel.KernelPage, desktop.DesktopPage, themes.ThemesPage,
+                    appearance.AppearancePage, plymouth.PlymouthPage, bootmenu.BootMenuPage,
+                    calamares.CalamaresPage, workshop.WorkshopPage, terminal.TerminalPage,
                     build.BuildPage, settings_page.SettingsPage):
             page = cls(self)
             self.pages.append(page)

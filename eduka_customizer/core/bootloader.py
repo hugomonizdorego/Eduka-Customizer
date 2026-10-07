@@ -127,6 +127,9 @@ def append_params(isodir, params):
                 tokens.append(p)
         return tokens
 
+    def unchanged(rest):
+        return merge(rest) == rest.split()
+
     for f in config_files(isodir):
         text = f.read_text(errors="replace")
         lines = text.split("\n")
@@ -135,10 +138,13 @@ def append_params(isodir, params):
             stripped = line.strip()
             if "boot=live" not in stripped:
                 continue
-            if stripped.startswith(("linux ", "linuxefi ", "append ", "APPEND ")):
+            if re.match(r"(?i)(linux|linuxefi|append)\s", stripped):
                 indent = line[:len(line) - len(line.lstrip())]
                 head, *rest = stripped.split(None, 1)
                 rest = rest[0] if rest else ""
+                args_part = rest if head.lower() == "append" else (rest.split(None, 1) + [""])[1]
+                if unchanged(args_part):
+                    continue  # keep the line as written (tabs and all)
                 if head.lower() == "append":
                     new = indent + head + " " + " ".join(merge(rest))
                 else:
@@ -192,6 +198,95 @@ def set_timeout(isodir, seconds):
             new = re.sub(r"(?m)^(\s*set\s+timeout=)\S+", lambda m: m.group(1) + str(seconds), text)
         if new != text:
             f.write_text(new)
+
+
+LANG_BEGIN = "# eduka-languages-begin"
+LANG_END = "# eduka-languages-end"
+LANG_KEYS = ("locales", "keyboard-layouts", "keyboard-variants", "timezone")
+
+
+def _remove_language_block(text):
+    return re.sub(r"(?ms)^[ \t]*{}.*?{}[^\n]*\n?".format(LANG_BEGIN, LANG_END), "", text)
+
+
+def _with_params(line, params):
+    tokens = [t for t in line.split() if t.split("=")[0] not in LANG_KEYS]
+    indent = line[:len(line) - len(line.lstrip())]
+    return indent + " ".join(tokens + params.split())
+
+
+def _grub_language_menu(text, entries):
+    for m in re.finditer(r"(?m)^([ \t]*)menuentry\b[^\n{]*\{", text):
+        depth, j = 1, m.end()
+        while j < len(text) and depth:
+            depth += {"{": 1, "}": -1}.get(text[j], 0)
+            j += 1
+        block = text[m.start():j]
+        if "boot=live" not in block:
+            continue
+        indent = m.group(1)
+        copies = []
+        for title, params in entries:
+            head, body = block.split("\n", 1) if "\n" in block else (block, "")
+            head = re.sub(r"(menuentry\s+)(['\"]).*?\2", lambda h: h.group(1) + '"{}"'.format(title.replace('"', "")),
+                          head, count=1)
+            head = re.sub(r"\s+(--id|--hotkey|\$menuentry_id_option)(=|\s+)\S+", "", head)
+            body = "\n".join(_with_params(l, params) if re.match(r"\s*(linux|linuxefi)\s", l) and "boot=live" in l
+                             else l for l in body.split("\n"))
+            copies.append(indent + "    " + head.lstrip() + "\n" + "\n".join(
+                ("    " + l if l.strip() else l) for l in body.split("\n")))
+        menu = "\n{i}{b}\n{i}submenu \"Language / Língua / Bahasa\" {{\n{c}\n{i}}}\n{i}{e}".format(
+            i=indent, b=LANG_BEGIN, e=LANG_END, c="\n".join(copies))
+        return text[:j] + menu + text[j:]
+    return text
+
+
+ISOLINUX_LABEL_LINE = re.compile(r"(?i)^\s*(kernel|linux|initrd|append|menu label|menu default|menu hide|"
+                                 r"text help|endtext|ipappend|sysappend)\b")
+
+
+def _isolinux_language_menu(text, entries):
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if not re.match(r"(?i)^\s*label\s", line):
+            continue
+        end = i + 1
+        while end < len(lines) and lines[end].strip() and ISOLINUX_LABEL_LINE.match(lines[end]):
+            end += 1
+        block = lines[i:end]
+        if not any("boot=live" in l for l in block):
+            continue
+        out = [LANG_BEGIN, "menu begin languages", "\tmenu title Language / Lingua / Bahasa"]
+        for n, (title, params) in enumerate(entries, 1):
+            out.append("\tlabel lang{}".format(n))
+            out.append("\t\tmenu label {}".format(title))
+            for l in block[1:]:
+                low = l.strip().lower()
+                if low.startswith(("menu label", "menu default", "menu hide")):
+                    continue
+                if low.startswith("append") and "boot=live" in l:
+                    l = _with_params(l, params)
+                out.append("\t\t" + l.strip())
+        out += ["\tlabel langback", "\t\tmenu label Back", "\t\tmenu exit", "menu end", LANG_END]
+        return "\n".join(lines[:end] + out + lines[end:])
+    return text
+
+
+def set_language_entries(isodir, entries):
+    """Add a 'Language' submenu with one live entry per (title, params)."""
+    changed = False
+    for f in config_files(isodir):
+        text = f.read_text(errors="replace")
+        new = _remove_language_block(text)
+        if entries:
+            if f.parent.name in ("isolinux", "syslinux") or f.parent.parent.name == "isolinux":
+                new = _isolinux_language_menu(new, entries)
+            else:
+                new = _grub_language_menu(new, entries)
+        if new != text:
+            f.write_text(new)
+            changed = True
+    return changed
 
 
 def set_splash(isodir, image):

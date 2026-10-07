@@ -1,0 +1,251 @@
+"""Kernel page: installed kernels, Debian/backports/third-party kernels, .deb files,
+removal, initramfs, GRUB defaults of the installed system, firmware and DKMS."""
+
+from eduka_customizer.qt.core import Qt
+from eduka_customizer.qt.widgets import (QCheckBox, QFileDialog, QLineEdit, QMessageBox, QSpinBox,
+                                          QTreeWidget, QTreeWidgetItem)
+
+from eduka_customizer.core.kernel import THIRD_PARTY, Kernels
+from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, label
+
+
+def _size(n):
+    return "{:.0f} MiB".format(n / 1024 ** 2) if n else "?"
+
+
+class KernelPage(Page):
+    title = "Kernel"
+    subtitle = ("The Linux kernel of the image: install Debian kernels, backports, third-party kernels "
+                "(Liquorix, XanMod, your own repository) or .deb files, remove old kernels, choose the "
+                "kernel of the ISO, update the initramfs and GRUB, add firmware.")
+    icon_names = ("preferences-system", "cpu", "applications-system")
+
+    def build(self):
+        c = self.card("Installed kernels")
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabels(["Version", "Package", "Origin", "Size", "initrd", "Headers", "ISO", "Held"])
+        self.tree.setRootIsDecorated(False)
+        self.tree.setMinimumHeight(170)
+        c.add(self.tree)
+        self.meta = label("", "muted")
+        c.add(self.meta)
+        c.add(hbox(button("Remove", self.remove, "danger"), button("Hold / unhold", self.toggle_hold), None,
+                   button("Update initramfs", self.initramfs), button("Copy to the ISO now", self.copy_to_iso),
+                   button("Use for the ISO", self.use_for_iso, "primary")))
+
+        c = self.card("Install a Debian kernel", "Debian's kernels are signed for Secure Boot.")
+        self.debian = combo([("linux-image-amd64", "linux-image-amd64 (newest of the release, recommended)")],
+                            editable=True)
+        self.headers = QCheckBox("Also install headers (needed for DKMS drivers such as VirtualBox or NVIDIA)")
+        c.add(hbox(self.debian, button("Show all", self.list_debian)))
+        c.add(self.headers)
+        c.add(hbox(None, button("Install", self.install_debian, "primary")))
+
+        c = self.card("Backports and third-party kernels")
+        self.preset = combo([(k, "{} — {}".format(v[0], v[1])) for k, v in THIRD_PARTY.items()])
+        c.add(self.preset)
+        c.add(label("Third-party kernels are not signed: Secure Boot must be disabled to boot them. Keep "
+                    "Debian's kernel installed as a fallback.", "muted"))
+        c.add(hbox(None, button("Add repository and install", self.install_preset, "primary")))
+
+        c = self.card("Kernel from your own repository or from files")
+        f = c.form()
+        self.r_name = QLineEdit()
+        self.r_name.setPlaceholderText("short name, e.g. mykernel")
+        self.r_uri = QLineEdit()
+        self.r_uri.setPlaceholderText("https://example.org/debian")
+        self.r_suite = QLineEdit()
+        self.r_suite.setPlaceholderText("e.g. trixie or stable")
+        self.r_comp = QLineEdit("main")
+        self.r_key = FilePicker("Repository key", "Keys (*.gpg *.asc *.key);;All files (*)")
+        self.r_pkgs = QLineEdit()
+        self.r_pkgs.setPlaceholderText("package names, e.g. linux-image-custom linux-headers-custom")
+        for text, w in (("Name:", self.r_name), ("URI:", self.r_uri), ("Suite:", self.r_suite),
+                        ("Components:", self.r_comp), ("Key (file or URL):", self.r_key),
+                        ("Packages:", self.r_pkgs)):
+            f.addRow(text, w)
+        c.add(hbox(button("Install .deb files...", self.install_debs), None,
+                   button("Add repository and install", self.install_repo, "primary")))
+
+        c = self.card("GRUB of the installed system",
+                      "Written to /etc/default/grub.d/95-eduka-customizer.cfg and used when Calamares "
+                      "installs GRUB (and by every later update-grub).")
+        f = c.form()
+        self.g_timeout = QSpinBox()
+        self.g_timeout.setRange(-1, 120)
+        self.g_timeout.setSuffix(" s")
+        f.addRow("Timeout:", self.g_timeout)
+        self.g_style = combo([("menu", "Show the menu"), ("countdown", "Countdown"), ("hidden", "Hidden (Shift/Esc shows it)")])
+        f.addRow("Menu:", self.g_style)
+        self.g_default = combo([("0", "First entry"), ("saved", "Last chosen entry")])
+        f.addRow("Default entry:", self.g_default)
+        self.g_cmdline = QLineEdit()
+        f.addRow("Kernel options:", self.g_cmdline)
+        self.g_osprober = QCheckBox("Find other systems (Windows, other Linux) for the menu (os-prober)")
+        f.addRow("", self.g_osprober)
+        self.g_recovery = QCheckBox("Hide recovery entries")
+        f.addRow("", self.g_recovery)
+        self.g_gfx = combo(["", "auto", "1024x768", "1280x800", "1920x1080"], editable=True)
+        f.addRow("Resolution:", self.g_gfx)
+        c.add(hbox(button("Run update-grub", self.update_grub), None,
+                   button("Save GRUB settings", self.save_grub, "primary")))
+
+        c = self.card("Drivers")
+        c.add(label("Firmware makes Wi-Fi, graphics and sound work on most laptops (needs the non-free-firmware "
+                    "component). DKMS rebuilds extra drivers for every installed kernel.", "muted"))
+        c.add(hbox(button("Install common firmware", self.firmware, "primary"),
+                   button("Rebuild DKMS drivers", self.dkms), None))
+
+    # Helpers -------------------------------------------------------------------------
+    def k(self):
+        return Kernels(self.project)
+
+    def _selected(self):
+        it = self.tree.currentItem()
+        return it.data(0, Qt.ItemDataRole.UserRole) if it else None
+
+    def refresh(self):
+        if not self.project:
+            return
+        k = self.k()
+        kernels, meta = k.installed()
+        self._kernels = {x["version"]: x for x in kernels}
+        keep = self._selected()
+        self.tree.clear()
+        for x in kernels:
+            it = QTreeWidgetItem([x["version"], x["package"] or "-", x["origin"], _size(x["size"]),
+                                  "yes" if x["initrd"] else "missing", "yes" if x["headers"] else "",
+                                  "●" if x["iso"] else "", "held" if x["held"] else ""])
+            it.setData(0, Qt.ItemDataRole.UserRole, x["version"])
+            self.tree.addTopLevelItem(it)
+            if x["version"] == keep:
+                self.tree.setCurrentItem(it)
+        for i in range(self.tree.columnCount()):
+            self.tree.resizeColumnToContents(i)
+        self.meta.setText("Kept up to date by: " + ", ".join(
+            "{}{}".format(m["package"], " (held)" if m["held"] else "") for m in meta) if meta
+            else "No kernel metapackage: kernels are not updated automatically.")
+        g = k.grub_defaults()
+        try:
+            self.g_timeout.setValue(int(g.get("GRUB_TIMEOUT", "5")))
+        except ValueError:
+            self.g_timeout.setValue(5)
+        self.g_style.setCurrentIndex(max(0, self.g_style.findData(g.get("GRUB_TIMEOUT_STYLE", "menu"))))
+        self.g_default.setCurrentIndex(max(0, self.g_default.findData(g.get("GRUB_DEFAULT", "0"))))
+        self.g_cmdline.setText(g.get("GRUB_CMDLINE_LINUX_DEFAULT", "quiet splash"))
+        self.g_osprober.setChecked(g.get("GRUB_DISABLE_OS_PROBER", "true") == "false")
+        self.g_recovery.setChecked(g.get("GRUB_DISABLE_RECOVERY", "false") == "true")
+        self.g_gfx.setCurrentText(g.get("GRUB_GFXMODE", ""))
+
+    def _run(self, name, func):
+        self.task(name, func, lambda _r: (self.refresh(), self.main.update_state()))
+
+    # Actions ----------------------------------------------------------------------------
+    def remove(self):
+        v = self._selected()
+        if not v:
+            return
+        if QMessageBox.question(self, "Remove kernel", "Remove kernel {} from the image?".format(v)) != \
+                QMessageBox.StandardButton.Yes:
+            return
+        proj = self.project
+        self._run("Remove kernel " + v, lambda t: Kernels(proj).remove(v))
+
+    def toggle_hold(self):
+        v = self._selected()
+        x = self._kernels.get(v) if v else None
+        if not x or not x["package"]:
+            return
+        proj, pkg, on = self.project, x["package"], not x["held"]
+        self._run(("Hold " if on else "Unhold ") + pkg, lambda t: Kernels(proj).hold(pkg, on))
+
+    def initramfs(self):
+        v = self._selected()
+        proj = self.project
+        self._run("Update initramfs", lambda t: Kernels(proj).update_initramfs(v))
+
+    def use_for_iso(self):
+        v = self._selected()
+        if v:
+            self.k().use_for_iso(v)
+            self.refresh()
+            self.main.stage_label.setText("The ISO will boot kernel " + v)
+
+    def copy_to_iso(self):
+        v = self._selected()
+        proj = self.project
+        self._run("Copy kernel to the ISO", lambda t: Kernels(proj).copy_to_iso(v))
+
+    def list_debian(self):
+        proj = self.project
+
+        def done(rows):
+            keep = self.debian.currentText()
+            self.debian.clear()
+            for name, desc in rows:
+                self.debian.addItem("{} — {}".format(name, desc), name)
+            idx = self.debian.findData("linux-image-amd64")
+            self.debian.setCurrentIndex(idx if idx >= 0 else 0)
+            if not rows:
+                self.debian.setEditText(keep)
+        self.task("List Debian kernels", lambda t: Kernels(proj).available(), done)
+
+    def install_debian(self):
+        data = self.debian.currentData()
+        name = data if data and self.debian.currentText().startswith(data) else self.debian.currentText().split()[0]
+        proj, headers = self.project, self.headers.isChecked()
+        self._run("Install kernel " + name, lambda t: Kernels(proj).install([name], headers=headers))
+
+    def install_preset(self):
+        key = self.preset.currentData()
+        proj, headers = self.project, self.headers.isChecked()
+        self._run("Install " + THIRD_PARTY[key][0], lambda t: Kernels(proj).install_third_party(key, headers))
+
+    def install_repo(self):
+        name, uri, suite = self.r_name.text().strip(), self.r_uri.text().strip(), self.r_suite.text().strip()
+        pkgs = self.r_pkgs.text().split()
+        if not (name and uri and suite and pkgs):
+            QMessageBox.information(self, "Kernel", "Name, URI, suite and packages are needed.")
+            return
+        proj, comp, key = self.project, self.r_comp.text().strip(), self.r_key.text()
+        self._run("Install kernel from " + name,
+                  lambda t: Kernels(proj).add_repository(name, uri, suite, comp, key, pkgs))
+
+    def install_debs(self):
+        files, _ = QFileDialog.getOpenFileNames(self, "Kernel packages", "", "Debian packages (*.deb)")
+        if files:
+            proj = self.project
+            self._run("Install kernel packages", lambda t: Kernels(proj).install_debs(files))
+
+    def save_grub(self):
+        values = {"GRUB_TIMEOUT": str(self.g_timeout.value()), "GRUB_TIMEOUT_STYLE": self.g_style.currentData(),
+                  "GRUB_DEFAULT": self.g_default.currentData(),
+                  "GRUB_CMDLINE_LINUX_DEFAULT": self.g_cmdline.text().strip(),
+                  "GRUB_DISABLE_OS_PROBER": "false" if self.g_osprober.isChecked() else "true",
+                  "GRUB_DISABLE_RECOVERY": "true" if self.g_recovery.isChecked() else "false",
+                  "GRUB_GFXMODE": self.g_gfx.currentText().strip()}
+        if values["GRUB_DEFAULT"] == "saved":
+            values["GRUB_SAVEDEFAULT"] = "true"
+        try:
+            self.k().set_grub_defaults(values)
+        except ValueError as e:
+            QMessageBox.warning(self, "GRUB", str(e))
+            return
+        self.main.stage_label.setText("GRUB settings saved")
+
+    def update_grub(self):
+        proj = self.project
+
+        def done(ran):
+            if not ran:
+                QMessageBox.information(self, "update-grub", "The image has no installed GRUB menu (normal for "
+                                        "a live image). The installer creates it with these settings.")
+        self.task("update-grub", lambda t: Kernels(proj).update_grub(), done)
+
+    def firmware(self):
+        proj = self.project
+        self._run("Install firmware", lambda t: Kernels(proj).install_firmware())
+
+    def dkms(self):
+        proj = self.project
+        self._run("Rebuild DKMS drivers", lambda t: Kernels(proj).dkms())

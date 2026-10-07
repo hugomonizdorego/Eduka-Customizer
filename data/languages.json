@@ -1,0 +1,291 @@
+{
+ "comment": "Languages offered by the Language page. Packages that APT cannot find are skipped. Tetun has no glibc locale yet: Timor-Leste uses pt_PT.UTF-8 and en_US.UTF-8.",
+ "languages": [
+  {
+   "locale": "en_US.UTF-8",
+   "name": "English (United States)",
+   "native": "English",
+   "keyboard": "us",
+   "timezone": "America/New_York",
+   "libreoffice": "",
+   "mozilla": "",
+   "hunspell": "en-us",
+   "extra": []
+  },
+  {
+   "locale": "en_GB.UTF-8",
+   "name": "English (United Kingdom)",
+   "native": "English (UK)",
+   "keyboard": "gb",
+   "timezone": "Europe/London",
+   "libreoffice": "en-gb",
+   "mozilla": "en-gb",
+   "hunspell": "en-gb",
+   "extra": []
+  },
+  {
+   "locale": "pt_PT.UTF-8",
+   "name": "Portuguese (Portugal, Timor-Leste)",
+   "native": "Português",
+   "keyboard": "pt",
+   "timezone": "Europe/Lisbon",
+   "libreoffice": "pt",
+   "mozilla": "pt-pt",
+   "hunspell": "pt-pt",
+   "extra": []
+  },
+  {
+   "locale": "pt_BR.UTF-8",
+   "name": "Portuguese (Brazil)",
+   "native": "Português (Brasil)",
+   "keyboard": "br",
+   "timezone": "America/Sao_Paulo",
+   "libreoffice": "pt-br",
+   "mozilla": "pt-br",
+   "hunspell": "pt-br",
+   "extra": []
+  },
+  {
+   "locale": "id_ID.UTF-8",
+   "name": "Indonesian",
+   "native": "Bahasa Indonesia",
+   "keyboard": "us",
+   "timezone": "Asia/Jakarta",
+   "libreoffice": "id",
+   "mozilla": "id",
+   "hunspell": "id",
+   "extra": []
+  },
+  {
+   "locale": "ms_MY.UTF-8",
+   "name": "Malay",
+   "native": "Bahasa Melayu",
+   "keyboard": "us",
+   "timezone": "Asia/Kuala_Lumpur",
+   "libreoffice": "",
+   "mozilla": "ms",
+   "hunspell": "",
+   "extra": []
+  },
+  {
+   "locale": "fil_PH.UTF-8",
+   "name": "Filipino",
+   "native": "Filipino",
+   "keyboard": "us",
+   "timezone": "Asia/Manila",
+   "libreoffice": "",
+   "mozilla": "",
+   "hunspell": "",
+   "extra": []
+  },
+  {
+   "locale": "es_ES.UTF-8",
+   "name": "Spanish",
+   "native": "Español",
+   "keyboard": "es",
+   "timezone": "Europe/Madrid",
+   "libreoffice": "es",
+   "mozilla": "es-es",
+   "hunspell": "es",
+   "extra": []
+  },
+  {
+   "locale": "fr_FR.UTF-8",
+   "name": "French",
+   "native": "Français",
+   "keyboard": "fr",
+   "timezone": "Europe/Paris",
+   "libreoffice": "fr",
+   "mozilla": "fr",
+   "hunspell": "fr",
+   "extra": []
+  },
+  {
+   "locale": "de_DE.UTF-8",
+   "name": "German",
+   "native": "Deutsch",
+   "keyboard": "de",
+   "timezone": "Europe/Berlin",
+   "libreoffice": "de",
+   "mozilla": "de",
+   "hunspell": "de-de",
+   "extra": []
+  },
+  {
+   "locale": "it_IT.UTF-8",
+   "name": "Italian",
+   "native": "Italiano",
+   "keyboard": "it",
+   "timezone": "Europe/Rome",
+   "libreoffice": "it",
+   "mozilla": "it",
+   "hunspell": "it",
+   "extra": []
+  },
+  {
+   "locale": "nl_NL.UTF-8",
+   "name": "Dutch",
+   "native": "Nederlands",
+   "keyboard": "us",
+   "timezone": "Europe/Amsterdam",
+   "libreoffice": "nl",
+   "mozilla": "nl",
+   "hunspell": "nl",
+   "extra": []
+  },
+  {
+   "locale": "pl_PL.UTF-8",
+   "name": "Polish",
+   "native": "Polski",
+   "keyboard": "pl",
+   "timezone": "Europe/Warsaw",
+   "libreoffice": "pl",
+   "mozilla": "pl",
+   "hunspell": "pl",
+   "extra": []
+  },
+  {
+   "locale": "tr_TR.UTF-8",
+   "name": "Turkish",
+   "native": "Türkçe",
+   "keyboard": "tr",
+   "timezone": "Europe/Istanbul",
+   "libreoffice": "tr",
+   "mozilla": "tr",
+   "hunspell": "tr",
+   "extra": []
+  },
+  {
+   "locale": "ru_RU.UTF-8",
+   "name": "Russian",
+   "native": "Русский",
+   "keyboard": "us,ru",
+   "timezone": "Europe/Moscow",
+   "libreoffice": "ru",
+   "mozilla": "ru",
+   "hunspell": "ru",
+   "extra": []
+  },
+  {
+   "locale": "uk_UA.UTF-8",
+   "name": "Ukrainian",
+   "native": "Українська",
+   "keyboard": "us,ua",
+   "timezone": "Europe/Kyiv",
+   "libreoffice": "uk",
+   "mozilla": "uk",
+   "hunspell": "uk",
+   "extra": []
+  },
+  {
+   "locale": "ar_EG.UTF-8",
+   "name": "Arabic",
+   "native": "العربية",
+   "keyboard": "us,ara",
+   "timezone": "Africa/Cairo",
+   "libreoffice": "ar",
+   "mozilla": "ar",
+   "hunspell": "ar",
+   "extra": [
+    "fonts-noto-core"
+   ]
+  },
+  {
+   "locale": "hi_IN.UTF-8",
+   "name": "Hindi",
+   "native": "हिन्दी",
+   "keyboard": "us,in",
+   "timezone": "Asia/Kolkata",
+   "libreoffice": "hi",
+   "mozilla": "hi-in",
+   "hunspell": "",
+   "extra": [
+    "fonts-noto-core"
+   ]
+  },
+  {
+   "locale": "th_TH.UTF-8",
+   "name": "Thai",
+   "native": "ไทย",
+   "keyboard": "us,th",
+   "timezone": "Asia/Bangkok",
+   "libreoffice": "th",
+   "mozilla": "th",
+   "hunspell": "th",
+   "extra": [
+    "fonts-thai-tlwg"
+   ]
+  },
+  {
+   "locale": "vi_VN.UTF-8",
+   "name": "Vietnamese",
+   "native": "Tiếng Việt",
+   "keyboard": "us",
+   "timezone": "Asia/Ho_Chi_Minh",
+   "libreoffice": "vi",
+   "mozilla": "vi",
+   "hunspell": "vi",
+   "extra": []
+  },
+  {
+   "locale": "zh_CN.UTF-8",
+   "name": "Chinese (Simplified)",
+   "native": "简体中文",
+   "keyboard": "us",
+   "timezone": "Asia/Shanghai",
+   "libreoffice": "zh-cn",
+   "mozilla": "zh-cn",
+   "hunspell": "",
+   "extra": [
+    "fonts-noto-cjk",
+    "fcitx5",
+    "fcitx5-chinese-addons"
+   ]
+  },
+  {
+   "locale": "zh_TW.UTF-8",
+   "name": "Chinese (Traditional)",
+   "native": "繁體中文",
+   "keyboard": "us",
+   "timezone": "Asia/Taipei",
+   "libreoffice": "zh-tw",
+   "mozilla": "zh-tw",
+   "hunspell": "",
+   "extra": [
+    "fonts-noto-cjk",
+    "fcitx5",
+    "fcitx5-chewing"
+   ]
+  },
+  {
+   "locale": "ja_JP.UTF-8",
+   "name": "Japanese",
+   "native": "日本語",
+   "keyboard": "jp",
+   "timezone": "Asia/Tokyo",
+   "libreoffice": "ja",
+   "mozilla": "ja",
+   "hunspell": "",
+   "extra": [
+    "fonts-noto-cjk",
+    "fcitx5",
+    "fcitx5-mozc"
+   ]
+  },
+  {
+   "locale": "ko_KR.UTF-8",
+   "name": "Korean",
+   "native": "한국어",
+   "keyboard": "kr",
+   "timezone": "Asia/Seoul",
+   "libreoffice": "ko",
+   "mozilla": "ko",
+   "hunspell": "",
+   "extra": [
+    "fonts-noto-cjk",
+    "fcitx5",
+    "fcitx5-hangul"
+   ]
+  }
+ ]
+}

@@ -1,15 +1,14 @@
 """Identity page: OS name, version, live user, language, time zone."""
 
-from eduka_customizer.qt.widgets import QCheckBox, QLineEdit, QListWidget, QAbstractItemView
+from eduka_customizer.qt.widgets import QCheckBox, QLineEdit
 
-from eduka_customizer.gui.widgets import Page, button, combo, hbox, label
+from eduka_customizer.gui.widgets import Page, button, hbox
 
 
 class IdentityPage(Page):
-    title = "Identity & Language"
-    nav_title = "Identity & Language"
-    subtitle = ("How the system names itself (os-release, boot menu, installer), the live user, "
-                "and the default language, time zone and keyboard.")
+    title = "Identity"
+    nav_title = "Identity"
+    subtitle = "How the system names itself (os-release, boot menu, installer) and the live user."
     icon_names = ("preferences-desktop-personal", "user-info")
 
     FIELDS = [("name", "System name"), ("version", "Version"), ("codename", "Codename"),
@@ -37,23 +36,9 @@ class IdentityPage(Page):
         f.addRow("", self.calamares)
         c.add(hbox(None, button("Apply identity", self.apply_identity, "primary")))
 
-        c = self.card("Language, time zone and keyboard",
-                      "Used for the installed system and the live session (live-config).")
-        f = c.form()
-        self.locale = combo([], editable=True)
-        f.addRow("Default language:", self.locale)
-        self.extra = QListWidget()
-        self.extra.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
-        self.extra.setMaximumHeight(150)
-        f.addRow("Extra languages:", self.extra)
-        self.tz = combo([], editable=True)
-        f.addRow("Time zone:", self.tz)
-        self.kb = QLineEdit()
-        self.kb.setPlaceholderText("us, pt, fr ... (comma separated)")
-        f.addRow("Keyboard layout:", self.kb)
-        c.add(label("Tip for Timor-Leste: pt_PT.UTF-8 and en_US.UTF-8 with time zone Asia/Dili.",
-                    "muted"))
-        c.add(hbox(None, button("Apply language settings", self.apply_locale, "primary")))
+        c = self.card("Language", "Default language, keyboard, time zone and language packs have "
+                                  "their own page.")
+        c.add(hbox(None, button("Open the Language page", lambda: self.main.go("LanguagePage"))))
 
     def refresh(self):
         if not self.project:
@@ -61,22 +46,6 @@ class IdentityPage(Page):
         ident = self.project.state.get("identity", {})
         for key, e in self.edits.items():
             e.setText(str(ident.get(key, "")))
-        from eduka_customizer.core.branding import Branding
-        b = Branding(self.project)
-        loc = self.project.state.get("locale", {})
-        locales = b.supported_locales()
-        self.locale.clear()
-        self.locale.addItems(locales)
-        self.locale.setCurrentText(loc.get("default", "en_US.UTF-8"))
-        self.extra.clear()
-        self.extra.addItems(locales)
-        for i in range(self.extra.count()):
-            it = self.extra.item(i)
-            it.setSelected(it.text() in loc.get("extra", []))
-        self.tz.clear()
-        self.tz.addItems(b.timezones())
-        self.tz.setCurrentText(loc.get("timezone", "Asia/Dili"))
-        self.kb.setText(loc.get("keyboard", "us"))
 
     def apply_identity(self):
         from eduka_customizer.core.branding import Branding
@@ -89,12 +58,3 @@ class IdentityPage(Page):
             if cal and b.calamares_branding(ident["name"], ident["version"], ident.get("home_url", "")):
                 t.set_stage("Calamares branding updated")
         self.task("Apply identity", work)
-
-    def apply_locale(self):
-        from eduka_customizer.core.branding import Branding
-        proj = self.project
-        default = self.locale.currentText().strip()
-        extra = [i.text() for i in self.extra.selectedItems()]
-        tz, kb = self.tz.currentText().strip(), self.kb.text().strip() or "us"
-        self.task("Apply language settings",
-                  lambda t: Branding(proj).apply_locale(default, extra, tz, kb))

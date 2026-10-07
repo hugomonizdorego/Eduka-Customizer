@@ -4,11 +4,25 @@ import os
 from pathlib import Path
 
 from eduka_customizer.qt.core import Qt
-from eduka_customizer.qt.widgets import (QFileDialog, QInputDialog, QLineEdit, QListWidget, QMessageBox,
-                             QTabWidget, QVBoxLayout, QWidget)
+from eduka_customizer.qt.widgets import (QCheckBox, QFileDialog, QInputDialog, QLineEdit, QListWidget,
+                                          QMessageBox, QTabWidget, QVBoxLayout, QWidget)
 
 from eduka_customizer.core.config import settings
+from eduka_customizer.core.log import log
+from eduka_customizer.gui.pages.language import combo_locale, language_combo
 from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, label
+
+
+def apply_language(proj, choice):
+    """Set the chosen default language on a freshly created root filesystem."""
+    if not choice:
+        return
+    from eduka_customizer.core.language import Language
+    locale, packs = choice
+    try:
+        Language(proj).apply(locale, packs=packs)
+    except Exception as e:  # the new system is usable without it
+        log.warning("Could not set the language %s: %s (set it on the Language page)", locale, e)
 
 
 class ProjectPage(Page):
@@ -42,6 +56,11 @@ class ProjectPage(Page):
         self.source = self.card("Source of the image",
                                 "Choose where the root filesystem comes from. Replacing the source "
                                 "deletes the current root filesystem of this project.")
+        self.lang = language_combo()
+        self.lang.insertItem(0, "Keep the language of the source", "")
+        self.lang.setCurrentIndex(0)
+        self.lang_packs = QCheckBox("Install translations (needs internet)")
+        self.source.add(hbox(label("Default language:"), self.lang, self.lang_packs))
         tabs = QTabWidget()
         self.source.add(tabs)
 
@@ -165,6 +184,11 @@ class ProjectPage(Page):
             return r == QMessageBox.StandardButton.Yes
         return True
 
+    def _language(self):
+        if not self.lang.currentData() and self.lang.currentIndex() == 0:
+            return None
+        return combo_locale(self.lang), self.lang_packs.isChecked()
+
     def _done(self, info):
         self.main.update_state()
         self.refresh()
@@ -175,8 +199,13 @@ class ProjectPage(Page):
         if not iso_path or not self._confirm_replace():
             return
         from eduka_customizer.core import iso
-        proj = self.project
-        self.task("Extract ISO", lambda t: iso.extract(proj, iso_path, t.set_progress), self._done)
+        proj, lang = self.project, self._language()
+
+        def work(t):
+            info = iso.extract(proj, iso_path, t.set_progress)
+            apply_language(proj, lang)
+            return info
+        self.task("Extract ISO", work, self._done)
 
     def refresh_images(self):
         from eduka_customizer.core import download
@@ -200,23 +229,29 @@ class ProjectPage(Page):
         if not self._confirm_replace():
             return
         suite = self.dl_suite.currentData()
-        proj = self.project
+        proj, lang = self.project, self._language()
 
         def work(t):
             t.set_stage("Downloading " + name)
             path = download.download(suite, name, proj.path / "downloads", t.set_progress)
             t.set_stage("Extracting")
-            return iso.extract(proj, path, t.set_progress)
+            info = iso.extract(proj, path, t.set_progress)
+            apply_language(proj, lang)
+            return info
         self.task("Download Debian live image", work, self._done)
 
     def bootstrap(self):
         if not self._confirm_replace():
             return
         from eduka_customizer.core import bootstrap
-        proj = self.project
+        proj, lang = self.project, self._language()
         suite, arch, variant = self.bs_suite.currentData(), self.bs_arch.currentData(), self.bs_variant.currentData()
-        self.task("Bootstrap Debian " + suite,
-                  lambda t: bootstrap.bootstrap(proj, suite, arch, variant), self._done)
+
+        def work(t):
+            info = bootstrap.bootstrap(proj, suite, arch, variant)
+            apply_language(proj, lang)
+            return info
+        self.task("Bootstrap Debian " + suite, work, self._done)
 
     def snapshot(self):
         if not self._confirm_replace():

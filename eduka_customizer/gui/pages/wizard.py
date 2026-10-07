@@ -125,8 +125,8 @@ class WizardPage(Page):
         self.w_upgrade = QCheckBox("Upgrade all packages first")
         self.w_upgrade.setChecked(True)
         f.addRow("", self.w_upgrade)
-        self.w_locale = combo(["en_US.UTF-8", "pt_PT.UTF-8", "pt_BR.UTF-8", "id_ID.UTF-8", "fr_FR.UTF-8",
-                               "es_ES.UTF-8", "de_DE.UTF-8"], "en_US.UTF-8", editable=True)
+        from eduka_customizer.gui.pages.language import language_combo
+        self.w_locale = language_combo("en_US.UTF-8")
         self.w_extra = QLineEdit("pt_PT.UTF-8 id_ID.UTF-8")
         self.w_tz = combo(["Asia/Dili", "Asia/Jakarta", "Europe/Lisbon", "UTC", "America/Sao_Paulo"],
                           "Asia/Dili", editable=True)
@@ -135,6 +135,12 @@ class WizardPage(Page):
         f.addRow("Extra languages:", self.w_extra)
         f.addRow("Time zone:", self.w_tz)
         f.addRow("Keyboard:", self.w_kb)
+        self.w_packs = QCheckBox("Install translations and spell checking")
+        self.w_packs.setChecked(True)
+        self.w_langmenu = QCheckBox("Language choice in the ISO boot menu")
+        self.w_langmenu.setChecked(True)
+        f.addRow("", self.w_packs)
+        f.addRow("", self.w_langmenu)
 
     def _desktop(self, lay):
         c = self._card(lay, "Desktop, session and login screen")
@@ -337,9 +343,6 @@ class WizardPage(Page):
                       "hostname": self.w_host.text().strip() or os_id, "live_user": self.w_user.text().strip() or "user",
                       "live_fullname": "{} Live User".format(name),
                       "volume_label": (name.upper().replace(" ", "_") + "_" + self.w_version.text().strip())[:32]})
-        steps.append({"action": "locale", "default": self.w_locale.currentText().strip(),
-                      "extra": self.w_extra.text().split(), "timezone": self.w_tz.currentText().strip(),
-                      "keyboard": self.w_kb.text().strip() or "us"})
         de = self.w_de.currentData()
         steps.append({"action": "desktop", "id": de, "dm": self.w_dm.currentData(),
                       "remove_others": self.w_remove.isChecked()})
@@ -355,6 +358,14 @@ class WizardPage(Page):
                 if self.w_flat.item(i).checkState() == Qt.CheckState.Checked]
         if apps:
             steps.append({"action": "flatpak", "apps": apps, "firstboot": self.w_flat_mode.currentData() == "firstboot"})
+        from eduka_customizer.gui.pages.language import combo_locale
+        default = combo_locale(self.w_locale)
+        extra = [l for l in self.w_extra.text().split() if l != default]
+        # After the applications, so their translations are installed too.
+        steps.append({"action": "language", "default": default, "extra": extra,
+                      "timezone": self.w_tz.currentText().strip(), "keyboard": self.w_kb.text().strip() or "us",
+                      "packs": self.w_packs.isChecked(),
+                      "boot_menu": [default] + extra if self.w_langmenu.isChecked() and extra else []})
         icon = dict((p, t) for p, _n, t in ICON_PACKS).get(self.w_icons.currentData(), "")
         gtk = dict((p, t) for p, _n, t in GTK_PACKS).get(self.w_gtk.currentData(), "")
         packs = [p for p in (self.w_icons.currentData(), self.w_gtk.currentData()) if p]

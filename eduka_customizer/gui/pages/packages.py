@@ -40,6 +40,9 @@ class PackagesPage(Page):
                    button("Autoremove", self.autoremove), button("Install .deb files...", self.install_debs),
                    None))
 
+        c.add(hbox(label("Prefer a graphical package manager or a terminal?", "muted"), None,
+                   button("Synaptic / terminal / live desktop...", lambda: self.main.go("TerminalPage"))))
+
         c = self.card("Find packages", "Searches the package lists of the image (apt-cache search).")
         self.query = QLineEdit()
         self.query.setPlaceholderText("e.g. gcompris, libreoffice, scratch, firmware ...")

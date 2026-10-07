@@ -6,12 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from eduka_customizer.qt.core import Qt, QTimer
-from eduka_customizer.qt.gui import QFont
-from eduka_customizer.qt.widgets import (QFileDialog, QLineEdit, QListWidget, QMessageBox, QPlainTextEdit,
-                             QSplitter)
+from eduka_customizer.qt.core import QTimer
+from eduka_customizer.qt.widgets import QFileDialog, QLineEdit, QListWidget, QMessageBox
 
-from eduka_customizer.core import bootloader, hooks
+from eduka_customizer.core import hooks
 from eduka_customizer.core.chroot import Chroot, mounts_under
 from eduka_customizer.core.config import settings
 from eduka_customizer.core.desktop import sessions
@@ -90,6 +88,17 @@ class TerminalPage(Page):
         self.poll = QTimer(self)
         self.poll.timeout.connect(self._poll_live)
 
+        c = self.card("Install applications",
+                      "Three ways, all installing straight into the image: type package names, use the "
+                      "Synaptic package manager in a window, or work in a root terminal.")
+        self.apt_line = QLineEdit()
+        self.apt_line.setPlaceholderText("package names, e.g. vlc gimp gcompris-qt")
+        self.apt_line.returnPressed.connect(self.apt_install)
+        c.add(hbox(self.apt_line, button("Install with APT", self.apt_install, "primary")))
+        c.add(hbox(button("Synaptic package manager (window)", self.synaptic, icon_names=("synaptic",)),
+                   button("Terminal in the image", self.open_terminal, icon_names=("utilities-terminal",)),
+                   button("Search on the Packages page", lambda: self.main.go("PackagesPage")), None))
+
         c = self.card("Terminal", "A root shell inside the image (apt, nano, systemctl enable ...).")
         self.cmd = QLineEdit()
         self.cmd.setPlaceholderText("Run one command inside the image, e.g. apt-get install -y vlc")
@@ -112,20 +121,6 @@ class TerminalPage(Page):
                    None, button("Run selected", self.run_selected_hook),
                    button("Run all", self.run_all_hooks, "primary")))
 
-        c = self.card("Boot files of the ISO", "Edit GRUB and ISOLINUX configuration directly.")
-        split = QSplitter()
-        self.boot_files = QListWidget()
-        self.boot_files.setMinimumWidth(220)
-        self.boot_files.currentTextChanged.connect(self.load_boot_file)
-        self.boot_edit = QPlainTextEdit()
-        self.boot_edit.setFont(QFont("monospace"))
-        self.boot_edit.setMinimumHeight(240)
-        split.addWidget(self.boot_files)
-        split.addWidget(self.boot_edit)
-        split.setStretchFactor(1, 3)
-        c.add(split)
-        c.add(hbox(None, button("Save boot file", self.save_boot_file, "primary")))
-
     def refresh(self):
         if not self.project:
             return
@@ -145,16 +140,6 @@ class TerminalPage(Page):
         self.hooks.clear()
         for h in hooks.hook_dirs(self.project):
             self.hooks.addItem(h.name)
-        current = self.boot_files.currentItem().text() if self.boot_files.currentItem() else ""
-        self.boot_files.blockSignals(True)
-        self.boot_files.clear()
-        for f in bootloader.config_files(self.project.isodir):
-            self.boot_files.addItem(str(f.relative_to(self.project.isodir)))
-        self.boot_files.blockSignals(False)
-        if current:
-            items = self.boot_files.findItems(current, Qt.MatchFlag.MatchExactly)
-            if items:
-                self.boot_files.setCurrentItem(items[0])
         n = len(mounts_under(self.project.rootfs))
         self.mounts.setText("{} filesystems mounted inside the image".format(n) if n else
                             "Nothing is mounted inside the image.")
@@ -216,6 +201,44 @@ class TerminalPage(Page):
             QMessageBox.information(self, "Live session", "Start the live session first.")
             return
         self.main.live.run_app(cmd)
+
+    # Applications --------------------------------------------------------------------
+    def apt_install(self):
+        names = self.apt_line.text().split()
+        if names:
+            from eduka_customizer.core.apt import Packages
+            proj = self.project
+            self.task("Install " + " ".join(names), lambda t: Packages(proj).install(names),
+                      lambda _r: self.apt_line.clear())
+
+    def synaptic(self):
+        if not (self.project.rootfs / "usr/sbin/synaptic").exists():
+            if QMessageBox.question(self, "Synaptic", "Synaptic is not installed in the image. Install it now?") != \
+                    QMessageBox.StandardButton.Yes:
+                return
+            from eduka_customizer.core.apt import Packages
+            proj = self.project
+            self.task("Install Synaptic", lambda t: Packages(proj).install(["synaptic"]),
+                      lambda _r: self._start_synaptic())
+            return
+        self._start_synaptic()
+
+    def _start_synaptic(self):
+        if self.main.live and self.main.live.running:
+            self.main.live.run_app("synaptic", home="/root")
+            return
+        if self.main.task:
+            QMessageBox.information(self, "Synaptic", "Wait for the running task to finish.")
+            return
+        live = LiveSession(self.project)
+        try:
+            display = live.start(resolution=self.resolution.currentText(), mode="root", command="synaptic")
+        except Exception as e:
+            QMessageBox.warning(self, "Synaptic", str(e))
+            return
+        self.main.live = live
+        self.live_state.setText("Synaptic is running on display :{} - close it when done".format(display))
+        self.poll.start(1500)
 
     # Terminal -------------------------------------------------------------------------
     def run_command(self):
@@ -282,15 +305,3 @@ class TerminalPage(Page):
                 t.set_stage("Hook " + h.name)
                 hooks.run_hook(proj, h)
         self.task("Run all hooks", work)
-
-    # Boot files -------------------------------------------------------------------------
-    def load_boot_file(self, rel):
-        if rel:
-            self.boot_edit.setPlainText((self.project.isodir / rel).read_text(errors="replace"))
-
-    def save_boot_file(self):
-        it = self.boot_files.currentItem()
-        if it:
-            (self.project.isodir / it.text()).write_text(self.boot_edit.toPlainText())
-            self.project.record("edit-boot-file", it.text())
-            self.main.stage_label.setText("Saved " + it.text())
