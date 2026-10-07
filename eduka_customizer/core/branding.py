@@ -281,9 +281,17 @@ class Branding:
             text = text[:m.start(1)] + " ".join(opts) + text[m.end(1):]
             p.write_text(text)
 
-    def import_plymouth(self, source):
-        """Import a theme from a directory, .tar.* or .zip archive."""
+    def import_plymouth(self, source, theme=None):
+        """Import a theme from a directory, .tar.* or .zip archive.
+
+        *theme* picks one theme when the source holds several (a chosen .plymouth file).
+        """
         source = Path(source)
+        if source.is_dir() and theme:
+            size = sum(f.stat().st_size for f in source.rglob("*") if f.is_file() and not f.is_symlink())
+            if size > 200 * 1024 ** 2:
+                raise ValueError("{} is very large ({} MiB): put the theme in a folder of its own".format(
+                    source, size // 1024 ** 2))
         dest_root = self.rootfs / PLYMOUTH_THEMES
         dest_root.mkdir(parents=True, exist_ok=True)
         tmp = self.project.cache / "plymouth-import"
@@ -311,6 +319,9 @@ class Branding:
         else:
             raise ValueError("Unsupported theme source: {}".format(source))
         found = sorted(tmp.rglob("*.plymouth"))
+        if theme:
+            found = [f for f in found if f.stem == theme and f.parent == tmp / source.name] or \
+                [f for f in found if f.stem == theme]
         if not found:
             raise ValueError("No .plymouth file found in {}".format(source))
         theme_dir = found[0].parent

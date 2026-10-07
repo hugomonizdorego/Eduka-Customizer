@@ -186,9 +186,10 @@ class Kernels:
 
     # Remove / hold --------------------------------------------------------------------
     def remove(self, version):
-        if not _VERSION.match(version or ""):
-            raise ValueError("Invalid kernel version")
         kernels, _meta = self.installed()
+        # Only versions that really exist: never a path like ".." (rmtree below).
+        if not _VERSION.match(version or "") or version not in [k["version"] for k in kernels]:
+            raise ValueError("No installed kernel {}".format(version))
         if len(kernels) <= 1:
             raise ValueError("This is the only kernel of the image: install another one first")
         names = {s.get("Package") for s in self._status()}

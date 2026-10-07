@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.13.0 Alpha — 2026-10-07
+
+### New
+* **Users** page: the live user with **its own password**, **no password**
+  (user name only) or Debian's default `live`; automatic login and groups;
+  *Remove* returns to Debian's defaults. Accounts built into the image:
+  create with or without a password, as administrator (sudo), change or
+  remove the password, delete the account. Also in the Quick Wizard (the
+  recipe stores only the password hash), in recipes (`users`) and on the
+  command line (`eduka-customizer users`, passwords asked for or read with
+  `--password-stdin`).
+* Default time zone **Asia/Dili** (Timor-Leste) for new projects, the
+  language page, the boot menu language entries and Calamares. Choosing a
+  language changes the keyboard, not the time zone.
+* The sidebar follows the order of the work, numbered **1. Start / Project**
+  to **18. Build & Test**; every step has **Back** and **Next step** buttons.
+* US English everywhere: the boot menu submenu is now "Language", and
+  "canceled" is spelled the US way (`runner.Cancelled` stays as an alias).
+
+### Fixed
+* "Reuse existing filesystem.squashfs" was remembered by the project, so every
+  later build silently skipped compressing the system (stale ISO content).
+  It now applies to one build only.
+* `kernel remove ..` could delete `/lib` of the image: only installed kernel
+  versions are accepted.
+* `kernel grub KEY=false` wrote `"False"`, which GRUB ignores.
+* After one build, renaming the distribution did not change the boot menu
+  title or the volume label of later builds.
+* Boot options could only be added: removing `toram` or `nomodeset` now
+  removes them from the ISO menu too.
+* *Rebuild boot files only* / *Apply to the ISO now* refuse when the ISO
+  kernel changed or the initramfs must be rebuilt (the compressed system
+  would not match).
+* Volume-label checks did not read the GRUB files inside `efi.img`.
+* Choosing a `.plymouth` file installed another theme from the same folder.
+* The Plymouth preview pasted the distribution name unescaped into a root
+  shell script.
+* `boot/isolinux/*.cfg` was checked as a GRUB file.
+* Calamares 3.2 (Debian 12): the EFI size and user shell use the 3.2 keys.
+* Empty inputs: kernel install with an empty field, `bootmenu show` without
+  a file, `kernel iso`/`third-party` without a name now explain the problem.
+* Boot Menu page: "Keep this edit" remembers an edit saved without keeping.
+* Live user: after *Remove* the Users page and CLI show Debian's user again.
+* Recipes: `comment` keys in a `users` step are ignored instead of failing.
+
 ## 0.12.0 Alpha — 2026-10-07
 
 ### New

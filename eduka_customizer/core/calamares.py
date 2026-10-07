@@ -172,6 +172,10 @@ class Calamares:
         old = major_minor and (int(major_minor.group(1)), int(major_minor.group(2))) < (3, 3)
         return key[0].lower() + key[1:] if old else key[0].upper() + key[1:]
 
+    def _is_32(self):
+        m = re.match(r"(\d+)\.(\d+)", self.version() or "")
+        return bool(m) and (int(m.group(1)), int(m.group(2))) < (3, 3)
+
     def style(self):
         """Branding colors with lower-case keys, whatever the Calamares version."""
         return {k[0].lower() + k[1:]: v for k, v in (self.branding().get("style") or {}).items()}
@@ -297,11 +301,14 @@ class Calamares:
                   "sudoersGroup": sudo_group or "sudo"}
         if groups is not None:
             values["defaultGroups"] = _merge_groups(data.get("defaultGroups") or [], groups)
-        user = dict(data.get("user") or {})
-        user["shell"] = shell or "/bin/bash"
-        values["user"] = user
-        if "userShell" in data:
-            values["userShell"] = None
+        if self._is_32():
+            values["userShell"] = shell or "/bin/bash"  # Calamares 3.2
+        else:
+            user = dict(data.get("user") or {})
+            user["shell"] = shell or "/bin/bash"
+            values["user"] = user
+            if "userShell" in data:
+                values["userShell"] = None
         if hostname:
             host = dict(data["hostname"]) if isinstance(data.get("hostname"), dict) else {
                 "location": "EtcFile", "writeHostsFile": True}
@@ -324,7 +331,7 @@ class Calamares:
                   "userSwapChoices": swap, "initialSwapChoice": initial_swap,
                   "initialPartitioningChoice": initial, "enableLuksAutomatedPartitioning": bool(luks),
                   "luksGeneration": "luks2" if luks2 else "luks1"}
-        if "efiSystemPartitionSize" in data and "efi" not in data:
+        if self._is_32() or ("efiSystemPartitionSize" in data and "efi" not in data):
             values["efiSystemPartitionSize"] = efi_size
         else:
             efi = dict(data.get("efi") or {"mountPoint": data.get("efiSystemPartition", "/boot/efi")})

@@ -1,7 +1,9 @@
+import os
 import shutil
 import subprocess
 
 import pytest
+from pathlib import Path
 
 from eduka_customizer.core import users as usr
 from eduka_customizer.core.config import DEFAULT_TIMEZONE
@@ -140,3 +142,107 @@ def test_example_recipe_users_arguments_match():
         assert set(_args(step["live"])) <= set(live)
         for acc in step.get("accounts", []):
             assert set(_args(acc)) <= set(add)
+
+
+# Fixes from the 0.13 code review ------------------------------------------------------
+
+def _kernels(project, *versions):
+    (project.rootfs / "boot").mkdir(exist_ok=True)
+    for v in versions:
+        (project.rootfs / "boot" / ("vmlinuz-" + v)).write_bytes(b"k")
+        (project.rootfs / "boot" / ("initrd.img-" + v)).write_bytes(b"i")
+
+
+def test_kernel_remove_refuses_paths(project, nochroot):
+    from eduka_customizer.core.kernel import Kernels
+    _kernels(project, "6.1.0-1-amd64", "6.12.0-1-amd64")
+    (project.rootfs / "lib/modules/keep").mkdir(parents=True)
+    for bad in ("..", ".", "nonexistent-1.0"):
+        with pytest.raises(ValueError):
+            Kernels(project).remove(bad)
+    assert (project.rootfs / "lib/modules/keep").is_dir()
+
+
+def test_cli_grub_booleans(project):
+    import sys
+    project.save()
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    subprocess.run([sys.executable, "-m", "eduka_customizer", "-p", str(project.path), "kernel", "grub",
+                    "GRUB_DISABLE_OS_PROBER=false", "GRUB_TIMEOUT=3"], check=True, env=env, capture_output=True)
+    text = (project.rootfs / "etc/default/grub.d/95-eduka-customizer.cfg").read_text()
+    assert 'GRUB_DISABLE_OS_PROBER="false"' in text and 'GRUB_TIMEOUT="3"' in text
+
+
+def test_build_options_follow_identity_after_a_build(project):
+    from eduka_customizer.core.isobuild import BuildOptions
+    project.state["build"] = BuildOptions.from_project(project).to_dict()  # as saved by a build
+    project.state["build"]["compression"] = "xz"
+    project.state["identity"].update({"name": "Renamed OS", "volume_label": "RENAMED"})
+    project.state["boot"].update({"extra_params": "quiet", "timeout": 3})
+    o = BuildOptions.from_project(project)
+    assert (o.title, o.volume_label, o.boot_params, o.timeout, o.compression) == \
+        ("Renamed OS", "RENAMED", "quiet", 3, "xz")
+
+
+def test_update_params_removes_old_options(project):
+    from eduka_customizer.core import bootloader
+    (project.isodir / "boot/grub").mkdir(parents=True)
+    cfg = project.isodir / "boot/grub/grub.cfg"
+    cfg.write_text('menuentry "Live" {\n\tlinux\t/live/vmlinuz boot=live components\n}\n')
+    bootloader.update_params(project, "quiet splash toram nomodeset")
+    assert "toram" in cfg.read_text()
+    bootloader.update_params(project, "quiet splash")
+    text = cfg.read_text()
+    assert "toram" not in text and "nomodeset" not in text and "quiet splash" in text and "boot=live" in text
+
+
+def test_quick_build_refuses_changed_kernel(project):
+    from eduka_customizer.core import isobuild
+    _kernels(project, "6.1.0-1-amd64", "6.12.0-1-amd64")
+    (project.isodir / "live").mkdir(parents=True)
+    (project.isodir / "live/filesystem.squashfs").write_bytes(b"x")
+    project.state["built_kernel"] = "6.1.0-1-amd64"
+    with pytest.raises(RuntimeError, match="kernel changed"):
+        isobuild.quick_build(project)
+    project.state["built_kernel"] = "6.12.0-1-amd64"
+    project.state["initramfs_dirty"] = True
+    with pytest.raises(RuntimeError, match="initramfs"):
+        isobuild.quick_build(project)
+
+
+def test_plymouth_file_installs_its_own_theme(project, tmp_path, monkeypatch):
+    from eduka_customizer.core.plymouth import Plymouth
+    downloads = tmp_path / "Downloads"
+    (downloads / "abc").mkdir(parents=True)
+    (downloads / "abc/abc.plymouth").write_text("[Plymouth Theme]\nName=abc\nModuleName=script\n")
+    (downloads / "foo.plymouth").write_text("[Plymouth Theme]\nName=foo\nModuleName=script\n")
+    assert Plymouth(project).install(downloads / "foo.plymouth") == "foo"
+    assert (project.rootfs / "usr/share/plymouth/themes/foo/foo.plymouth").exists()
+
+
+def test_isolinux_in_boot_folder_is_not_checked_as_grub(project):
+    from eduka_customizer.core import bootedit
+    (project.isodir / "boot/isolinux").mkdir(parents=True)
+    problems = bootedit.validate(project, "boot/isolinux/isolinux.cfg", "label live\n  menu label {Live\n")
+    assert not any("GRUB" in p or "{" in p for p in problems)
+
+
+def test_calamares_32_keys(project, monkeypatch):
+    from eduka_customizer.core.calamares import Calamares
+    (project.rootfs / "etc/calamares/modules").mkdir(parents=True)
+    (project.rootfs / "etc/calamares/settings.conf").write_text("branding: debian\n")
+    (project.rootfs / "etc/calamares/modules/users.conf").write_text("userShell: /bin/sh\n")
+    (project.rootfs / "etc/calamares/modules/partition.conf").write_text("defaultFileSystemType: ext4\n")
+    monkeypatch.setattr(Calamares, "version", lambda self: "3.2.61-1")
+    c = Calamares(project)
+    c.set_users(shell="/bin/bash")
+    c.set_partition(efi_size="512MiB")
+    assert c.read("users")["userShell"] == "/bin/bash" and "user" not in c.read("users")
+    assert c.read("partition")["efiSystemPartitionSize"] == "512MiB" and "efi" not in c.read("partition")
+
+
+def test_reuse_squashfs_is_not_remembered(project):
+    from eduka_customizer.core.isobuild import BuildOptions
+    project.state["build"] = {"reuse_squashfs": True, "compression": "xz"}
+    o = BuildOptions.from_project(project)
+    assert o.reuse_squashfs is False and o.compression == "xz"

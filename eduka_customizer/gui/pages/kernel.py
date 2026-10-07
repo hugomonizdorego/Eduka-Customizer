@@ -192,7 +192,11 @@ class KernelPage(Page):
 
     def install_debian(self):
         data = self.debian.currentData()
-        name = data if data and self.debian.currentText().startswith(data) else self.debian.currentText().split()[0]
+        words = self.debian.currentText().split()
+        name = data if data and self.debian.currentText().startswith(data) else (words[0] if words else "")
+        if not name:
+            QMessageBox.information(self, "Kernel", "Choose or type a kernel package first.")
+            return
         proj, headers = self.project, self.headers.isChecked()
         self._run("Install kernel " + name, lambda t: Kernels(proj).install([name], headers=headers))
 

@@ -120,7 +120,8 @@ class BootMenuPage(Page):
             self.file_state.setText(str(e))
             return
         kept = key in bootedit.overrides(self.project)
-        self.keep.setChecked(True)
+        # Ticked unless this file was saved before without "keep".
+        self.keep.setChecked(kept or not bootedit.edited(self.project, key))
         self.file_state.setText("{} — {}".format(
             key, "edited by you, re-applied at every build" if kept else "as generated / from the source ISO"))
 
@@ -140,7 +141,7 @@ class BootMenuPage(Page):
         if p.has_isotree():
             bootloader.set_titles(p.isodir, build["title"])
             bootloader.set_timeout(p.isodir, boot["timeout"])
-            bootloader.append_params(p.isodir, boot["extra_params"])
+            bootloader.update_params(p, boot["extra_params"])
             if splash:
                 bootloader.set_splash(p.isodir, splash)
             Language(p).apply_boot_menu(build["title"])

@@ -469,6 +469,9 @@ def cmd_kernel(args):
     from eduka_customizer.core.kernel import THIRD_PARTY, Kernels
     p = _locked(args)
     k = Kernels(p)
+    if args.action in ("install", "third-party", "deb", "remove", "iso") and not args.items:
+        raise SystemExit("kernel {} needs at least one name (see 'kernel list' and 'kernel available')".format(
+            args.action))
     if args.action == "list":
         kernels, meta = k.installed()
         for x in kernels:
@@ -496,7 +499,9 @@ def cmd_kernel(args):
         print(" ".join(k.install_firmware()))
     elif args.action == "grub":
         values = dict(k.grub_defaults())
-        values.update({key: str(v) for key, v in _kv(args.items).items()})
+        # GRUB compares with "true"/"false": YAML booleans must not become "True"/"False".
+        values.update({key: (str(v).lower() if isinstance(v, bool) else str(v))
+                       for key, v in _kv(args.items).items()})
         k.set_grub_defaults(values)
     return 0
 
@@ -504,6 +509,8 @@ def cmd_kernel(args):
 def cmd_bootmenu(args):
     from eduka_customizer.core import bootedit
     p = _locked(args)
+    if args.action in ("show", "edit", "revert") and not args.file:
+        raise SystemExit("bootmenu {} needs a file, e.g. boot/grub/grub.cfg (see 'bootmenu list')".format(args.action))
     if args.action == "list":
         kept = bootedit.overrides(p)
         for key in bootedit.files(p):

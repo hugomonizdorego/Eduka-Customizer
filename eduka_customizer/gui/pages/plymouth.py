@@ -221,9 +221,6 @@ class PlymouthPage(Page):
         p.save()
         if p.has_isotree():
             from eduka_customizer.core import bootloader
-            if self.iso_splash.isChecked():
-                bootloader.append_params(p.isodir, boot["extra_params"])
-            else:
-                bootloader.remove_params(p.isodir, ["splash"])
+            bootloader.update_params(p, boot["extra_params"])
         delay, scale = self.delay.value(), self.scale.currentData()
         self.task("Plymouth settings", lambda t: Plymouth(p).set_settings(delay, scale))

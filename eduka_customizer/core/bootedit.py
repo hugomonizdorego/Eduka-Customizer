@@ -100,7 +100,7 @@ def validate(project, key, text):
     """Return a list of problems found in *text* (empty when it looks fine)."""
     problems = []
     rel = _check_key(key)
-    is_grub = key.startswith(EFI_PREFIX) or not (rel.startswith(("isolinux/", "syslinux/")))
+    is_grub = key.startswith(EFI_PREFIX) or Path(rel).parent.name not in ("isolinux", "syslinux")
     if is_grub:
         checker = shutil.which("grub-script-check")
         if checker:
@@ -168,6 +168,11 @@ def revert(project, key):
     _store(project, "boot-overrides", key).unlink(missing_ok=True)
     project.save()
     project.record("revert-boot-file", key)
+
+
+def edited(project, key):
+    """True once the file was saved from the editor (its original is kept)."""
+    return _store(project, "boot-originals", key).exists()
 
 
 def overrides(project):

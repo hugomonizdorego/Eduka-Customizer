@@ -171,6 +171,26 @@ def remove_params(isodir, params):
             f.write_text(new)
 
 
+PROTECTED_PARAMS = {"boot=live", "components"}
+
+
+def update_params(project, params):
+    """Make *params* the kernel options of every live entry.
+
+    Options applied earlier but no longer wanted (e.g. 'toram' or 'nomodeset')
+    are removed first; append_params alone could only ever add options.
+    """
+    new = params.split() if isinstance(params, str) else list(params)
+    boot = project.state.setdefault("boot", {})
+    old = boot.get("applied_params", "").split()
+    gone = [p for p in old if p not in new and p not in PROTECTED_PARAMS]
+    if gone:
+        remove_params(project.isodir, gone)
+    append_params(project.isodir, new)
+    boot["applied_params"] = " ".join(new)
+    project.save()
+
+
 def set_titles(isodir, name):
     """Replace Debian branding in boot menu titles."""
     for f in config_files(isodir):

@@ -11,7 +11,7 @@ The images it builds are always **Debian stable, testing or sid** or **Edukasaun
 (Ubuntu-based images are refused as a source). Eduka-Customizer itself can be
 installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
 
-![Calamares installer editor](docs/screenshots/15-calamares.png)
+![Users and passwords](docs/screenshots/04-users.png)
 
 > Eduka-Customizer is a complete rewrite of *Customizer* (Ivailo Monev,
 > Mubiin Kimura, Graham Cantin and contributors). It takes ideas from
@@ -51,13 +51,14 @@ installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
 
 | | |
 |---|---|
-| ![Language](docs/screenshots/04-language.png) | ![Calamares: users and partitions](docs/screenshots/15c-calamares.png) |
-| ![Plymouth](docs/screenshots/13-plymouth.png) | ![Plymouth preview in a window](docs/screenshots/plymouth-preview-window.png) |
-| ![Boot menu editor](docs/screenshots/14b-boot-menu-editor.png) | ![Kernel](docs/screenshots/09-kernel.png) |
-| ![Start](docs/screenshots/01-start.png) | ![Distro Branding](docs/screenshots/05-distro-branding.png) |
-| ![Package Workshop](docs/screenshots/16-package-workshop.png) | ![Login screen, X11/Wayland, compositor](docs/screenshots/10b-desktop-login-session.png) |
+| ![Users: live user with or without a password](docs/screenshots/04-users.png) | ![Accounts in the image](docs/screenshots/04b-users-new-account.png) |
+| ![Language](docs/screenshots/05-language.png) | ![Calamares: users and partitions](docs/screenshots/14c-calamares.png) |
+| ![Plymouth](docs/screenshots/12-plymouth.png) | ![Plymouth preview in a window](docs/screenshots/plymouth-preview-window.png) |
+| ![Boot menu editor](docs/screenshots/15b-boot-menu-editor.png) | ![Kernel](docs/screenshots/08-kernel.png) |
+| ![Start](docs/screenshots/01-start.png) | ![Distro Branding](docs/screenshots/13-distro-branding.png) |
+| ![Package Workshop](docs/screenshots/16-package-workshop.png) | ![Login screen, X11/Wayland, compositor](docs/screenshots/09b-desktop-login-session.png) |
 | ![Terminal & Live](docs/screenshots/17-terminal-live.png) | ![Build & Test](docs/screenshots/18-build-test.png) |
-| ![Dark mode](docs/screenshots/21-dark-calamares.png) | ![Settings and logs](docs/screenshots/19-settings.png) |
+| ![Dark mode](docs/screenshots/21-dark-users.png) | ![Settings and logs](docs/screenshots/19-settings.png) |
 
 All screenshots, including every Quick Wizard step: [docs/screenshots](docs/screenshots).
 

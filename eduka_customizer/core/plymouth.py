@@ -98,7 +98,7 @@ class Plymouth:
             new = sorted(set(self.branding.plymouth_themes()) - before)
             name = new[0] if new else self._theme_in_deb(source)
         elif source.suffix == ".plymouth":
-            name = self.branding.import_plymouth(source.parent)
+            name = self.branding.import_plymouth(source.parent, theme=source.stem)
         elif source.is_dir() or source.name.lower().endswith(ARCHIVES):
             name = self.branding.import_plymouth(source)
         else:
@@ -188,8 +188,10 @@ class Plymouth:
         seconds = max(3, min(60, int(seconds)))
         with self.chroot:
             self.branding.write_plymouth_default(name)
-        script = PREVIEW.format(n=seconds,
-                                title=self.project.state.get("identity", {}).get("name", "Edukasaun OS"))
+        # The name ends up in a shell script run as root: keep only harmless characters.
+        title = re.sub(r"[^A-Za-z0-9 ._+-]", "", self.project.state.get("identity", {}).get("name", "")) \
+            or "Edukasaun OS"
+        script = PREVIEW.format(n=seconds, title=title)
         live = LiveSession(self.project)
         live.start(resolution=resolution, mode="root", command="/bin/sh -c '{}'".format(script.replace("'", "")))
         try:
