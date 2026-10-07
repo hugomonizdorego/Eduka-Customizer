@@ -1,6 +1,6 @@
 # Eduka-Customizer manual
 
-Version 0.11 Alpha.
+Version 0.12 Alpha.
 
 ## Concepts
 
@@ -114,7 +114,7 @@ When an ISO is extracted, its El Torito/MBR/GPT boot setup is recorded with
 into `boot/`, so the rebuilt ISO boots exactly like the original even after
 the source ISO is deleted ("replay" boot mode).
 
-### Identity & Language
+### Identity
 * os-release: `NAME`, `PRETTY_NAME`, `VERSION`, `ID=edukasaun`,
   `ID_LIKE=debian`. `VERSION_CODENAME` stays the Debian codename because APT
   tooling uses it; your codename is stored as `EDUKASAUN_CODENAME`.
@@ -123,8 +123,31 @@ the source ISO is deleted ("replay" boot mode).
 * `/etc/issue`, `/etc/issue.net`, `/etc/lsb-release`, `/etc/hostname`, `/etc/hosts`.
 * Live user name and host name (`/etc/live/config.conf.d/50-edukasaun.conf`).
 * Calamares branding (`/etc/calamares/branding/*/branding.desc`).
-* Locales (generated with `locale-gen`), time zone, keyboard; also passed to
-  live-config.
+
+### Language
+The default language of the live session, the installer and the installed
+system. The same choice is offered on the Start page when a project is
+created from an ISO, a download or a new Debian base.
+
+* Locale (`locale-gen`, `/etc/default/locale`), time zone (`tzdata` is
+  installed when missing), keyboard layout and variant (`/etc/default/keyboard`;
+  several layouts such as `us,ru` switch with Alt+Shift), all passed to
+  live-config too (`/etc/live/config.conf.d/40-edukasaun-locale.conf`).
+* **Translations and spell checking**: hunspell and hyphenation dictionaries,
+  and the translations of LibreOffice, Firefox and Thunderbird — only for the
+  programs already installed, so nothing big is pulled in. CJK languages get
+  Noto CJK fonts and fcitx5 input. Packages missing in the Debian release are
+  skipped and listed in the log. Catalog: `data/languages.json`.
+* **Boot menu**: with more than one language ticked, a *Language / Língua /
+  Bahasa* submenu is added to GRUB and ISOLINUX; every entry starts the live
+  system with `locales=`, `keyboard-layouts=` and the chosen `timezone=`.
+  It is re-created at every build.
+* **Calamares**: the installer's time zone (`locale.conf`) follows the
+  choice and GeoIP is switched off; the installer's language follows the
+  live session.
+
+Tetun has no glibc locale yet; for Timor-Leste use `pt_PT.UTF-8` and
+`en_US.UTF-8`.
 
 ### Repositories
 * Suite presets write `/etc/apt/sources.list.d/debian.sources` (deb822)
@@ -172,16 +195,88 @@ skips the live session). The second option keeps the ISO small.
 * Default session for the login manager, live autologin and
   `x-session-manager`; window manager used by LXQt/Eduka-Desktop.
 
-### Appearance
-* Plymouth: choose an installed theme, import a theme folder or archive, or
-  generate a simple theme from a PNG logo and two colors. The initramfs is
-  rebuilt on the next build.
+### Kernel
+* Table of installed kernels: package, origin, size, initrd, headers, the
+  kernel the ISO boots (●) and holds. The metapackage line tells which package
+  keeps kernels up to date.
+* **Install**: Debian kernels (signed for Secure Boot) with optional headers;
+  **backports** (adds `<codename>-backports` and installs with `-t`);
+  **Liquorix** and **XanMod** (repository and key are added, amd64 only, not
+  signed for Secure Boot); **your own repository** (URI, suite, components,
+  key file or URL, packages); or **.deb files** (e.g. a self-built kernel).
+* **Remove** a kernel (image, headers and modules packages, or the files of a
+  kernel copied by hand). The last kernel cannot be removed.
+* **Hold / unhold**, **Update initramfs**, **Use for the ISO**, **Copy to the
+  ISO now**.
+* **GRUB of the installed system**: timeout, menu style, default entry,
+  kernel options, os-prober, recovery entries and resolution, written to
+  `/etc/default/grub.d/95-eduka-customizer.cfg`. Calamares installs GRUB and
+  runs `update-grub` with these settings; *Run update-grub* only works in an
+  image that already has an installed GRUB menu.
+* **Drivers**: install common firmware (needs `non-free-firmware`) and
+  rebuild DKMS modules for every kernel.
+
+### Wallpaper & Login
 * Wallpaper: LXQt/Eduka-Desktop (pcmanfm-qt), Xfce, KDE Plasma, GNOME,
   Cinnamon, MATE and Debian's `desktop-background` alternative.
 * Login screen: background, logo, GTK and icon theme for LightDM greeters,
   SDDM theme and background, GDM logo, LXDM background.
-* ISO boot menu: title, timeout, kernel options (e.g. `quiet splash`,
-  `toram`, `locales=pt_PT.UTF-8`), kernel version and background image.
+
+### Plymouth
+* List of installed themes with type, package and a preview image.
+* **Install** from a Debian package (`.deb`), an archive (`.zip`, `.tar.gz`,
+  `.tar.xz`, `.tar.bz2`), a folder or a `.plymouth` file — themes from
+  gnome-look/pling usually come as archives — or tick Debian's
+  `plymouth-theme-*` packages. Archives are checked for unsafe paths, and
+  `ImageDir`/`ScriptFile` are fixed to the installed location.
+* **Preview in a window**: runs `plymouthd` with the X11 renderer
+  (`plymouth-x11`, installed when needed) inside a Xephyr window, shows
+  progress, messages and a password prompt, then restores the previous theme.
+* **Apply** (`plymouth-set-default-theme`, or `plymouthd.conf` where that
+  tool does not exist), **Remove** (imported themes are deleted, packaged
+  themes are purged; the current theme and themes inside `plymouth-themes`
+  are protected), **Create from a logo**.
+* Settings: delay before the splash, HiDPI scale, splash on ISO boot.
+
+### Boot Menu
+* Menu settings: title, timeout, kernel options (e.g. `quiet splash`,
+  `toram`, `nomodeset`), kernel version and background image.
+* **Edit boot files**: `boot/grub/*.cfg`, `isolinux/*.cfg` and the `.cfg`
+  files inside `boot/grub/efi.img` (read and written with mtools), shown as
+  `efi.img:EFI/boot/grub.cfg`. *Check* runs `grub-script-check` and looks for
+  missing kernels, initrds and includes.
+* A saved file is kept in `PROJECT/boot-overrides/` and copied over the menu
+  at every build (marked ✎), so a regenerated menu never loses it. The first
+  version is kept in `PROJECT/boot-originals/` for *Revert to original*.
+* **Save and apply to the ISO now** rebuilds the ISO in seconds with the
+  compressed system of the last build (also *Rebuild boot files only* on
+  Build & Test, `eduka-customizer bootmenu apply`).
+
+### Calamares
+Edits Debian's installer configuration in `/etc/calamares` while keeping the
+comments of the files (only the changed keys are rewritten, and a file is
+never written if the result is not valid YAML). Module files that only exist
+in `/usr/share/calamares/modules` are copied to `/etc` first.
+
+* **Name, images and colors**: product name and URLs, logo, window icon and
+  welcome image (converted to PNG), sidebar colors (Calamares 3.3 and 3.2 key
+  spellings), and the name of the desktop launcher (*Install Edukasaun OS*).
+* **Slideshow**: one image per slide, order and seconds per slide
+  (`show.qml`, API 2).
+* **Users and passwords**: autologin, root password, reuse password, minimum
+  and maximum length, weak passwords, groups, administrator group, shell and
+  the computer name template.
+* **Live session password**: Debian's live user has the password `live`; a
+  new one is stored as a SHA-512 hash in a live-config script.
+* **Partitions**: preselected option, default and offered file systems, swap
+  choices, EFI size, encryption (LUKS1 or LUKS2).
+* **Requirements and finish**: minimum disk and RAM, internet and power,
+  restart behavior, GRUB timeout, EFI id (keep `debian` for Secure Boot),
+  packages removed after installation (*Recommended removals* lists the live
+  tools).
+* **All configuration files**: browse and edit `/etc/calamares` directly.
+
+Test the installer by booting the ISO in QEMU (Build & Test).
 
 ### Terminal & Live
 * **Live edit session** – starts the image's desktop in a Xephyr window.
@@ -194,7 +289,9 @@ skips the live session). The second option keeps the ISO small.
 * **Terminal** – opens your terminal emulator with a root shell inside the
   image (`eduka-customizer shell`); or run one command.
 * **Hooks** – scripts in `PROJECT/hooks`, run as root inside the image.
-* **Boot files** – edit `grub.cfg` and ISOLINUX files of the ISO directly.
+* **Install applications** – type package names (APT), open **Synaptic in a
+  window** (installed on request, runs as root in the image), or use the
+  terminal. The Build page offers the same right before building.
 
 ### Build & Test
 1. Checks the system again (Debian/Edukasaun only).
@@ -248,7 +345,7 @@ recipe file. Actions: `sources`, `repo`, `apt-install`, `apt-remove`,
 `apt-upgrade`, `deb`, `flatpak`, `desktop`, `session`, `display-manager`,
 `eduka-desktop`, `identity`, `locale`, `plymouth`, `wallpaper`, `login`,
 `hook`, `command`, `boot`, `branding`, `themes`, `session-type`, `compositor`,
-`sddm-theme`, `build`. Example: `examples/edukasaun-school.json`.
+`sddm-theme`, `language`, `calamares`, `kernel`, `boot-file`, `build`. Example: `examples/edukasaun-school.json`.
 `recipe export` writes a recipe from the current project.
 
 ## Troubleshooting

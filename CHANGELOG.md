@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.12.0 Alpha — 2026-10-07
+
+### New
+* **Language** page: default language, keyboard layout and variant, time
+  zone, translations and spell checking for installed programs (LibreOffice,
+  Firefox, Thunderbird, hunspell, CJK fonts and input), a *Language* submenu
+  in the GRUB and ISOLINUX menus of the ISO, Calamares defaults. The default
+  language can also be chosen when a project is created from an ISO, a
+  download or a new Debian base, and in the Quick Wizard.
+* **Calamares** page: product name and URLs, logo, icon and welcome images,
+  sidebar colors, slideshow, launcher name, user and password rules, live
+  user password (SHA-512 hash via live-config), partitioning (file systems,
+  swap, EFI size, LUKS1/LUKS2), requirements, restart behavior, GRUB timeout,
+  EFI id, packages removed after installation, and an editor for every file
+  in /etc/calamares. Comments in the files are kept.
+* **Plymouth** page: install themes from .deb, .zip, .tar.*, a folder, a
+  .plymouth file or Debian packages; preview them in a window (plymouthd with
+  the X11 renderer in Xephyr); apply; remove; create from a logo; delay and
+  HiDPI settings.
+* **Boot Menu** page: menu settings and direct editing of grub.cfg,
+  isolinux.cfg and the GRUB files inside efi.img, with a syntax check, kept
+  edits (re-applied at every build) and revert. *Apply to the ISO now* and
+  *Rebuild boot files only* rebuild the ISO in seconds.
+* **Kernel** page: install Debian, backports, Liquorix, XanMod, own-repository
+  or .deb kernels; remove kernels; hold; update initramfs; choose the ISO
+  kernel; GRUB defaults of the installed system; firmware; DKMS.
+* Install applications with APT, **Synaptic in a window** or a terminal
+  (Terminal & Live), also right before building (Build & Test).
+* CLI: `language`, `calamares`, `plymouth`, `kernel`, `bootmenu`; recipe
+  actions `language`, `calamares`, `kernel`, `boot-file`.
+* Ready-made package in `release/`.
+
+### Fixed
+* Held packages were not counted as installed.
+* Kernel option changes rewrote boot entries that did not change (tabs were
+  lost); entries written with tabs were not updated at all.
+* Setting a time zone failed in images without tzdata.
+* Applying a Plymouth theme failed where plymouth-set-default-theme is missing.
+* Live sessions now end when the desktop or program inside them ends.
+
 ## 0.11.0 Alpha — 2026-10-07
 
 ### New

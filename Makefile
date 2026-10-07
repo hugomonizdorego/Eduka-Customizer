@@ -1,5 +1,5 @@
 # Eduka-Customizer - ISO builder for Edukasaun OS
-VERSION   = 0.11.0~alpha
+VERSION   = 0.12.0~alpha
 PYTHON   ?= python3
 DESTDIR  ?=
 PREFIX   ?= /usr
@@ -32,7 +32,7 @@ install:
 	sed -e 's|@PREFIX@|$(PREFIX)|g' data/eduka-customizer-pkexec.in \
 		> $(DESTDIR)$(PREFIX)/bin/eduka-customizer-pkexec
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/eduka-customizer $(DESTDIR)$(PREFIX)/bin/eduka-customizer-pkexec
-	$(INSTALL) -m644 data/exclude.list data/desktops.json $(DESTDIR)$(DATADIR)/
+	$(INSTALL) -m644 data/exclude.list data/desktops.json data/languages.json $(DESTDIR)$(DATADIR)/
 	$(INSTALL) -m644 data/eduka-customizer.conf $(DESTDIR)/etc/eduka-customizer/eduka-customizer.conf
 	sed -e 's|@PREFIX@|$(PREFIX)|g' data/org.edukasaun.customizer.desktop.in \
 		> $(DESTDIR)$(PREFIX)/share/applications/org.edukasaun.customizer.desktop

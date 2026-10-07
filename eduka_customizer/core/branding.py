@@ -1,6 +1,7 @@
 """Identity and look of the image: os-release, Plymouth, wallpaper, login."""
 
 import configparser
+import os
 import re
 import shutil
 import tarfile
@@ -230,8 +231,24 @@ class Branding:
         return ""
 
     def ensure_plymouth(self):
-        if not (self.rootfs / "usr/sbin/plymouth-set-default-theme").exists():
+        if not any((self.rootfs / d / "plymouthd").exists() for d in ("usr/sbin", "sbin")):
             Packages(self.project).install(["plymouth", "plymouth-themes", "plymouth-label"])
+
+    def write_plymouth_default(self, theme):
+        """Select *theme* without rebuilding anything.
+
+        Debian has plymouth-set-default-theme; where it is missing (or not
+        executable) plymouthd.conf is written directly, which plymouthd reads first.
+        """
+        tool = self.rootfs / "usr/sbin/plymouth-set-default-theme"
+        if tool.is_file() and os.access(tool, os.X_OK) and tool.stat().st_size:
+            self.chroot.run(["plymouth-set-default-theme", theme])
+            return
+        conf = self.rootfs / "etc/plymouth/plymouthd.conf"
+        conf.parent.mkdir(parents=True, exist_ok=True)
+        if not conf.exists():
+            conf.write_text("[Daemon]\n")
+        _ini_set(conf, "Daemon", {"Theme": theme})
 
     def set_plymouth(self, theme):
         if not SAFE.match(theme):
@@ -240,7 +257,7 @@ class Branding:
             self.ensure_plymouth()
             if theme not in self.plymouth_themes():
                 raise ValueError("Plymouth theme not installed: {}".format(theme))
-            self.chroot.run(["plymouth-set-default-theme", theme])
+            self.write_plymouth_default(theme)
         self._grub_default_splash()
         self.project.mark_initramfs_dirty()
         self.project.record("plymouth", theme)

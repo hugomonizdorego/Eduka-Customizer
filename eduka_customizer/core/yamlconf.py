@@ -24,21 +24,26 @@ def dump_value(key, value):
 
 
 def _block(lines, key):
-    """Return (start, end) of the top-level block of *key*, or None."""
+    """Return (start, end) of the top-level block of *key*, or None.
+
+    Comment lines (even at column 0, as in Debian's branding.desc) do not end
+    a block; trailing blank lines and comments stay outside it.
+    """
     pat = re.compile(r"^{}\s*:".format(re.escape(key)))
     for i, line in enumerate(lines):
         if pat.match(line):
-            end = i + 1
+            end = last = i + 1
             while end < len(lines):
                 nxt = lines[end]
-                if nxt.strip() == "" or nxt[:1] in (" ", "\t") or nxt.startswith("- "):
+                if nxt.strip() == "" or nxt.lstrip().startswith("#"):
                     end += 1
                     continue
+                if nxt[:1] in (" ", "\t") or nxt.startswith("- "):
+                    end += 1
+                    last = end
+                    continue
                 break
-            # Keep trailing blank lines and comments outside the block.
-            while end > i + 1 and lines[end - 1].strip() == "":
-                end -= 1
-            return i, end
+            return i, last
     return None
 
 
@@ -48,7 +53,9 @@ def set_key(text, key, value):
     span = _block(lines, key)
     new = [] if value is None else dump_value(key, value).rstrip("\n").splitlines()
     if span:
-        lines[span[0]:span[1]] = new
+        # Comments inside the old block (e.g. disabled options) are kept below it.
+        kept = [l for l in lines[span[0] + 1:span[1]] if l.lstrip().startswith("#")]
+        lines[span[0]:span[1]] = new + kept
     elif new:
         if lines and lines[-1].strip():
             lines.append("")

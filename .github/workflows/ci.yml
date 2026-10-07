@@ -13,7 +13,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends git ca-certificates python3 python3-pytest \
-            python3-pyqt6 pyflakes3 dpkg-dev debhelper xorriso squashfs-tools mtools dosfstools \
+            python3-pyqt6 python3-yaml openssl pyflakes3 dpkg-dev debhelper xorriso squashfs-tools mtools dosfstools \
             isolinux syslinux-common grub-efi-amd64-bin grub-common make
       - uses: actions/checkout@v4
       - name: Lint

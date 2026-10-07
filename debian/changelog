@@ -1,3 +1,29 @@
+eduka-customizer (0.12.0~alpha) unstable; urgency=medium
+
+  * Language page: default language, keyboard (with variant), time zone,
+    translations and spell checking for installed programs, a 'Language'
+    submenu in the ISO boot menu and Calamares defaults. Also offered when a
+    project is created from an ISO, a download or a new Debian base.
+  * Calamares page: name, logo, icon and welcome images, colors, slideshow,
+    desktop launcher, user and password rules, live user password,
+    partitioning (file systems, swap, EFI size, encryption), requirements,
+    restart, removed packages, and every configuration file.
+  * Plymouth page: install themes from .deb, .zip, .tar.*, folders, .plymouth
+    files or Debian packages; preview in a window; apply; remove; settings.
+  * Boot Menu page: menu settings plus direct editing of grub.cfg,
+    isolinux.cfg and the GRUB files inside the EFI image; edits are kept for
+    every build; 'apply to the ISO now' rebuilds the ISO in seconds.
+  * Kernel page: Debian, backports, Liquorix, XanMod, own repositories and
+    .deb kernels; remove, hold, initramfs, ISO kernel, GRUB defaults of the
+    installed system, firmware and DKMS.
+  * Install applications with APT, Synaptic in a window or a terminal, also
+    right before building.
+  * Fixes: held packages counted as installed, append_params keeps unchanged
+    lines, tzdata/locales installed when missing, Plymouth themes can be set
+    where plymouth-set-default-theme is missing.
+
+ -- Edukasaun OS Developers <dev@edukasaun.org>  Wed, 07 Oct 2026 12:00:00 +0000
+
 eduka-customizer (0.11.0~alpha) unstable; urgency=medium
 
   * Quick Wizard: build a complete distribution with Next, Next, Finish.

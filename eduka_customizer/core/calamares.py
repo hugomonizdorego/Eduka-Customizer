@@ -132,7 +132,9 @@ class Calamares:
             if bad:
                 raise ValueError("Colors must look like #00a879: {}".format(", ".join(bad)))
             merged = dict(data.get("style") or {})
-            merged.update({k: v for k, v in colors.items() if v})
+            for k, v in colors.items():
+                if v:
+                    merged[self._style_key(merged, k)] = v
             values["style"] = merged
         if images:
             merged = dict(data.get("images") or {})
@@ -153,6 +155,19 @@ class Calamares:
             desc.write_text(yamlconf.update(text, values))
         self.project.record("calamares-branding", self.branding_name())
 
+    def _style_key(self, style, key):
+        """Calamares 3.3 spells style keys SidebarBackground, 3.2 sidebarBackground."""
+        for existing in style:
+            if existing.lower() == key.lower():
+                return existing
+        major_minor = re.match(r"(\d+)\.(\d+)", self.version() or "3.3")
+        old = major_minor and (int(major_minor.group(1)), int(major_minor.group(2))) < (3, 3)
+        return key[0].lower() + key[1:] if old else key[0].upper() + key[1:]
+
+    def style(self):
+        """Branding colors with lower-case keys, whatever the Calamares version."""
+        return {k[0].lower() + k[1:]: v for k, v in (self.branding().get("style") or {}).items()}
+
     def _slideshow(self, d, slides, seconds):
         for old in d.glob("slide-*.png"):
             old.unlink()
@@ -161,7 +176,7 @@ class Calamares:
             name = "slide-{:02d}.png".format(i)
             imaging.write_png(src, d / name, (800, 440), fit="contain")
             names.append(name)
-        accent = (self.branding().get("style") or {}).get("sidebarBackground", "#0f2f27")
+        accent = self.style().get("sidebarBackground", "#0f2f27")
         items = "\n".join(SLIDE.format(image=n) for n in names) or SLIDE_TEXT.format(
             name=(self.branding().get("strings") or {}).get("productName", "Edukasaun OS"))
         (d / "show.qml").write_text(SHOW_QML.format(slides=items, ms=max(2, int(seconds)) * 1000,
@@ -237,7 +252,7 @@ class Calamares:
                 "max_length": int(pw.get("maxLength", -1) or -1),
                 "weak": bool(users.get("allowWeakPasswords", False)),
                 "weak_default": bool(users.get("allowWeakPasswordsDefault", False)),
-                "groups": _groups(users.get("defaultGroups") or []),
+                "groups": _unique(_groups(users.get("defaultGroups") or [])),
                 "shell": (users.get("user") or {}).get("shell") or users.get("userShell") or "/bin/bash",
                 "sudo_group": users.get("sudoersGroup", "sudo"),
                 "hostname": (users.get("hostname") or {}).get("template", "") if isinstance(
@@ -263,7 +278,7 @@ class Calamares:
             "bootloader": {"timeout": str(boot.get("timeout", "")), "efi_id": boot.get("efiBootloaderId", "")},
             "locale": {"region": locale.get("region", ""), "zone": locale.get("zone", ""),
                        "geoip": bool(locale.get("geoip"))},
-            "remove": [r for r in removed if r],
+            "remove": _unique(r for r in removed if r),
         }
 
     # Structured edits ---------------------------------------------------------
@@ -358,7 +373,7 @@ class Calamares:
         ops = [op for op in data.get("operations") or []
                if not (isinstance(op, dict) and set(op) <= {"remove", "try_remove"})]
         if packages:
-            ops.insert(0, {"try_remove": list(packages)})
+            ops.insert(0, {"try_remove": _unique(packages)})
         values = {"operations": ops}
         if "backend" not in data:
             values["backend"] = "apt"
@@ -375,7 +390,15 @@ def _groups(groups):
 def _merge_groups(existing, names):
     """Keep the dict form (name/must_exist/system) of groups that stay."""
     keep = {(g if isinstance(g, str) else g.get("name")): g for g in existing}
-    return [keep.get(n, n) for n in names if n]
+    return [keep.get(n, n) for n in _unique(names) if n]
+
+
+def _unique(items):
+    out = []
+    for i in items:
+        if i not in out:
+            out.append(i)
+    return out
 
 
 def _sha512_crypt(password):
@@ -394,6 +417,9 @@ LIVE_PASSWORD = """#!/bin/sh
 # Live user password, set by Eduka-Customizer. Runs after live-config created the user.
 [ -e /var/lib/live/config/eduka-password ] && exit 0
 for f in /etc/live/config.conf /etc/live/config.conf.d/*.conf; do [ -r "$f" ] && . "$f"; done
+for arg in $(cat /proc/cmdline 2>/dev/null); do
+    case "$arg" in live-config.username=*|username=*) LIVE_USERNAME="${{arg#*=}}" ;; esac
+done
 LIVE_USERNAME="${{LIVE_USERNAME:-user}}"
 if id "$LIVE_USERNAME" >/dev/null 2>&1; then
     usermod -p '{hash}' "$LIVE_USERNAME"

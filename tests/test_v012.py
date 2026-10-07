@@ -42,6 +42,17 @@ def png(path, color="#00a879"):
 
 # YAML ---------------------------------------------------------------------------
 
+def test_yaml_column0_comment_inside_block():
+    # As in Debian's calamares branding.desc
+    text = ('images:\n#    productBanner: "x.png"\n    productLogo: "debian-logo.png"\n'
+            '#    productWallpaper: ""\n\nslideshow: "show.qml"\n\nstyle:\n   SidebarBackground: "#010027"\n')
+    out = yamlconf.update(text, {"images": {"productLogo": "logo.png"}, "style": {"SidebarBackground": "#0f2f27"}})
+    data = yamlconf.load(out)
+    assert data == {"images": {"productLogo": "logo.png"}, "slideshow": "show.qml",
+                    "style": {"SidebarBackground": "#0f2f27"}}
+    assert "productBanner" in out and "productWallpaper" in out
+
+
 def test_yaml_set_keeps_comments_and_replaces_blocks():
     text = ("---\n# Who may log in\ndoAutologin: false\n\n# Rules\npasswordRequirements:\n"
             "    nonempty: true\n    minLength: -1  # no minimum\n\n# Groups\ndefaultGroups:\n- users\n- sudo\n"
@@ -154,6 +165,7 @@ def test_calamares_branding_images_slides_launcher(cal_project, tmp_path, nochro
     br = c.branding()
     d = c.branding_dir()
     assert br["strings"]["productName"] == "Edukasaun OS" and br["style"]["sidebarBackground"] == "#0f2f27"
+    assert c.style()["sidebarBackground"] == "#0f2f27"
     assert br["images"]["productIcon"] == "icon.png" and (d / "icon.png").exists()
     assert len(c.slides()) == 2 and "interval: 5000" in (d / "show.qml").read_text()
     assert "# Strings" in (d / "branding.desc").read_text()
@@ -512,3 +524,16 @@ def test_new_pages_build_and_refresh(cal_project, isotree):
                          text=True, env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
     assert res.stdout.startswith("ok 19")
+
+
+def test_every_data_file_is_installed():
+    """Each data_file("x") used by the code must be installed by the Makefile."""
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    used = set()
+    for py in (root / "eduka_customizer").rglob("*.py"):
+        used |= set(re.findall(r'data_file\("([^"]+)"\)', py.read_text()))
+    makefile = (root / "Makefile").read_text()
+    missing = [f for f in sorted(used) if "data/" + f not in makefile]
+    assert used and not missing, missing

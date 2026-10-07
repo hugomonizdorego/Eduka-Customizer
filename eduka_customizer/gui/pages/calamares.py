@@ -25,8 +25,9 @@ class CalamaresPage(Page):
         self.state = label("", "muted")
         self.brand_combo = combo([])
         c.add(self.state)
+        self.install_btn = button("Install Calamares", self.install, "primary")
         c.add(hbox(label("Branding in use"), self.brand_combo, button("Use", self.use_branding), None,
-                   button("Install Calamares", self.install, "primary")))
+                   self.install_btn))
 
         # Branding -------------------------------------------------------------------
         c = self.card("Name, images and colors",
@@ -177,6 +178,7 @@ class CalamaresPage(Page):
         ok = c.installed()
         self.state.setText("Calamares {} is installed. Branding: {}.".format(c.version() or "", c.branding_name())
                            if ok else "Calamares is not installed in the image. Install it to use this page.")
+        self.install_btn.setVisible(not ok)
         self.brand_combo.clear()
         self.brand_combo.addItems(c.brandings())
         self.brand_combo.setCurrentText(c.branding_name())
@@ -187,7 +189,7 @@ class CalamaresPage(Page):
         strings = br.get("strings") or {}
         for k, w in self.s.items():
             w.setText(str(strings.get(k, "")))
-        style = br.get("style") or {}
+        style = c.style()
         for k, w in self.colors.items():
             if isinstance(style.get(k), str) and style[k].startswith("#") and len(style[k]) == 7:
                 w.set(style[k])

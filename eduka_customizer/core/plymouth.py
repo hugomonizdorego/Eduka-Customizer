@@ -186,28 +186,32 @@ class Plymouth:
             Packages(self.project).install(["plymouth-x11"])
         old = self.current()
         seconds = max(3, min(60, int(seconds)))
-        script = PREVIEW.format(theme=name, old=old or name, n=seconds,
+        with self.chroot:
+            self.branding.write_plymouth_default(name)
+        script = PREVIEW.format(n=seconds,
                                 title=self.project.state.get("identity", {}).get("name", "Edukasaun OS"))
         live = LiveSession(self.project)
         live.start(resolution=resolution, mode="root", command="/bin/sh -c '{}'".format(script.replace("'", "")))
         try:
-            deadline = time.time() + seconds + 20
+            deadline = time.time() + seconds + 60
             while live.running and live.session and live.session.poll() is None and time.time() < deadline:
                 time.sleep(0.5)
         finally:
             live.stop()
             if old and self.current() != old:
                 with self.chroot:
-                    self.chroot.run(["plymouth-set-default-theme", old], check=False, quiet=True)
+                    self.branding.write_plymouth_default(old)
 
 
 PREVIEW = (
-    "plymouth-set-default-theme {theme}; "
-    "plymouthd --no-daemon --debug --debug-file=/tmp/plymouth-preview.log & P=$!; sleep 1; "
+    # The kernel command line is the host's: give plymouthd one that asks for the splash and
+    # makes it skip serial consoles and udev, so the X11 renderer (plymouth-x11) is used.
+    "plymouthd --no-daemon --debug --debug-file=/tmp/plymouth-preview.log "
+    "--kernel-command-line=\"quiet splash plymouth.ignore-serial-consoles plymouth.ignore-udev\" & P=$!; "
+    "w=0; until plymouth --ping || [ $w -gt 60 ]; do sleep 0.5; w=$((w+1)); done; "
     "plymouth show-splash; "
     "i=0; while [ $i -lt {n} ]; do i=$((i+1)); "
     "plymouth system-update --progress=$((i*100/{n})) 2>/dev/null; "
     "plymouth display-message --text=\"{title}: preview $i/{n}\"; sleep 1; done; "
     "plymouth ask-for-password --prompt=Password --dont-pause-progress >/dev/null 2>&1 & A=$!; sleep 3; kill $A 2>/dev/null; "
-    "plymouth quit; sleep 1; kill $P 2>/dev/null; "
-    "plymouth-set-default-theme {old}")
+    "plymouth quit; sleep 1; kill $P 2>/dev/null")

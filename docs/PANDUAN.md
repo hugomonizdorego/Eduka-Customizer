@@ -1,4 +1,4 @@
-# Panduan singkat Eduka-Customizer 0.11 Alpha
+# Panduan singkat Eduka-Customizer 0.12 Alpha
 
 Eduka-Customizer adalah pembangun ISO khusus **Edukasaun OS**. ISO sumber
 harus **Debian stable, testing, sid** atau **Edukasaun OS** (ISO Ubuntu dan
@@ -14,10 +14,18 @@ tekan **Finish**. Semua jawaban disimpan sebagai recipe
 
 ## Instalasi
 
+Paket siap pakai untuk dicoba (Debian 13, Ubuntu 24.04 dan turunannya):
+
+```sh
+sudo apt install ./release/eduka-customizer_0.12.0~alpha_all.deb
+```
+
+Atau build sendiri:
+
 ```sh
 sudo apt install debhelper python3-pytest dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.11.0~alpha_all.deb
+sudo apt install ../eduka-customizer_0.12.0~alpha_all.deb
 eduka-customizer doctor        # cek alat yang dibutuhkan
 ```
 
@@ -60,7 +68,26 @@ eduka-customizer doctor        # cek alat yang dibutuhkan
     KDE, SDDM + tema, GDM, LXDM, Ly, greetd), sesi **X11 atau Wayland**, dan
     **compositor** (picom: ringan/bayangan/kaca blur, bawaan desktop, labwc,
     KWin, Wayfire, Sway).
-13. **Build & Test** – pilih kompresi (zstd disarankan), opsi pembersihan,
+13. **Language** – bahasa default (locale), keyboard, zona waktu, terjemahan
+    dan pemeriksa ejaan untuk program yang terpasang, submenu *Language* di
+    menu boot ISO, dan default untuk Calamares. Bahasa juga bisa dipilih di
+    halaman **Start** saat membuat ISO / custom ISO.
+14. **Calamares** – edit installer langsung: nama, logo dan gambar, warna,
+    slideshow, nama ikon installer, aturan user dan password, password user
+    live, partisi (file system, swap, ukuran EFI, enkripsi), syarat minimum,
+    paket yang dihapus setelah instalasi, dan semua file konfigurasi.
+15. **Plymouth** – pasang tema dari .deb, .zip, .tar.*, folder atau paket
+    Debian; pratinjau di jendela; terapkan; hapus; buat dari logo.
+16. **Boot Menu** – judul, timeout, opsi kernel, latar; edit `grub.cfg`,
+    `isolinux.cfg` dan GRUB di dalam `efi.img` langsung, lalu **terapkan ke
+    ISO sekarang** (beberapa detik, tanpa kompres ulang sistem). Editan
+    disimpan dan dipakai lagi di setiap build.
+17. **Kernel** – pasang kernel Debian, backports, Liquorix, XanMod,
+    repositori sendiri atau file .deb; hapus kernel; hold; update initramfs;
+    pilih kernel ISO; pengaturan GRUB sistem terpasang; firmware; DKMS.
+18. **Pasang aplikasi** – lewat APT, **Synaptic di jendela** atau terminal
+    (halaman Terminal & Live), juga tepat sebelum build (halaman Build).
+19. **Build & Test** – pilih kompresi (zstd disarankan), opsi pembersihan,
    lalu *Build ISO image*. Uji di QEMU dengan BIOS, UEFI atau Secure Boot.
 
 ## Baris perintah
