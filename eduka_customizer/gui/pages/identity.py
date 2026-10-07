@@ -1,4 +1,4 @@
-"""Identity page: OS name, version, live user, language, time zone."""
+"""Identity page: OS name, version, computer name."""
 
 from eduka_customizer.qt.widgets import QCheckBox, QLineEdit
 

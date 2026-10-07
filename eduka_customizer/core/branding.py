@@ -384,10 +384,14 @@ class Branding:
         image = Path(image)
         if image.suffix.lower() not in (".png", ".jpg", ".jpeg", ".svg", ".webp"):
             raise ValueError("Wallpaper must be PNG, JPEG, SVG or WebP")
-        dest_dir = self.rootfs / BACKGROUNDS
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        dest = dest_dir / ("wallpaper" + image.suffix.lower())
-        shutil.copy2(image, dest)
+        try:
+            # A picture of the wallpaper gallery is already in the image: use it as it is.
+            dest = self.rootfs / image.resolve().relative_to(self.rootfs.resolve())
+        except ValueError:
+            dest_dir = self.rootfs / BACKGROUNDS
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest = dest_dir / ("wallpaper" + image.suffix.lower())
+            shutil.copy2(image, dest)
         path = "/" + str(dest.relative_to(self.rootfs))
         # LXQt / Eduka-Desktop (pcmanfm-qt)
         for rel in ("etc/xdg/pcmanfm-qt/lxqt/settings.conf", "etc/skel/.config/pcmanfm-qt/lxqt/settings.conf"):
@@ -396,6 +400,7 @@ class Branding:
                 _ini_set(p, "Desktop", {"Wallpaper": path, "WallpaperMode": "zoom"})
         # GNOME, Cinnamon, MATE, Budgie (gsettings overrides)
         override = self.rootfs / "usr/share/glib-2.0/schemas/90_edukasaun-wallpaper.gschema.override"
+        override.parent.mkdir(parents=True, exist_ok=True)
         uri = "file://" + path
         override.write_text(
             "[org.gnome.desktop.background]\npicture-uri='{0}'\npicture-uri-dark='{0}'\n\n"

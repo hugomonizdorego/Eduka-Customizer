@@ -398,3 +398,78 @@ def tile(text, tooltip=""):
     if tooltip:
         b.setToolTip(tooltip)
     return b
+
+
+class DropZone(QFrame):
+    """Drop files, folders or archives here, or use the buttons; emits the paths."""
+
+    dropped = pyqtSignal(list)
+
+    def __init__(self, text, file_filter="All files (*)", folders=True):
+        super().__init__()
+        self.setObjectName("dropZone")
+        self.setAcceptDrops(True)
+        self.file_filter = file_filter
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(18, 14, 18, 14)
+        hint = QLabel(text)
+        hint.setWordWrap(True)
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(hint)
+        buttons = [None, button("Add files...", self._files)]
+        if folders:
+            buttons.append(button("Add folder...", self._folder))
+        lay.addWidget(hbox(*buttons, None))
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+            self.setProperty("hover", True)
+            self.style().polish(self)
+
+    def dragLeaveEvent(self, event):
+        self.setProperty("hover", False)
+        self.style().polish(self)
+
+    def dropEvent(self, event):
+        self.setProperty("hover", False)
+        self.style().polish(self)
+        paths = [u.toLocalFile() for u in event.mimeData().urls() if u.isLocalFile()]
+        if paths:
+            event.acceptProposedAction()
+            self.dropped.emit(paths)
+
+    def _files(self):
+        files, _ = QFileDialog.getOpenFileNames(self, "Add files", "", self.file_filter)
+        if files:
+            self.dropped.emit(files)
+
+    def _folder(self):
+        d = QFileDialog.getExistingDirectory(self, "Add folder")
+        if d:
+            self.dropped.emit([d])
+
+
+def table(headers):
+    """A read-only table with a stretching last column."""
+    from eduka_customizer.qt.widgets import QAbstractItemView, QHeaderView, QTableWidget
+    t = QTableWidget(0, len(headers))
+    t.setHorizontalHeaderLabels(headers)
+    t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+    t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+    t.verticalHeader().setVisible(False)
+    t.horizontalHeader().setSectionResizeMode(len(headers) - 1, QHeaderView.ResizeMode.Stretch)
+    t.setMinimumHeight(220)
+    return t
+
+
+def fill(t, rows):
+    from eduka_customizer.qt.widgets import QTableWidgetItem
+    t.setRowCount(0)
+    t.setSortingEnabled(False)
+    for r, row in enumerate(rows):
+        t.insertRow(r)
+        for c, value in enumerate(row):
+            t.setItem(r, c, QTableWidgetItem(str(value)))
+    t.setSortingEnabled(True)
+    t.resizeColumnToContents(0)

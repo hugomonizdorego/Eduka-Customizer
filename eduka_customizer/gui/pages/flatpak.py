@@ -5,7 +5,7 @@ from eduka_customizer.qt.widgets import QAbstractItemView, QLineEdit, QListWidge
 from eduka_customizer.qt.core import Qt
 
 from eduka_customizer.core.flatpak import EDUCATION_PICKS, Flatpak, search_flathub
-from eduka_customizer.gui.pages.packages import fill, table
+from eduka_customizer.gui.widgets import fill, table
 from eduka_customizer.gui.widgets import Page, button, combo, hbox, label
 
 

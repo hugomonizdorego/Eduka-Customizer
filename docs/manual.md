@@ -1,6 +1,6 @@
 # Eduka-Customizer manual
 
-Version 0.13 Alpha.
+Version 0.14 Alpha.
 
 ## Concepts
 
@@ -20,7 +20,9 @@ logs/          eduka-customizer.log, live-session.log, qemu.log
 
 Only one Eduka-Customizer instance can use a project at a time.
 
-**Supported systems.** Images: Debian stable, testing and sid, and Edukasaun OS.
+**Supported systems.** Images: Debian stable, testing and sid, Edukasaun OS and
+Debian derivatives such as LMDE (Ubuntu-based systems are refused). Recommended
+source: the Debian live *standard* ISO (no desktop).
 Build computer: Debian, Edukasaun OS, Ubuntu or an Ubuntu-based system.
 The check reads `/etc/os-release`, `/etc/debian_version` and the APT sources
 of the image. Ubuntu and every Ubuntu derivative are refused, and so are
@@ -62,6 +64,23 @@ When an ISO is extracted, its El Torito/MBR/GPT boot setup is recorded with
 into `boot/`, so the rebuilt ISO boots exactly like the original even after
 the source ISO is deleted ("replay" boot mode).
 
+#### What is your distribution for?
+When a project gets its system (an ISO is extracted or downloaded, or a new
+Debian base is made), a window asks what the distribution is for:
+
+| Purpose | Recommended |
+|---|---|
+| Education | Eduka-Desktop, LightDM, picom (light), Papirus + Arc, LibreOffice, Firefox, GCompris, KGeography, Kalzium, Stellarium, Tux Paint, TuxMath, Marble, KTurtle, Orca, Onboard, VLC; GeoGebra (Flatpak) |
+| Server | no desktop; OpenSSH server, ufw, fail2ban, unattended-upgrades, htop, curl, rsync, vim, tmux |
+| Professional | KDE Plasma (Wayland) with KWin, SDDM, Breeze, LibreOffice, Thunderbird, Okular, GIMP, Inkscape, Krita, VLC, Remmina, KeePassXC, git |
+| Home | Cinnamon with Muffin, LightDM Slick greeter, Papirus + Arc, Firefox, Thunderbird, LibreOffice, VLC, Rhythmbox, Shotwell, Transmission, games |
+| Other | nothing: build it yourself |
+
+Firmware, the Calamares installer and a Plymouth splash are recommended
+where they make sense. Untick what you do not want and press *Apply*, or
+close the window. *What is it for?* on the Start page opens it again. The
+purposes are stored in `data/profiles.json`.
+
 ### Quick Wizard
 Eight steps — Source, Identity, Base system, Desktop, Look, Applications,
 Branding, Finish. Every answer becomes a recipe step; the last page shows the
@@ -102,7 +121,7 @@ Debian, runs every step and (optionally) builds the ISO. The recipe is saved as
   Files: `/etc/live/config.conf.d/50-edukasaun.conf` and
   `/usr/lib/live/config/1999-eduka-password`.
 * **Accounts in the image** – real accounts inside the root filesystem, for
-  example a teacher or administrator account: create them with or without a
+  example an administrator account: create them with or without a
   password and optionally as administrators (`sudo`), change or remove the
   password, or delete them with their home folder. They exist in the live
   session and on every computer installed from the ISO.
@@ -134,9 +153,21 @@ Tetun has no glibc locale yet; for Timor-Leste use `pt_PT.UTF-8` and
 `en_US.UTF-8`.
 
 ### 6. Packages
-Search (`apt-cache search`), queue packages to install/remove, apply, full
-upgrade, autoremove, install local `.deb` files (dependencies are resolved by
-APT), import/export package lists (`name` installs, `-name` removes).
+* **All Debian packages** of the image's sources, read directly from
+  `/var/lib/apt/lists` (press *Refresh package lists* first if the ISO has
+  none). Views: *Applications* (no libraries), *All packages*, *Installed*,
+  *My changes*, plus Debian sections. Search runs as you type over names and
+  descriptions. Ticked = in the ISO: tick to install, untick to remove;
+  required and important packages cannot be unticked. *Apply changes*
+  removes and installs in one go.
+* **Remove applications of the ISO** lists every installed program with a
+  menu entry (from its `.desktop` file) and the package that owns it.
+* Other ways: type names and press *Tick*, import/export a package list,
+  Synaptic in a window or a terminal (Terminal & Live), or right before
+  building (Build & Test).
+
+* Maintenance: full upgrade, autoremove, local `.deb` files (dependencies
+  are resolved by APT). Package lists: `name` installs, `-name` removes.
 
 ### 7. Flatpak apps
 *Enable Flatpak + Flathub* installs `flatpak` (and the Discover/GNOME
@@ -181,6 +212,13 @@ skips the live session). The second option keeps the ISO small.
 * **Login screen**: LightDM with the GTK, Slick, Arctica or KDE greeter,
   SDDM (with theme choice), GDM, LXDM, Ly or greetd + tuigreet. *Check
   availability* disables the ones the image's Debian suite does not have.
+* **Compositors that fit the desktop**: the desktop's own compositor —
+  Mutter (GNOME), Muffin (Cinnamon), KWin (KDE), xfwm4 (Xfce), Marco (MATE),
+  Budgie's window manager — is recommended. picom and xcompmgr are not
+  offered for desktops that always composite (GNOME, Cinnamon, KDE, Budgie)
+  and their autostart entries get `NotShowIn=` for those desktops, so two
+  compositors never run at once. On Wayland, GNOME and KDE are their own
+  compositor; only LXQt lets you choose (labwc, KWin, Wayfire, Sway).
 * **Session type and compositor**: X11 or Wayland for desktops that offer
   both (GDM and SDDM are configured to match). Compositors for X11: picom
   with presets (light, shadows, glass blur for Eduka-Desktop Liquid Glass,
@@ -190,14 +228,29 @@ skips the live session). The second option keeps the ISO small.
   `x-session-manager`; window manager used by LXQt/Eduka-Desktop.
 
 ### 10. Themes & Icons
-Default GTK theme, icons, cursor, LXQt/Eduka theme, font and dark style,
+* **Add your own**: drop folders, archives or files. Recognized and placed:
+  GTK themes (`index.theme` with gtk-3.0/gtk-4.0/xfwm4/cinnamon/...) in
+  `/usr/share/themes`; icon themes (`[Icon Theme]` with `Directories`) and
+  cursor themes (`cursors/`) in `/usr/share/icons` (icon cache updated);
+  fonts (.ttf, .otf, .ttc) in `/usr/share/fonts/*/eduka-custom` (fc-cache);
+  Plymouth themes; SDDM themes (`metadata.desktop` + QML) in
+  `/usr/share/sddm/themes`; pictures to the wallpaper gallery; `.deb` files
+  are installed. Archives are checked: absolute paths, devices and links
+  pointing outside the archive are refused.
+
+* **Default look**: GTK theme, icons, cursor, LXQt/Eduka theme, font and dark style,
 written for GTK 2/3/4, GNOME, Cinnamon, MATE (gsettings overrides), LXQt and
 Eduka-Desktop, Xfce and KDE. One-click theme packs (only those available for
 the image's Debian suite are installed), import of theme archives or folders,
 and desktop icons for LXQt/Eduka-Desktop and Xfce.
 
 ### 11. Wallpaper & Login
-* Wallpaper: LXQt/Eduka-Desktop (pcmanfm-qt), Xfce, KDE Plasma, GNOME,
+* **Wallpaper gallery** in `/usr/share/backgrounds/<id>/`: drop pictures or
+  folders, *Make default ★* (applied to every desktop), *Remove*. All
+  pictures are listed for the wallpaper choosers of GNOME, Cinnamon and
+  MATE (`*-background-properties/<id>.xml`).
+
+* The default wallpaper is set for LXQt/Eduka-Desktop (pcmanfm-qt), Xfce, KDE Plasma, GNOME,
   Cinnamon, MATE and Debian's `desktop-background` alternative.
 * Login screen: background, logo, GTK and icon theme for LightDM greeters,
   SDDM theme and background, GDM logo, LXDM background.
@@ -366,7 +419,7 @@ recipe file. Actions: `sources`, `repo`, `apt-install`, `apt-remove`,
 `apt-upgrade`, `deb`, `flatpak`, `desktop`, `session`, `display-manager`,
 `eduka-desktop`, `identity`, `locale`, `plymouth`, `wallpaper`, `login`,
 `hook`, `command`, `boot`, `branding`, `themes`, `session-type`, `compositor`,
-`sddm-theme`, `language`, `users`, `calamares`, `kernel`, `boot-file`, `build`. Example: `examples/edukasaun-school.json`.
+`sddm-theme`, `language`, `users`, `assets`, `calamares`, `kernel`, `boot-file`, `build`. Example: `examples/edukasaun-school.json`.
 `recipe export` writes a recipe from the current project.
 
 ## Troubleshooting

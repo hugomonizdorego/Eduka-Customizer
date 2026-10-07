@@ -3,7 +3,7 @@
 import logging
 import time
 
-from eduka_customizer.qt.core import Qt, QTimer
+from eduka_customizer.qt.core import QSize, Qt, QTimer
 from eduka_customizer.qt.gui import QAction, QFont, QKeySequence, QTextCharFormat, QColor
 from eduka_customizer.qt.widgets import (QFrame, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
                              QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
@@ -19,6 +19,39 @@ from eduka_customizer.gui.widgets import icon
 from eduka_customizer.gui.worker import LogBridge, QtLogHandler, Task
 
 
+# Bundled Papirus icons (GPL-3.0), see data/icons/menu/README.md.
+MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "sources",
+              "IdentityPage": "identity", "UsersPage": "users", "LanguagePage": "language",
+              "PackagesPage": "packages", "FlatpakPage": "flatpak", "KernelPage": "kernel",
+              "DesktopPage": "desktop", "ThemesPage": "themes", "AppearancePage": "wallpaper",
+              "PlymouthPage": "plymouth", "BrandingPage": "branding", "CalamaresPage": "calamares",
+              "BootMenuPage": "bootmenu", "WorkshopPage": "workshop", "TerminalPage": "terminal",
+              "BuildPage": "build", "SettingsPage": "settings"}
+
+
+def menu_icon(key, *fallback):
+    """The bundled menu icon, or the icon theme's when it is missing."""
+    from eduka_customizer.qt.gui import QIcon
+    from eduka_customizer.core.config import data_file
+    if key:
+        path = data_file("icons", "menu", key + ".svg")
+        if path.exists():
+            return QIcon(str(path))
+    return icon(*fallback)
+
+
+def app_icon():
+    from eduka_customizer.qt.gui import QIcon
+    from eduka_customizer.core.config import data_file
+    ic = icon("eduka-customizer")
+    if ic.isNull():
+        for path in (data_file("icons", "eduka-customizer.svg"),
+                     data_file("..", "icons", "eduka-customizer.svg")):
+            if path.exists():
+                return QIcon(str(path))
+    return ic
+
+
 class MainWindow(QMainWindow):
     def __init__(self, dark=False):
         super().__init__()
@@ -29,7 +62,7 @@ class MainWindow(QMainWindow):
         self._file_handler = None
         self._task_started = 0
         self.setWindowTitle("{} {}".format(APP_NAME, VERSION_LABEL))
-        self.setWindowIcon(icon("eduka-customizer", "media-optical", "drive-optical"))
+        self.setWindowIcon(app_icon())
         self.resize(1280, 860)
 
         self.bridge = LogBridge()
@@ -94,7 +127,7 @@ class MainWindow(QMainWindow):
         v.addWidget(sub)
         self.nav = QListWidget()
         self.nav.setObjectName("nav")
-        self.nav.setIconSize(self.nav.iconSize() * 1.2)
+        self.nav.setIconSize(QSize(22, 22))
         self.nav.currentRowChanged.connect(self._show_page)
         v.addWidget(self.nav, 1)
         self.theme_btn = QPushButton("Dark mode")
@@ -175,7 +208,7 @@ class MainWindow(QMainWindow):
                 steps.append(page)
                 name = "{}. {}".format(len(steps), name)
             page.step = len(steps) if is_step else 0
-            item = QListWidgetItem(icon(*page.icon_names), name)
+            item = QListWidgetItem(menu_icon(MENU_ICONS.get(cls.__name__), *page.icon_names), name)
             self.nav.addItem(item)
         # "Next step" at the bottom of every step leads on to Build & Test.
         for here, nxt in zip(steps, steps[1:]):

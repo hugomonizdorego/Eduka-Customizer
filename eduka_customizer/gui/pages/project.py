@@ -28,8 +28,8 @@ def apply_language(proj, choice):
 class ProjectPage(Page):
     title = "Start"
     nav_title = "Start / Project"
-    subtitle = ("Build Edukasaun OS from a Debian live ISO, an existing Edukasaun OS ISO, a fresh "
-                "Debian base or this computer. Only Debian stable, testing and sid are supported.")
+    subtitle = ("Build Edukasaun OS from a Debian live ISO (the minimal 'standard' ISO is recommended), "
+                "an Edukasaun OS or Debian-derivative ISO such as LMDE, a fresh Debian base or this computer.")
     icon_names = ("go-home", "user-home")
     needs_rootfs = False
 
@@ -67,8 +67,11 @@ class ProjectPage(Page):
         # ISO ------------------------------------------------------------------
         t = QWidget()
         v = QVBoxLayout(t)
-        v.addWidget(label("Debian live images (debian-live-*.iso) and Edukasaun OS ISOs are "
-                          "accepted. Ubuntu, Linux Mint and other Ubuntu-based images are refused.",
+        v.addWidget(label("<b>Recommended: the Debian live <i>standard</i> ISO</b> "
+                          "(debian-live-*-amd64-standard.iso): it has no desktop, so you start from a small, "
+                          "clean system and add only what you choose. Every Debian-based live ISO works too: "
+                          "the other Debian live ISOs, Edukasaun OS, and Debian derivatives such as Linux Mint "
+                          "Debian Edition (LMDE). Ubuntu-based images (Ubuntu, Linux Mint) are refused.",
                           "muted"))
         self.iso = FilePicker("Choose ISO image", "ISO images (*.iso)")
         v.addWidget(self.iso)
@@ -118,6 +121,8 @@ class ProjectPage(Page):
         tabs.addTab(t, "This computer")
 
         self.status = self.card("Project status")
+        self.purpose = label("", "muted")
+        self.status.add(hbox(self.purpose, None, button("What is it for? Recommendations...", self.choose_purpose)))
         self.status_text = label("", wrap=True)
         self.status.add(self.status_text)
         self.history = QListWidget()
@@ -145,9 +150,23 @@ class ProjectPage(Page):
                                                    src.get("boot_mode"), "-")),
                  "<b>Last ISO:</b> {}".format(p.state.get("last_iso") or "not built yet")]
         self.status_text.setText("<br>".join(lines))
+        from eduka_customizer.core import profiles
+        pid = p.state.get("purpose")
+        try:
+            self.purpose.setText("Purpose: <b>{}</b>".format(profiles.get(pid)["name"]) if pid else
+                                 "Purpose: not chosen yet")
+        except KeyError:
+            self.purpose.setText("Purpose: " + pid)
         self.history.clear()
         for h in reversed(p.state.get("history", [])[-30:]):
             self.history.addItem("{}  {}  {}".format(h["time"].replace("T", " "), h["action"], h["detail"]))
+
+    def choose_purpose(self):
+        from eduka_customizer.gui.purpose import ask_purpose
+        if not self.project.has_rootfs():
+            QMessageBox.information(self, "Purpose", "Extract an ISO or create a Debian base first.")
+            return
+        ask_purpose(self, force=True)
 
     def project_changed(self):
         self.refresh()
@@ -193,6 +212,8 @@ class ProjectPage(Page):
         self.main.update_state()
         self.refresh()
         QMessageBox.information(self, "Ready", "The image is ready to customize:\n{}".format(info.summary()))
+        from eduka_customizer.gui.purpose import ask_purpose
+        ask_purpose(self)
 
     def extract(self):
         iso_path = self.iso.text()
@@ -215,9 +236,11 @@ class ProjectPage(Page):
             self.dl_image.clear()
             for name, _sha in images:
                 self.dl_image.addItem(name, name)
-            lxqt = self.dl_image.findText("lxqt", Qt.MatchFlag.MatchContains)
-            if lxqt >= 0:
-                self.dl_image.setCurrentIndex(lxqt)
+            # The standard image (no desktop) is the recommended start.
+            standard = self.dl_image.findText("standard", Qt.MatchFlag.MatchContains)
+            if standard >= 0:
+                self.dl_image.setCurrentIndex(standard)
+                self.dl_image.setItemText(standard, self.dl_image.itemText(standard) + "  (recommended)")
         self.task("List Debian images", lambda t: download.list_images(suite), done)
 
     def download(self):

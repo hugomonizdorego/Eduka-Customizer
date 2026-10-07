@@ -28,7 +28,7 @@ class UsersPage(Page):
                                    "'user' with the password 'live'.")
         f = c.form()
         self.live_name = QLineEdit()
-        self.live_name.setPlaceholderText("e.g. student")
+        self.live_name.setPlaceholderText("live")
         f.addRow("User name:", self.live_name)
         self.live_full = QLineEdit()
         f.addRow("Full name:", self.live_full)
@@ -48,7 +48,7 @@ class UsersPage(Page):
                    button("Save live user", self.save_live, "primary")))
 
         c = self.card("Accounts in the image",
-                      "Real accounts inside the system, for example a teacher or administrator account. "
+                      "Real accounts inside the system, for example an administrator account. "
                       "They exist in the live session and on every computer installed from this ISO.")
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["User", "Full name", "Password", "Groups", "Home"])
@@ -62,7 +62,7 @@ class UsersPage(Page):
         c = self.card("New account")
         f = c.form()
         self.new_name = QLineEdit()
-        self.new_name.setPlaceholderText("lower-case, e.g. teacher")
+        self.new_name.setPlaceholderText("lower-case letters, e.g. admin")
         f.addRow("User name:", self.new_name)
         self.new_full = QLineEdit()
         f.addRow("Full name:", self.new_full)
@@ -96,8 +96,10 @@ class UsersPage(Page):
             return
         u = self.users()
         live = u.live()
-        self.live_name.setText(live["username"])
-        self.live_full.setText(live["fullname"])
+        # Not configured yet: suggest "live" / "Live" (the ISO still uses Debian's "user").
+        name, full = (live["username"], live["fullname"]) if live["configured"] else usr.SUGGESTED_USER
+        self.live_name.setText(name)
+        self.live_full.setText(full)
         self.live_mode.setCurrentIndex(max(0, self.live_mode.findData(live["password"])))
         self.live_pw.clear()
         self.live_pw2.clear()

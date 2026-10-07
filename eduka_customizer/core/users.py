@@ -25,6 +25,8 @@ RESERVED = {"root", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail"
             "sshd", "polkitd", "lightdm", "sddm", "gdm", "avahi", "colord", "pulse", "rtkit"}
 LIVE_CONF = "etc/live/config.conf.d/50-edukasaun.conf"
 LIVE_SCRIPT = "live/config/1999-eduka-password"
+# Suggested live user for new images: simple to remember and to type.
+SUGGESTED_USER = ("live", "Live")
 DEFAULT_GROUPS = ["audio", "cdrom", "dip", "floppy", "video", "plugdev", "netdev", "powerdev", "scanner",
                   "bluetooth", "lpadmin"]
 PASSWORD_MODES = {"default": "Debian default password ('live')",
@@ -83,10 +85,10 @@ class Users:
         mode = "default"
         if script.exists():
             mode = "none" if "passwd -d" in script.read_text(errors="replace") else "custom"
-        ident = self.project.state.get("identity", {})
-        return {"username": conf.get("LIVE_USERNAME") or ident.get("live_user") or "user",
-                "fullname": conf.get("LIVE_USER_FULLNAME") or ident.get("live_fullname") or "Live user",
-                "hostname": conf.get("LIVE_HOSTNAME") or ident.get("hostname") or "",
+        # What the ISO really does: without our file live-config uses Debian's "user".
+        return {"username": conf.get("LIVE_USERNAME") or "user",
+                "fullname": conf.get("LIVE_USER_FULLNAME") or "Debian Live user",
+                "hostname": conf.get("LIVE_HOSTNAME") or "",
                 "password": mode,
                 "autologin": conf.get("LIVE_CONFIG_NOAUTOLOGIN", "false") != "true",
                 "groups": [g for g in conf.get("LIVE_USER_DEFAULT_GROUPS", "").split() if g] or list(DEFAULT_GROUPS),
@@ -107,7 +109,8 @@ class Users:
             raise ValueError("password_hash must be a crypt(3) hash such as $6$...")
         if password_mode == "custom" and not (password or password_hash) and not keep_password:
             raise ValueError("Type a password, or choose 'No password'")
-        hostname = hostname if hostname is not None else self.live()["hostname"]
+        if hostname is None:
+            hostname = self.live()["hostname"] or self.project.state.get("identity", {}).get("hostname", "")
         if hostname and not HOSTNAME.match(hostname):
             raise ValueError("Invalid host name: {}".format(hostname))
         groups = [g for g in (groups if groups is not None else DEFAULT_GROUPS) if g]

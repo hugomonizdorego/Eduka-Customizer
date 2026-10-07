@@ -1,4 +1,4 @@
-# Eduka-Customizer 0.13 Alpha
+# Eduka-Customizer 0.14 Alpha
 
 **Eduka-Customizer** is the ISO builder for **Edukasaun OS**. It takes a Debian
 live image (or an existing Edukasaun OS image, a fresh Debian base, or the
@@ -7,11 +7,12 @@ You can change anything on the way: packages, Flatpak apps, desktop,
 Plymouth splash, login screen, APT sources and the boot menu. You can also run
 the system's desktop in a window and edit it live.
 
-The images it builds are always **Debian stable, testing or sid** or **Edukasaun OS**
-(Ubuntu-based images are refused as a source). Eduka-Customizer itself can be
+The images it builds are always **Debian stable, testing or sid**, **Edukasaun OS** or a
+**Debian derivative such as LMDE** (Ubuntu-based images are refused as a source). The
+recommended start is the **Debian live standard ISO**: no desktop, small and clean. Eduka-Customizer itself can be
 installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
 
-![Users and passwords](docs/screenshots/04-users.png)
+![What is your distribution for?](docs/screenshots/01b-purpose.png)
 
 > Eduka-Customizer is a complete rewrite of *Customizer* (Ivailo Monev,
 > Mubiin Kimura, Graham Cantin and contributors). It takes ideas from
@@ -21,6 +22,10 @@ installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
 
 | Area | What you can do |
 |------|-----------------|
+| Purpose | *What is your distribution for?* Education, Server, Professional, Home or Other — recommendations for desktop, login screen, compositor, look and applications that you can untick or close |
+| Packages | Every package of the Debian sources with tick boxes and instant search; remove the applications that came with the ISO; or use a terminal / Synaptic |
+| Your own look | Drag and drop themes, icons, cursors, fonts, wallpapers, Plymouth and SDDM themes (folders, archives, files): each goes where it belongs. Wallpaper gallery with one default |
+| Compositors | The desktop's own compositor (Mutter, Muffin, KWin, xfwm4, Marco, Budgie) or picom where it fits — never two at once |
 | Users | The live user with a password, **without a password** or with Debian's default, autologin and groups; accounts built into the image (with or without a password, administrator), change or remove passwords, delete accounts |
 | Language | Default language, keyboard, time zone (Asia/Dili by default), translations and spell checking, a *Language* submenu in the ISO boot menu, Calamares defaults; also chosen when a project is created |
 | Calamares | Edit the installer directly: name, logo and images, colors, slideshow, launcher, user and password rules, live user password, partitions (file systems, swap, EFI size, encryption), requirements, removed packages, every configuration file |
@@ -51,7 +56,9 @@ installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
 
 | | |
 |---|---|
-| ![Users: live user with or without a password](docs/screenshots/04-users.png) | ![Accounts in the image](docs/screenshots/04b-users-new-account.png) |
+| ![What is your distribution for?](docs/screenshots/01b-purpose.png) | ![Package browser](docs/screenshots/06-packages.png) |
+| ![Drag and drop themes, icons, fonts](docs/screenshots/10-themes-icons.png) | ![Wallpaper gallery](docs/screenshots/11-wallpaper-login.png) |
+| ![Users: live user with or without a password](docs/screenshots/04-users.png) | ![Native compositors](docs/screenshots/09b-desktop-login-session.png) |
 | ![Language](docs/screenshots/05-language.png) | ![Calamares: users and partitions](docs/screenshots/14c-calamares.png) |
 | ![Plymouth](docs/screenshots/12-plymouth.png) | ![Plymouth preview in a window](docs/screenshots/plymouth-preview-window.png) |
 | ![Boot menu editor](docs/screenshots/15b-boot-menu-editor.png) | ![Kernel](docs/screenshots/08-kernel.png) |
@@ -67,11 +74,11 @@ All screenshots, including every Quick Wizard step: [docs/screenshots](docs/scre
 On Debian 13 (trixie), Edukasaun OS, Ubuntu 22.04/24.04 or an Ubuntu-based system:
 
 ```sh
-sudo apt install ./release/eduka-customizer_0.13.0~alpha_all.deb   # ready-made package
+sudo apt install ./release/eduka-customizer_0.14.0~alpha_all.deb   # ready-made package
 # or build it yourself:
 sudo apt install debhelper python3-pytest python3-yaml dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.13.0~alpha_all.deb
+sudo apt install ../eduka-customizer_0.14.0~alpha_all.deb
 ```
 
 Or run it from the source tree:
@@ -122,8 +129,11 @@ sudo eduka-customizer themes apply --gtk Arc --icons Papirus --cursor Breeze_Sno
 sudo eduka-customizer desktop compositor picom --preset glass
 sudo eduka-customizer workshop open base-files   # edit files in ~/eduka/workshop/base-files
 sudo eduka-customizer workshop build base-files
-sudo eduka-customizer users live siswa --fullname "Siswa" --no-password   # live user without password
-sudo eduka-customizer users add guru --fullname "Guru" --admin              # asks for the password
+sudo eduka-customizer purpose apply education                           # or: server, professional, home
+sudo eduka-customizer assets ~/Downloads/Nordic.tar.xz ~/Downloads/*.ttf    # themes, icons, fonts ...
+sudo eduka-customizer wallpapers add ~/Pictures/school/ && sudo eduka-customizer wallpapers default school-1.png
+sudo eduka-customizer users live live --fullname Live --no-password   # live user "live", no password
+sudo eduka-customizer users add admin --admin                          # asks for the password
 sudo eduka-customizer language set pt_PT.UTF-8 --extra en_US.UTF-8 id_ID.UTF-8 --timezone Asia/Dili --boot-menu all
 sudo eduka-customizer calamares users min_length=8 autologin=false root_password=true
 sudo eduka-customizer calamares partition fs=btrfs efi_size=512MiB "swap=[none, file]" initial_swap=file
@@ -155,7 +165,14 @@ compositor, tema & ikon, lalu edit sistem secara langsung (live) di jendela
 dan simpan ke ISO. **Distro Branding** membuat paket branding sendiri
 (pengganti identitas base-files, lsb-release, distro-info-data, desktop-base,
 logo Debian, GRUB, Calamares, keyring) dan **Package Workshop** membuka paket
-Debian terpasang untuk diedit langsung. Versi 0.13 menambah menu **Users**
+Debian terpasang untuk diedit langsung. Versi 0.14: saat ISO dipilih, Eduka-Customizer bertanya **distro untuk apa?**
+(Pendidikan, Server, Profesional, Rumah, Lainnya) lalu memberi rekomendasi
+desktop, layar login, compositor, ikon, tema dan aplikasi — bisa dihapus
+centangnya atau ditutup. Semua paket Debian bisa dicari dan dicentang;
+aplikasi bawaan ISO bisa dihapus; tema, ikon, kursor, font dan wallpaper
+cukup di-*drag & drop*; galeri wallpaper dengan satu default; compositor asli
+GNOME/Cinnamon/KDE/Xfce/MATE; LMDE didukung; ISO yang disarankan: Debian live
+*standard*. Versi 0.13 menambah menu **Users**
 (user live dengan password, tanpa password atau default Debian; akun di
 dalam image; ubah/hapus password; hapus user), zona waktu default
 **Asia/Dili**, dan menu bernomor sesuai urutan kerja sampai Build ISO.
@@ -166,7 +183,7 @@ boot), **Calamares** (gambar, slideshow, password, partisi, dll.),
 **Boot Menu** (edit grub.cfg, isolinux dan GRUB EFI langsung lalu terapkan
 ke ISO dalam hitungan detik) dan **Kernel** (kernel Debian, backports,
 Liquorix, XanMod, repositori sendiri atau .deb, hapus kernel, GRUB, firmware).
-Paket siap pasang: `release/eduka-customizer_0.13.0~alpha_all.deb`. Cara tercepat: **Quick Wizard**
+Paket siap pasang: `release/eduka-customizer_0.14.0~alpha_all.deb`. Cara tercepat: **Quick Wizard**
 (Next, Next, Finish). ISO hasil build bisa langsung diuji di QEMU (BIOS/UEFI).
 Aplikasi ini bisa dipasang di Debian, Edukasaun OS, Ubuntu dan turunannya;
 ISO sumber harus Debian atau Edukasaun OS. Log error: `/tmp/eduka-customizer/`.

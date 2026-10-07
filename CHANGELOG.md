@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.14.0 Alpha — 2026-10-07
+
+### New
+* **What is your distribution for?** When a project gets its system (ISO,
+  download, new Debian base) Eduka-Customizer asks: *Education*, *Server*,
+  *Professional*, *Home* or *Other*. Each purpose lists recommendations —
+  desktop, login screen, session, compositor, icons and theme,
+  applications, Flatpak apps, firmware, installer, boot splash — that can be
+  unticked one by one, applied, or closed to build everything yourself.
+  Also on the Start page, in the Quick Wizard (first step) and on the
+  command line (`eduka-customizer purpose list|show|apply`).
+* **Package browser**: every package of the image's Debian sources (read
+  directly from the APT lists, about 1 second for 75,000 packages), search
+  as you type, *Applications / All / Installed / My changes* views and
+  sections; tick to install, untick to remove (essential packages are
+  protected). *Remove applications of the ISO* lists the programs with a
+  menu entry that came with the source ISO. Both are also in the Quick
+  Wizard. Installing through a terminal or Synaptic stays available.
+* **Your own look by drag and drop**: drop folders, archives (.zip,
+  .tar.gz, .tar.xz, .tar.bz2) or files on the Themes & Icons page (or the
+  Quick Wizard). GTK themes go to /usr/share/themes, icon and cursor themes
+  to /usr/share/icons (with icon cache), fonts to /usr/share/fonts (with
+  fc-cache), Plymouth and SDDM themes to theirs, pictures to the wallpaper
+  gallery, .deb files are installed. CLI: `eduka-customizer assets`.
+* **Wallpaper gallery**: add many wallpapers (drop pictures or folders),
+  make one the default (★), remove; all of them are offered in the
+  wallpaper choosers of GNOME, Cinnamon and MATE. CLI: `wallpapers`.
+* **Native compositors**: Mutter (GNOME), Muffin (Cinnamon), KWin (KDE),
+  xfwm4 (Xfce), Marco (MATE) and Budgie's own window manager. Only the
+  compositors that fit the desktop are offered; picom is refused for
+  desktops that always composite, and its autostart entry is kept out of
+  them (NotShowIn), so two compositors never fight. On Wayland, GNOME and
+  KDE are their own compositor.
+* **Debian derivatives** such as Linux Mint Debian Edition (LMDE) are
+  accepted; Ubuntu-based systems (including Ubuntu-based Linux Mint) stay
+  refused. The **Debian live standard ISO** (no desktop) is the recommended
+  source and is preselected for downloads.
+* **Menu icons**: every menu has its own GPL-3.0 icon (Papirus, bundled in
+  data/icons/menu). New flat application icon: a monitor with an ISO disc
+  and a wrench, in PNG sizes 16-256 and SVG.
+* Live user defaults to **live** / **Live**; example names removed.
+* The .deb is built without compression and ships the documentation and
+  screenshots.
+
+### Fixed
+* Setting a wallpaper failed on images without GNOME (missing schema folder).
+* KDE on Wayland was offered labwc as compositor.
+* Archives with relative links inside (common in icon themes) were refused.
+* The Flatpak and Settings pages depended on helpers of the old Packages page.
+
 ## 0.13.0 Alpha — 2026-10-07
 
 ### New

@@ -1,5 +1,5 @@
 # Eduka-Customizer - ISO builder for Edukasaun OS
-VERSION   = 0.13.0~alpha
+VERSION   = 0.14.0~alpha
 PYTHON   ?= python3
 DESTDIR  ?=
 PREFIX   ?= /usr
@@ -32,7 +32,7 @@ install:
 	sed -e 's|@PREFIX@|$(PREFIX)|g' data/eduka-customizer-pkexec.in \
 		> $(DESTDIR)$(PREFIX)/bin/eduka-customizer-pkexec
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/eduka-customizer $(DESTDIR)$(PREFIX)/bin/eduka-customizer-pkexec
-	$(INSTALL) -m644 data/exclude.list data/desktops.json data/languages.json $(DESTDIR)$(DATADIR)/
+	$(INSTALL) -m644 data/exclude.list data/desktops.json data/languages.json data/profiles.json $(DESTDIR)$(DATADIR)/
 	$(INSTALL) -m644 data/eduka-customizer.conf $(DESTDIR)/etc/eduka-customizer/eduka-customizer.conf
 	sed -e 's|@PREFIX@|$(PREFIX)|g' data/org.edukasaun.customizer.desktop.in \
 		> $(DESTDIR)$(PREFIX)/share/applications/org.edukasaun.customizer.desktop
@@ -40,6 +40,12 @@ install:
 		> $(DESTDIR)$(PREFIX)/share/polkit-1/actions/org.edukasaun.customizer.policy
 	$(INSTALL) -m644 data/org.edukasaun.customizer.metainfo.xml $(DESTDIR)$(PREFIX)/share/metainfo/
 	$(INSTALL) -m644 icons/eduka-customizer.svg $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/
+	for s in 16 22 24 32 48 64 128 256; do \
+		$(INSTALL) -D -m644 icons/hicolor/$${s}x$${s}/apps/eduka-customizer.png \
+			$(DESTDIR)$(PREFIX)/share/icons/hicolor/$${s}x$${s}/apps/eduka-customizer.png; done
+	$(INSTALL) -d $(DESTDIR)$(DATADIR)/icons/menu
+	$(INSTALL) -m644 data/icons/menu/*.svg data/icons/menu/README.md $(DESTDIR)$(DATADIR)/icons/menu/
+	$(INSTALL) -m644 icons/eduka-customizer.svg $(DESTDIR)$(DATADIR)/icons/
 	$(INSTALL) -m644 docs/eduka-customizer.1 $(DESTDIR)$(PREFIX)/share/man/man1/
 	$(INSTALL) -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/eduka-customizer/examples/
 
@@ -50,6 +56,7 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/share/polkit-1/actions/org.edukasaun.customizer.policy \
 		$(DESTDIR)$(PREFIX)/share/metainfo/org.edukasaun.customizer.metainfo.xml \
 		$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/eduka-customizer.svg \
+		$(DESTDIR)$(PREFIX)/share/icons/hicolor/*/apps/eduka-customizer.png \
 		$(DESTDIR)$(PREFIX)/share/man/man1/eduka-customizer.1
 
 run:

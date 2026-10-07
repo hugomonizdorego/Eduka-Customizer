@@ -18,7 +18,7 @@ from eduka_customizer.core import desktop as dsk
 from eduka_customizer.core.config import settings
 from eduka_customizer.core.flatpak import EDUCATION_PICKS
 from eduka_customizer.gui.pages.appearance import IMAGES, ColorButton
-from eduka_customizer.gui.widgets import Card, FilePicker, ImagePreview, Page, button, combo, hbox, label
+from eduka_customizer.gui.widgets import Card, DropZone, FilePicker, ImagePreview, Page, button, combo, hbox, label
 
 STEPS = ["Source", "Identity", "Base system", "Desktop", "Look", "Applications", "Branding", "Finish"]
 
@@ -91,6 +91,16 @@ class WizardPage(Page):
         f.addRow("Architecture (new base):", self.bs_arch)
         self.src_note = label("", "muted")
         c.add(self.src_note)
+        c.add(label("Recommended source: the Debian live <b>standard</b> ISO (no desktop, minimal). Any Debian "
+                    "live ISO, Edukasaun OS or a Debian derivative such as LMDE works too.", "muted"))
+        c = self._card(lay, "What is your distribution for?",
+                       "Fills the next steps with recommendations (desktop, login screen, look, applications). "
+                       "Change anything you like afterwards, or choose 'Other' to decide everything yourself.")
+        from eduka_customizer.core import profiles
+        self.w_purpose = combo([(p["id"], "{} — {}".format(p["name"], p["description"]))
+                                for p in profiles.catalog()], "other")
+        self.w_purpose.currentIndexChanged.connect(lambda _i: self._apply_purpose())
+        c.add(self.w_purpose)
 
     def _identity(self, lay):
         c = self._card(lay, "Name your distribution")
@@ -101,7 +111,7 @@ class WizardPage(Page):
         self.w_codename = QLineEdit("Kameli")
         self.w_home = QLineEdit("https://edukasaun.org")
         self.w_host = QLineEdit("edukasaun")
-        self.w_user = QLineEdit("eduka")
+        self.w_user = QLineEdit("live")
         for text, w in (("Name:", self.w_name), ("ID:", self.w_id), ("Version:", self.w_version),
                         ("Codename:", self.w_codename), ("Home page:", self.w_home),
                         ("Host name:", self.w_host), ("Live user:", self.w_user)):
@@ -158,8 +168,9 @@ class WizardPage(Page):
     def _desktop(self, lay):
         c = self._card(lay, "Desktop, session and login screen")
         f = c.form()
-        self.w_de = combo([(d["id"], "{} — {}".format(d["name"], d["description"]))
-                           for d in dsk.catalog()["desktops"]])
+        self.w_de = combo([("", "No desktop — keep what the ISO has (or a server)")] +
+                          [(d["id"], "{} — {}".format(d["name"], d["description"]))
+                           for d in dsk.catalog()["desktops"]], "eduka")
         self.w_de.currentIndexChanged.connect(self._de_changed)
         f.addRow("Desktop:", self.w_de)
         self.w_type = combo([])
@@ -198,6 +209,13 @@ class WizardPage(Page):
         f.addRow("Icons:", self.w_icons)
         f.addRow("GTK theme:", self.w_gtk)
         f.addRow("", self.w_darkmode)
+        self.w_assets = []
+        drop = DropZone("Drop your own themes, icons, cursors, fonts or more wallpapers here "
+                        "(folders, archives or files)")
+        drop.dropped.connect(self._add_assets)
+        c.add(drop)
+        self.w_assets_note = label("", "muted")
+        c.add(self.w_assets_note)
 
     def _apps(self, lay):
         c = self._card(lay, "Applications", "Debian packages")
@@ -212,6 +230,11 @@ class WizardPage(Page):
         self.w_more = QLineEdit()
         self.w_more.setPlaceholderText("More Debian packages, separated by spaces")
         c.add(self.w_more)
+        c.add(hbox(button("Choose from all Debian packages (search)...", self._browse_packages),
+                   button("Remove applications of the ISO...", self._remove_apps), None))
+        self.w_remove_apps = []
+        self.w_apps_note = label("", "muted")
+        c.add(self.w_apps_note)
         c = self._card(lay, "Flatpak apps from Flathub")
         self.w_flat = QListWidget()
         self.w_flat.setMinimumHeight(160)
@@ -253,6 +276,91 @@ class WizardPage(Page):
         c.add(self.w_build)
 
     # Logic ---------------------------------------------------------------------
+    def _apply_purpose(self):
+        """Pre-fill desktop, login screen, look and applications from the chosen purpose."""
+        from eduka_customizer.core import profiles
+        p = profiles.get(self.w_purpose.currentData())
+        if p["id"] == "other":
+            return
+        self.w_de.setCurrentIndex(max(0, self.w_de.findData(p.get("desktop") or "")))
+        self._de_changed()
+        if p.get("dm") and self.w_dm.findData(p["dm"]) >= 0:
+            self.w_dm.setCurrentIndex(self.w_dm.findData(p["dm"]))
+        if p.get("session_type") and self.w_type.findData(p["session_type"]) >= 0:
+            self.w_type.setCurrentIndex(self.w_type.findData(p["session_type"]))
+        self._type_changed()
+        if p.get("picom_preset") and self.w_preset.findData(p["picom_preset"]) >= 0:
+            self.w_preset.setCurrentIndex(self.w_preset.findData(p["picom_preset"]))
+        for combo_, key in ((self.w_icons, "icons"), (self.w_gtk, "gtk")):
+            pkg = (p.get(key) or ["", ""])[0]
+            combo_.setCurrentIndex(max(0, combo_.findData(pkg)))
+        self.w_darkmode.setChecked(bool(p.get("dark")))
+        for cb, _pkgs in self.w_groups:
+            cb.setChecked(False)
+        self.w_more.setText(" ".join(p.get("packages", [])))
+        for i in range(self.w_flat.count()):
+            it = self.w_flat.item(i)
+            it.setCheckState(Qt.CheckState.Checked if it.data(Qt.ItemDataRole.UserRole) in p.get("flatpaks", [])
+                             else Qt.CheckState.Unchecked)
+        self.w_ply.setCurrentIndex(max(0, self.w_ply.findData("generate" if p.get("plymouth") else "keep")))
+
+    def _need_system(self):
+        if self.project and self.project.has_rootfs():
+            return True
+        QMessageBox.information(self, "Quick Wizard", "This needs the system of an open project (extract the ISO "
+                                "first). Until then, type package names in the field above.")
+        return False
+
+    def _browse_packages(self):
+        if not self._need_system():
+            return
+        from eduka_customizer.qt.widgets import QDialog, QDialogButtonBox
+        from eduka_customizer.gui.package_browser import PackageBrowser
+        dlg = QDialog(self)
+        dlg.setWindowTitle("All Debian packages")
+        dlg.resize(1100, 700)
+        v = QVBoxLayout(dlg)
+        browser = PackageBrowser()
+        v.addWidget(browser)
+        browser.load(self.project.rootfs)
+        browser.select(self.w_more.text().split())
+        box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        box.accepted.connect(dlg.accept)
+        box.rejected.connect(dlg.reject)
+        v.addWidget(box)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            install, remove = browser.changes()
+            self.w_more.setText(" ".join(install))
+            self.w_remove_apps = sorted(set(self.w_remove_apps) | set(remove))
+            self._apps_note()
+
+    def _remove_apps(self):
+        if not self._need_system():
+            return
+        from eduka_customizer.qt.widgets import QDialog, QDialogButtonBox
+        from eduka_customizer.gui.package_browser import AppRemover
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Remove applications of the ISO")
+        dlg.resize(700, 560)
+        v = QVBoxLayout(dlg)
+        remover = AppRemover()
+        v.addWidget(remover)
+        remover.load(self.project.rootfs)
+        box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        box.accepted.connect(dlg.accept)
+        box.rejected.connect(dlg.reject)
+        v.addWidget(box)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self.w_remove_apps = sorted(set(self.w_remove_apps) | set(remover.selected()))
+            self._apps_note()
+
+    def _apps_note(self):
+        self.w_apps_note.setText("Removed from the ISO: " + " ".join(self.w_remove_apps) if self.w_remove_apps else "")
+
+    def _add_assets(self, paths):
+        self.w_assets += [p for p in paths if p not in self.w_assets]
+        self.w_assets_note.setText("Will be added: " + ", ".join(os.path.basename(p) for p in self.w_assets))
+
     def _de_changed(self):
         de = self.w_de.currentData()
         if not de:
@@ -271,15 +379,11 @@ class WizardPage(Page):
     def _type_changed(self):
         kind = self.w_type.currentData() or "x11"
         self.w_comp.clear()
-        for comp in dsk.catalog()["compositors"]:
-            if comp["kind"] == kind:
-                self.w_comp.addItem(comp["name"], comp["id"])
-        de = self.w_de.currentData()
-        default = {"eduka": "picom", "lxqt": "picom", "openbox": "picom", "i3": "picom",
-                   "kde": "builtin", "gnome": "builtin", "xfce": "builtin", "mate": "builtin",
-                   "cinnamon": "builtin"}.get(de, "none")
-        if kind == "wayland":
-            default = "labwc"
+        # Only compositors that suit the desktop: its own (Mutter, Muffin, KWin, xfwm4, Marco,
+        # Budgie) instead of picom where the desktop composites itself, to avoid conflicts.
+        choices, default = dsk.compositors_for(self.w_de.currentData(), kind)
+        for comp in choices:
+            self.w_comp.addItem(comp["name"] + ("  (recommended)" if comp["id"] == default else ""), comp["id"])
         idx = self.w_comp.findData(default)
         if idx >= 0:
             self.w_comp.setCurrentIndex(idx)
@@ -359,7 +463,7 @@ class WizardPage(Page):
         """Live user for the recipe; a password is stored only as its hash."""
         mode = self.w_pwmode.currentData()
         live = {"username": self.w_user.text().strip() or "user",
-                "fullname": "{} Live User".format(self.w_name.text().strip()), "password_mode": mode}
+                "fullname": "Live", "password_mode": mode}
         if mode == "custom" and self.w_pw.text():
             from eduka_customizer.core.users import sha512_crypt
             if self._pw_hash[0] != self.w_pw.text():
@@ -375,19 +479,23 @@ class WizardPage(Page):
             steps.append({"action": "apt-upgrade"})
         steps.append({"action": "identity", "name": name, "id": os_id, "version": self.w_version.text().strip(),
                       "codename": self.w_codename.text().strip(), "home_url": self.w_home.text().strip(),
-                      "hostname": self.w_host.text().strip() or os_id, "live_user": self.w_user.text().strip() or "user",
-                      "live_fullname": "{} Live User".format(name),
+                      "hostname": self.w_host.text().strip() or os_id, "live_user": self.w_user.text().strip() or "live",
+                      "live_fullname": "Live",
                       "volume_label": (name.upper().replace(" ", "_") + "_" + self.w_version.text().strip())[:32]})
         steps.append({"action": "users", "live": self._live_user()})
         de = self.w_de.currentData()
-        steps.append({"action": "desktop", "id": de, "dm": self.w_dm.currentData(),
-                      "remove_others": self.w_remove.isChecked()})
-        if self.w_type.currentData():
-            steps.append({"action": "session-type", "desktop": de, "type": self.w_type.currentData()})
-        if self.w_comp.currentData():
-            steps.append({"action": "compositor", "id": self.w_comp.currentData(),
-                          "preset": self.w_preset.currentData()})
+        if self.w_remove_apps:
+            steps.append({"action": "apt-remove", "packages": list(self.w_remove_apps)})
+        if de:
+            steps.append({"action": "desktop", "id": de, "dm": self.w_dm.currentData(),
+                          "remove_others": self.w_remove.isChecked()})
+            if self.w_type.currentData():
+                steps.append({"action": "session-type", "desktop": de, "type": self.w_type.currentData()})
+            if self.w_comp.currentData():
+                steps.append({"action": "compositor", "id": self.w_comp.currentData(),
+                              "preset": self.w_preset.currentData()})
         pkgs = [p for cb, ps in self.w_groups if cb.isChecked() for p in ps] + self.w_more.text().split()
+        pkgs = [p for i, p in enumerate(pkgs) if p not in pkgs[:i]]
         if pkgs:
             steps.append({"action": "apt-install", "packages": pkgs})
         apps = [self.w_flat.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.w_flat.count())
@@ -408,6 +516,8 @@ class WizardPage(Page):
         if packs or self.w_darkmode.isChecked():
             steps.append({"action": "themes", "packs": packs, "icons": icon, "gtk": gtk,
                           "dark": self.w_darkmode.isChecked()})
+        if self.w_assets:
+            steps.append({"action": "assets", "files": list(self.w_assets)})
         wall = self.w_wall.text()
         if wall:
             steps.append({"action": "wallpaper", "image": wall})

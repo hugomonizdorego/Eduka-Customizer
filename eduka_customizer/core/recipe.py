@@ -85,6 +85,9 @@ def run_step(project, step, base, build=True):
                 setattr(spec, k, v)
         DistroBranding(project).apply(spec, with_keyring=step.get("keyring", False),
                                       email=step.get("email", ""))
+    elif action == "assets":
+        from eduka_customizer.core.assets import Assets
+        Assets(project).add([_path(base, f) for f in step.get("files", [])])
     elif action == "themes":
         from eduka_customizer.core.themes import Themes
         th = Themes(project)
@@ -201,7 +204,14 @@ def run_step(project, step, base, build=True):
         if theme:
             b.set_plymouth(theme)
     elif action == "wallpaper":
-        Branding(project).set_wallpaper(_path(base, step["image"]))
+        # Every picture goes to the gallery; "image" (or the first one) becomes the default.
+        from eduka_customizer.core.assets import Wallpapers
+        w = Wallpapers(project)
+        names = [w.add_file(_path(base, f)) for f in step.get("images", [])]
+        if step.get("image"):
+            names.insert(0, w.add_file(_path(base, step["image"])))
+        if names:
+            w.set_default(names[0])
     elif action == "login":
         Branding(project).set_login_screen(
             background=_path(base, step["background"]) if step.get("background") else None,

@@ -1,3 +1,23 @@
+eduka-customizer (0.14.0~alpha) unstable; urgency=medium
+
+  * "What is your distribution for?" (Education, Server, Professional, Home,
+    Other) with recommendations that can be unticked or closed.
+  * Package browser with every package of the Debian sources, search,
+    tick boxes, and removal of the applications of the ISO; also in the
+    Quick Wizard.
+  * Add themes, icons, cursors, fonts, wallpapers, Plymouth and SDDM themes
+    by drag and drop (files, folders, archives); wallpaper gallery with one
+    default.
+  * Native compositors (Mutter, Muffin, KWin, xfwm4, Marco, Budgie) and a
+    guard that keeps picom out of desktops that composite themselves.
+  * Debian derivatives such as LMDE accepted; the Debian live standard ISO
+    is the recommended source.
+  * Bundled GPL-3 menu icons (Papirus), new flat application icon.
+  * Live user defaults "live" / "Live".
+  * Uncompressed package (dh_builddeb -Znone) with documentation.
+
+ -- Edukasaun OS Developers <dev@edukasaun.org>  Wed, 07 Oct 2026 20:00:00 +0000
+
 eduka-customizer (0.13.0~alpha) unstable; urgency=medium
 
   * Users page: the live user with a password, without a password or with

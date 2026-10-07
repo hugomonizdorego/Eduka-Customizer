@@ -1,4 +1,4 @@
-# Panduan singkat Eduka-Customizer 0.13 Alpha
+# Panduan singkat Eduka-Customizer 0.14 Alpha
 
 Eduka-Customizer adalah pembangun ISO khusus **Edukasaun OS**. ISO sumber
 harus **Debian stable, testing, sid** atau **Edukasaun OS** (ISO Ubuntu dan
@@ -17,7 +17,7 @@ tekan **Finish**. Semua jawaban disimpan sebagai recipe
 Paket siap pakai untuk dicoba (Debian 13, Ubuntu 24.04 dan turunannya):
 
 ```sh
-sudo apt install ./release/eduka-customizer_0.13.0~alpha_all.deb
+sudo apt install ./release/eduka-customizer_0.14.0~alpha_all.deb
 ```
 
 Atau build sendiri:
@@ -25,9 +25,28 @@ Atau build sendiri:
 ```sh
 sudo apt install debhelper python3-pytest dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.13.0~alpha_all.deb
+sudo apt install ../eduka-customizer_0.14.0~alpha_all.deb
 eduka-customizer doctor        # cek alat yang dibutuhkan
 ```
+
+## Baru di 0.14
+
+* **Distro untuk apa?** Saat ISO atau folder dipilih: Pendidikan, Server,
+  Profesional, Rumah atau Lainnya. Muncul rekomendasi (desktop, layar login,
+  compositor, ikon, tema, aplikasi, firmware, installer); hapus centang yang
+  tidak perlu, terapkan, atau tutup untuk membangun sendiri.
+* **Semua paket Debian** bisa dicari dan dicentang (halaman Packages dan
+  Quick Wizard); aplikasi bawaan ISO bisa dihapus.
+* **Drag & drop** tema, ikon, kursor, font, wallpaper, tema Plymouth/SDDM
+  (folder, arsip atau file): otomatis ditaruh di lokasi yang benar.
+* **Galeri wallpaper**: tambah banyak, pilih satu sebagai default (★).
+* **Compositor asli** Cinnamon (Muffin), GNOME (Mutter), KDE (KWin),
+  Xfce (xfwm4), MATE (Marco), Budgie — picom tidak dipakai bersamaan,
+  jadi tidak ada konflik.
+* **ISO yang disarankan:** Debian live *standard* (minimal). Semua Debian
+  dan turunannya seperti **LMDE** bisa dipakai.
+* Ikon menu GPL (Papirus) dan ikon aplikasi baru yang flat.
+* User live default: **live** / **Live**.
 
 ## Alur kerja di GUI
 
@@ -41,13 +60,14 @@ sampai **18. Build & Test**. Setiap halaman punya tombol **Back** dan
   lengkap, grup, login otomatis, dan password: default Debian (`live`),
   **password sendiri**, atau **tanpa password** (hanya username). *Remove*
   mengembalikan ke default Debian.
-* **Akun di dalam image** – misalnya akun guru/admin: buat dengan atau tanpa
+* **Akun di dalam image** – misalnya akun admin: buat dengan atau tanpa
   password, jadikan administrator (sudo), ubah atau hapus password, hapus
   akun. Akun ini ada di sesi live dan di setiap komputer yang diinstal dari ISO.
-* Baris perintah: `sudo eduka-customizer users live siswa --no-password`,
-  `sudo eduka-customizer users add guru --admin`,
-  `sudo eduka-customizer users passwd guru --no-password`,
-  `sudo eduka-customizer users delete guru`.
+* Default yang disarankan: user **live**, nama lengkap **Live**.
+* Baris perintah: `sudo eduka-customizer users live live --fullname Live --no-password`,
+  `sudo eduka-customizer users add admin --admin`,
+  `sudo eduka-customizer users passwd admin --no-password`,
+  `sudo eduka-customizer users delete admin`.
 
 Urutan halaman (sama dengan nomor di sidebar):
 

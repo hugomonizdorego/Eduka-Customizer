@@ -1,6 +1,6 @@
 # Roadmap & rekomendasi
 
-Status: **0.13 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
+Status: **0.14 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
 berikutnya untuk pengembang Edukasaun OS, diurutkan menurut manfaatnya.
 
 ## Selesai di 0.11 Alpha
@@ -18,7 +18,12 @@ jendela, paket .deb siap coba di `release/`.
 Menu Users (user live dengan/tanpa password, akun di image), zona waktu
 default Asia/Dili, menu bernomor sesuai urutan kerja, perbaikan bug.
 
-## Menuju 0.14 Alpha
+## Selesai di 0.14 Alpha
+Tujuan distro + rekomendasi, browser paket Debian, hapus aplikasi ISO, drag &
+drop tema/ikon/font/wallpaper, galeri wallpaper, compositor asli, LMDE, ikon
+menu GPL dan ikon aplikasi flat.
+
+## Menuju 0.15 Alpha
 
 1. **Uji penuh dengan ISO Debian 13 live asli** (LXQt dan standard) di
    perangkat keras nyata, BIOS dan UEFI, termasuk Secure Boot. Unit test dan
@@ -35,7 +40,7 @@ default Asia/Dili, menu bernomor sesuai urutan kerja, perbaikan bug.
 5. **Terjemahan GUI** (Tetun, Português, Bahasa Indonesia, English) memakai
    Qt Linguist (`pylupdate6`/`lrelease`).
 
-## Menuju 0.14 – 0.20
+## Menuju 0.15 – 0.20
 
 * **Overlay / snapshot rootfs** (overlayfs atau btrfs) sehingga setiap
   perubahan bisa di-*undo*, dan beberapa varian (sekolah, guru, lab) dibuat

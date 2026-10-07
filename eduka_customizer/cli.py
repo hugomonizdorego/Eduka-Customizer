@@ -465,6 +465,51 @@ def cmd_users(args):
     return 0
 
 
+def cmd_assets(args):
+    from eduka_customizer.core.assets import KIND_LABEL, Assets
+    p = _locked(args)
+    for kind, name in Assets(p).add([os.path.abspath(f) for f in args.files]):
+        print("{:24} {}".format(KIND_LABEL.get(kind, kind), name))
+    return 0
+
+
+def cmd_wallpapers(args):
+    from eduka_customizer.core.assets import Wallpapers
+    p = _locked(args)
+    w = Wallpapers(p)
+    if args.action in ("default", "remove") and not args.items:
+        raise SystemExit("wallpapers {} needs a file name (see 'wallpapers list')".format(args.action))
+    if args.action == "add":
+        print("\n".join(w.add([os.path.abspath(f) for f in args.items])))
+    elif args.action == "default":
+        w.set_default(args.items[0])
+    elif args.action == "remove":
+        for name in args.items:
+            w.remove(name)
+    default = w.default()
+    for path in w.list():
+        print(("* " if path.name == default else "  ") + path.name)
+    return 0
+
+
+def cmd_purpose(args):
+    from eduka_customizer.core import profiles
+    if args.action == "list":
+        for pr in profiles.catalog():
+            print("{:14} {}".format(pr["id"], pr["description"]))
+        return 0
+    if not args.id:
+        raise SystemExit("Name a purpose: " + ", ".join(pr["id"] for pr in profiles.catalog()))
+    if args.action == "show":
+        for key, text, _step in profiles.recommendations(args.id):
+            print("{:12} {}".format(key, text))
+        return 0
+    p = _locked(args)
+    keys = set(args.only.split(",")) if args.only else None
+    print("Applied:", ", ".join(profiles.apply(p, args.id, keys)))
+    return 0
+
+
 def cmd_kernel(args):
     from eduka_customizer.core.kernel import THIRD_PARTY, Kernels
     p = _locked(args)
@@ -784,6 +829,21 @@ def build_parser():
     s.add_argument("--apply", action="store_true", help="apply the installed theme")
     s.add_argument("--seconds", type=int, default=10)
     s.set_defaults(func=cmd_plymouth)
+
+    s = sub.add_parser("assets", help="add themes, icons, cursors, fonts, wallpapers (files, folders, archives)")
+    s.add_argument("files", nargs="+")
+    s.set_defaults(func=cmd_assets)
+
+    s = sub.add_parser("wallpapers", help="wallpaper gallery of the image and its default")
+    s.add_argument("action", choices=["list", "add", "default", "remove"])
+    s.add_argument("items", nargs="*")
+    s.set_defaults(func=cmd_wallpapers)
+
+    s = sub.add_parser("purpose", help="what the distribution is for, and its recommendations")
+    s.add_argument("action", choices=["list", "show", "apply"])
+    s.add_argument("id", nargs="?", help="education, server, professional, home or other")
+    s.add_argument("--only", help="apply only these recommendations, e.g. desktop,apps")
+    s.set_defaults(func=cmd_purpose)
 
     s = sub.add_parser("users", help="live user and accounts in the image (with or without password)")
     s.add_argument("action", choices=["show", "live", "live-remove", "add", "passwd", "delete"])

@@ -14,6 +14,7 @@
   <launchable type="desktop-id">org.edukasaun.customizer.desktop</launchable>
   <url type="homepage">https://github.com/hugomonizdorego/Eduka-Customizer</url>
   <releases>
+    <release version="0.14.0~alpha" date="2026-10-07"/>
     <release version="0.13.0~alpha" date="2026-10-07"/>
     <release version="0.12.0~alpha" date="2026-10-07"/>
     <release version="0.11.0~alpha" date="2026-10-07"/>
