@@ -1,0 +1,5 @@
+?package(customizer): \
+needs="X11" \
+section="Applications/System/Administration" \
+title="Customizer" \
+command="@ELEVATOR@ @PREFIX@/sbin/customizer-gui"

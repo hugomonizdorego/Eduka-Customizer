@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Customizer
+Exec=@ELEVATOR@ @PREFIX@/sbin/customizer-gui
+Comment=Ubuntu Live CD remastering tool
+Icon=@PREFIX@/share/customizer/logo.png
+Terminal=false
+StartupNotify=true
+Categories=System;
