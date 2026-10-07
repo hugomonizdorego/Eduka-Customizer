@@ -5,6 +5,7 @@ from eduka_customizer.qt.core import Qt
 from eduka_customizer.qt.widgets import QCheckBox, QLineEdit, QListWidget, QListWidgetItem
 
 from eduka_customizer.core import language
+from eduka_customizer.core.config import DEFAULT_TIMEZONE
 from eduka_customizer.gui.widgets import Page, button, combo, hbox, label
 
 
@@ -68,9 +69,8 @@ class LanguagePage(Page):
         b.add(hbox(None, button("Apply language", self.apply, "primary")))
 
     def _suggest(self):
+        # Only the keyboard follows the language; the time zone stays (Asia/Dili by default).
         lang = language.info(combo_locale(self.default))
-        if lang.get("timezone"):
-            self.tz.setCurrentText(lang["timezone"])
         if lang.get("keyboard"):
             self.kb.setText(lang["keyboard"])
 
@@ -88,7 +88,7 @@ class LanguagePage(Page):
         self.default.blockSignals(False)
         self.tz.clear()
         self.tz.addItems(Branding(self.project).timezones())
-        self.tz.setCurrentText(st.get("timezone", "Asia/Dili"))
+        self.tz.setCurrentText(st.get("timezone") or DEFAULT_TIMEZONE)
         self.kb.setText(st.get("keyboard", "us"))
         self.variant.setText(st.get("variant", ""))
         extra, boot = set(st.get("extra", [])), set(st.get("boot_menu", []))

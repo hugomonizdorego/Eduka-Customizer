@@ -4,6 +4,8 @@ import configparser
 import os
 from pathlib import Path
 
+# Edukasaun OS is made for Timor-Leste: the default time zone everywhere.
+DEFAULT_TIMEZONE = "Asia/Dili"
 CONFIG_PATH = Path(os.environ.get("EDUKA_CUSTOMIZER_CONF",
                                   "/etc/eduka-customizer/eduka-customizer.conf"))
 

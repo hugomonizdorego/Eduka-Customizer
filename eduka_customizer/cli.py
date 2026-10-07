@@ -419,6 +419,52 @@ def cmd_plymouth(args):
     return 0
 
 
+def _ask_password(args):
+    """None = no password. Read from stdin with --password-stdin, else ask twice."""
+    if getattr(args, "no_password", False):
+        return None
+    if getattr(args, "password_stdin", False):
+        return sys.stdin.readline().rstrip("\n") or None
+    import getpass
+    first = getpass.getpass("Password: ")
+    if first != getpass.getpass("Repeat the password: "):
+        raise SystemExit("The two passwords are not the same")
+    return first or None
+
+
+def cmd_users(args):
+    from eduka_customizer.core.users import PASSWORD_MODES, Users
+    p = _locked(args)
+    u = Users(p)
+    if args.action == "show":
+        live = u.live()
+        print("Live user: {} ({}) - {}{}".format(live["username"], live["fullname"], PASSWORD_MODES[live["password"]],
+                                                 "" if live["autologin"] else ", no autologin"))
+        for a in u.accounts():
+            print("  {:16} {:24} {:14} {}".format(a["username"], a["fullname"], a["password"], " ".join(a["groups"])))
+        return 0
+    if args.action == "live-remove":
+        u.remove_live()
+        return 0
+    if not args.name:
+        raise SystemExit("A user name is needed")
+    if args.action == "live":
+        if args.debian_default:
+            mode, pw = "default", ""
+        else:
+            pw = _ask_password(args)
+            mode = "custom" if pw else "none"
+        u.set_live(args.name, args.fullname or "", mode, pw or "", autologin=not args.no_autologin,
+                   groups=args.groups.split(",") if args.groups else None)
+    elif args.action == "add":
+        u.add_account(args.name, args.fullname or "", _ask_password(args), admin=args.admin, shell=args.shell)
+    elif args.action == "passwd":
+        u.set_password(args.name, _ask_password(args))
+    elif args.action == "delete":
+        u.delete_account(args.name, remove_home=not args.keep_home)
+    return 0
+
+
 def cmd_kernel(args):
     from eduka_customizer.core.kernel import THIRD_PARTY, Kernels
     p = _locked(args)
@@ -732,6 +778,20 @@ def build_parser():
     s.add_argument("--seconds", type=int, default=10)
     s.set_defaults(func=cmd_plymouth)
 
+    s = sub.add_parser("users", help="live user and accounts in the image (with or without password)")
+    s.add_argument("action", choices=["show", "live", "live-remove", "add", "passwd", "delete"])
+    s.add_argument("name", nargs="?")
+    s.add_argument("--fullname")
+    s.add_argument("--no-password", action="store_true", help="the user logs in without a password")
+    s.add_argument("--password-stdin", action="store_true", help="read the password from standard input")
+    s.add_argument("--debian-default", action="store_true", help="live: Debian's password 'live'")
+    s.add_argument("--no-autologin", action="store_true")
+    s.add_argument("--groups", help="live: comma separated groups")
+    s.add_argument("--admin", action="store_true", help="add: member of sudo")
+    s.add_argument("--shell", default="/bin/bash")
+    s.add_argument("--keep-home", action="store_true", help="delete: keep the home folder")
+    s.set_defaults(func=cmd_users)
+
     s = sub.add_parser("kernel", help="kernels, initramfs, GRUB defaults and firmware")
     s.add_argument("action", choices=["list", "available", "install", "third-party", "deb", "remove", "iso",
                                       "initramfs", "firmware", "grub"])
@@ -817,7 +877,7 @@ def main(argv=None):
         runner.CANCEL.set()
         log.error("Interrupted")
         return 130
-    except (UnsupportedDistro, ProjectLocked, runner.CommandError, runner.Cancelled,
+    except (UnsupportedDistro, ProjectLocked, runner.CommandError, runner.Canceled,
             FileNotFoundError, ValueError, RuntimeError) as e:
         log.error("%s", e, exc_info=True)
         if args.debug:

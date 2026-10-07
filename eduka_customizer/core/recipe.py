@@ -23,6 +23,7 @@ from eduka_customizer.core.branding import Branding
 from eduka_customizer.core.desktop import DesktopManager
 from eduka_customizer.core.eduka_desktop import EdukaDesktop
 from eduka_customizer.core.flatpak import Flatpak
+from eduka_customizer.core.config import DEFAULT_TIMEZONE
 from eduka_customizer.core.log import log
 
 
@@ -117,7 +118,7 @@ def run_step(project, step, base, build=True):
         Branding(project).apply_identity(ident)
     elif action == "locale":
         Branding(project).apply_locale(step.get("default", "en_US.UTF-8"), step.get("extra", []),
-                                       step.get("timezone", "UTC"), step.get("keyboard", "us"))
+                                       step.get("timezone", DEFAULT_TIMEZONE), step.get("keyboard", "us"))
     elif action == "language":
         from eduka_customizer.core.language import Language
         Language(project).apply(step.get("default", "en_US.UTF-8"), step.get("extra", []), step.get("timezone"),
@@ -148,6 +149,19 @@ def run_step(project, step, base, build=True):
             cal.set_removed_packages(step["remove_packages"])
         if "live_password" in step:
             cal.set_live_password(step["live_password"])
+    elif action == "users":
+        from eduka_customizer.core.users import Users
+        u = Users(project)
+        if step.get("live") == "remove":
+            u.remove_live()
+        elif step.get("live"):
+            u.set_live(**_args(step["live"]))
+        for name in step.get("delete", []):
+            u.delete_account(name)
+        for acc in step.get("accounts", []):
+            u.add_account(**_args(acc))
+        for name, pw in (step.get("passwords") or {}).items():
+            u.set_password(name, pw or None)
     elif action == "kernel":
         from eduka_customizer.core.kernel import Kernels
         k = Kernels(project)
@@ -225,6 +239,7 @@ def export(project):
     """Create a recipe from the current project settings and history."""
     st = project.state
     steps = [{"action": "identity", **{k: v for k, v in st["identity"].items()}},
+             {"action": "users", "live": _live_step(project)},
              {"action": "language", **_language_step(st)}]
     installs, removes = [], []
     for h in st.get("history", []):
@@ -253,3 +268,16 @@ def _language_step(st):
         if k != "installed_packs":
             lang[k] = v
     return lang
+
+
+def _live_step(project):
+    """The live user without its password (a recipe should not carry secrets)."""
+    from eduka_customizer.core.users import Users
+    live = Users(project).live()
+    return {"username": live["username"], "fullname": live["fullname"], "autologin": live["autologin"],
+            "groups": live["groups"], "keep_password": True}
+
+
+def _args(values):
+    """Keyword arguments from a recipe object; "comment" keys are notes for people."""
+    return {k: v for k, v in values.items() if k != "comment"}

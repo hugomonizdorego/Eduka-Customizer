@@ -1,3 +1,19 @@
+eduka-customizer (0.13.0~alpha) unstable; urgency=medium
+
+  * Users page: the live user with a password, without a password or with
+    Debian's default, autologin and groups; accounts built into the image
+    (create with or without a password, administrator, change or remove the
+    password, delete). Also in the Quick Wizard, recipes ('users') and the
+    command line ('eduka-customizer users').
+  * Default time zone Asia/Dili (Timor-Leste) everywhere; choosing a
+    language no longer changes the time zone.
+  * The menu follows the order of the work, numbered from 1. Start to
+    18. Build & Test, with Back and 'Next step' buttons on every page.
+  * US English everywhere (boot menu 'Language' submenu, 'canceled').
+  * Fixes from a code review (see CHANGELOG.md).
+
+ -- Edukasaun OS Developers <dev@edukasaun.org>  Wed, 07 Oct 2026 16:00:00 +0000
+
 eduka-customizer (0.12.0~alpha) unstable; urgency=medium
 
   * Language page: default language, keyboard (with variant), time zone,

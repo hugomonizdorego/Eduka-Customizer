@@ -8,11 +8,11 @@ Debian's calamares-settings-debian keeps its configuration in /etc/calamares
 
 import re
 import shutil
-import subprocess
 
 from eduka_customizer.core import imaging, yamlconf
 from eduka_customizer.core.apt import Packages
 from eduka_customizer.core.chroot import Chroot
+from eduka_customizer.core.log import log
 
 ETC = "etc/calamares"
 SHARE = "usr/share/calamares"
@@ -45,6 +45,14 @@ class Calamares:
 
     def install(self):
         Packages(self.project).install(["calamares", "calamares-settings-debian"])
+        # The installer suggests the project's time zone (Asia/Dili unless changed).
+        from eduka_customizer.core.config import DEFAULT_TIMEZONE
+        tz = self.project.state.get("language", {}).get("timezone") or \
+            self.project.state.get("locale", {}).get("timezone") or DEFAULT_TIMEZONE
+        try:
+            self.set_locale(tz)
+        except (OSError, ValueError) as e:
+            log.warning("Could not set the installer's time zone: %s", e)
 
     def version(self):
         status = self.rootfs / "var/lib/dpkg/status"
@@ -209,26 +217,21 @@ class Calamares:
         text = re.sub(r"(?m)^(\[Desktop Entry\]\n)", lambda m: m.group(1) + "Name={}\n".format(name), text, count=1)
         p.write_text(text)
 
-    # Live user password (live-config, not Calamares, but asked for in one place) ---
-    def _live_script(self):
-        lib = self.rootfs / "lib"
-        base = "lib" if lib.is_dir() and not lib.is_symlink() else "usr/lib"
-        return self.rootfs / base / "live/config/1999-eduka-password"
-
+    # Live user password: kept for recipes and the CLI, managed by core/users.py ----
     def set_live_password(self, password):
         """Password of the live user; empty restores Debian's default ('live')."""
-        script = self._live_script()
-        if not password:
-            script.unlink(missing_ok=True)
-            return
-        hashed = _sha512_crypt(password)
-        script.parent.mkdir(parents=True, exist_ok=True)
-        script.write_text(LIVE_PASSWORD.format(hash=hashed.replace("'", "")))
-        script.chmod(0o755)
-        self.project.record("live-password", "changed")
+        from eduka_customizer.core.users import Users
+        u = Users(self.project)
+        u._write_password_script("custom" if password else "default", password)
+        self.project.record("live-password", "changed" if password else "default")
 
     def live_password_set(self):
-        return self._live_script().exists()
+        from eduka_customizer.core.users import Users
+        return Users(self.project).live()["password"] != "default"
+
+    def _live_script(self):
+        from eduka_customizer.core.users import Users
+        return Users(self.project)._script()
 
     # Summary used by the GUI -----------------------------------------------------
     def summary(self):
@@ -400,32 +403,6 @@ def _unique(items):
             out.append(i)
     return out
 
-
-def _sha512_crypt(password):
-    """$6$ hash for /etc/shadow, made with openssl (crypt left Python in 3.13)."""
-    exe = shutil.which("openssl")
-    if not exe:
-        raise RuntimeError("openssl is needed to hash the password")
-    out = subprocess.run([exe, "passwd", "-6", "-stdin"], input=password + "\n", text=True,
-                         capture_output=True, check=True).stdout.strip()
-    if not out.startswith("$6$"):
-        raise RuntimeError("openssl did not return a SHA-512 hash")
-    return out
-
-
-LIVE_PASSWORD = """#!/bin/sh
-# Live user password, set by Eduka-Customizer. Runs after live-config created the user.
-[ -e /var/lib/live/config/eduka-password ] && exit 0
-for f in /etc/live/config.conf /etc/live/config.conf.d/*.conf; do [ -r "$f" ] && . "$f"; done
-for arg in $(cat /proc/cmdline 2>/dev/null); do
-    case "$arg" in live-config.username=*|username=*) LIVE_USERNAME="${{arg#*=}}" ;; esac
-done
-LIVE_USERNAME="${{LIVE_USERNAME:-user}}"
-if id "$LIVE_USERNAME" >/dev/null 2>&1; then
-    usermod -p '{hash}' "$LIVE_USERNAME"
-fi
-mkdir -p /var/lib/live/config && touch /var/lib/live/config/eduka-password
-"""
 
 SLIDE = """    Slide {{
         Image {{ anchors.fill: parent; source: "{image}"; fillMode: Image.PreserveAspectFit; smooth: true }}

@@ -152,21 +152,47 @@ class MainWindow(QMainWindow):
     def _build_pages(self):
         from eduka_customizer.gui.pages import (appearance, bootmenu, branding, build, calamares, desktop,
                                                 flatpak, identity, kernel, language, packages, plymouth,
-                                                project, settings_page, sources, terminal, themes, wizard,
-                                                workshop)
+                                                project, settings_page, sources, terminal, themes, users,
+                                                wizard, workshop)
+        # The order of the work, from the source to the ISO. Pages marked False are
+        # not steps (the wizard does everything at once; settings are global).
+        order = [(project.ProjectPage, True), (wizard.WizardPage, False),
+                 (sources.SourcesPage, True), (identity.IdentityPage, True), (users.UsersPage, True),
+                 (language.LanguagePage, True), (packages.PackagesPage, True), (flatpak.FlatpakPage, True),
+                 (kernel.KernelPage, True), (desktop.DesktopPage, True), (themes.ThemesPage, True),
+                 (appearance.AppearancePage, True), (plymouth.PlymouthPage, True),
+                 (branding.BrandingPage, True), (calamares.CalamaresPage, True),
+                 (bootmenu.BootMenuPage, True), (workshop.WorkshopPage, True), (terminal.TerminalPage, True),
+                 (build.BuildPage, True), (settings_page.SettingsPage, False)]
         self.pages = []
-        for cls in (project.ProjectPage, wizard.WizardPage, identity.IdentityPage, language.LanguagePage,
-                    branding.BrandingPage, sources.SourcesPage, packages.PackagesPage,
-                    flatpak.FlatpakPage, kernel.KernelPage, desktop.DesktopPage, themes.ThemesPage,
-                    appearance.AppearancePage, plymouth.PlymouthPage, bootmenu.BootMenuPage,
-                    calamares.CalamaresPage, workshop.WorkshopPage, terminal.TerminalPage,
-                    build.BuildPage, settings_page.SettingsPage):
+        steps = []
+        for cls, is_step in order:
             page = cls(self)
             self.pages.append(page)
             self.stack.addWidget(page)
-            item = QListWidgetItem(icon(*page.icon_names), page.nav_title if hasattr(page, "nav_title") else page.title)
+            name = page.nav_title if hasattr(page, "nav_title") else page.title
+            if is_step:
+                steps.append(page)
+                name = "{}. {}".format(len(steps), name)
+            page.step = len(steps) if is_step else 0
+            item = QListWidgetItem(icon(*page.icon_names), name)
             self.nav.addItem(item)
+        # "Next step" at the bottom of every step leads on to Build & Test.
+        for here, nxt in zip(steps, steps[1:]):
+            label_ = nxt.nav_title if hasattr(nxt, "nav_title") else nxt.title
+            here.layout_.addWidget(self._next_button(here, nxt, label_))
         self.nav.setCurrentRow(0)
+
+    def _next_button(self, here, nxt, text):
+        from eduka_customizer.gui.widgets import button, hbox
+        prev_steps = [p for p in self.pages if getattr(p, "step", 0) == here.step - 1 and here.step > 1]
+        widgets = []
+        if prev_steps:
+            prev = prev_steps[0]
+            widgets.append(button("◀  Back", lambda: self.go(prev.__class__.__name__)))
+        widgets += [None, button("Next step: {}. {}  ▶".format(nxt.step, text),
+                                 lambda: self.go(nxt.__class__.__name__), "primary")]
+        return hbox(*widgets)
 
     def _actions(self):
         quit_ = QAction("Quit", self)
@@ -352,7 +378,7 @@ class MainWindow(QMainWindow):
         if self.task:
             runner.CANCEL.set()
             self.cancel_btn.setEnabled(False)
-            self.stage_label.setText("Cancelling...")
+            self.stage_label.setText("Canceling...")
 
     # Log ------------------------------------------------------------------------
     def _append_log(self, level, text):

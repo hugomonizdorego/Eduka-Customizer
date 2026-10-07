@@ -6,7 +6,7 @@ import re
 
 from eduka_customizer.core import bootloader
 from eduka_customizer.core.apt import Packages
-from eduka_customizer.core.config import data_file
+from eduka_customizer.core.config import DEFAULT_TIMEZONE, data_file
 from eduka_customizer.core.log import log
 
 # Translations are only added for applications that are already installed;
@@ -29,15 +29,18 @@ def info(locale):
         if lang["locale"] == locale:
             return lang
     code = locale.split(".")[0]
-    return {"locale": locale, "name": code, "native": code, "keyboard": "us", "timezone": "UTC",
+    return {"locale": locale, "name": code, "native": code, "keyboard": "us", "timezone": DEFAULT_TIMEZONE,
             "libreoffice": "", "mozilla": "", "hunspell": "", "extra": []}
 
 
 def boot_params(locale, keyboard=None, timezone=None):
-    """live-config boot options that start the live system in *locale*."""
+    """live-config boot options that start the live system in *locale*.
+
+    The language changes, the place does not: the time zone is Dili unless given.
+    """
     lang = info(locale)
     params = ["locales=" + locale, "keyboard-layouts=" + (keyboard or lang["keyboard"])]
-    tz = timezone or lang["timezone"]
+    tz = timezone or DEFAULT_TIMEZONE
     if tz:
         params.append("timezone=" + tz)
     return " ".join(params)
@@ -75,7 +78,8 @@ class Language:
         """Make *default* the language of the live and installed system."""
         from eduka_customizer.core.branding import Branding
         lang = info(default)
-        timezone = timezone or lang["timezone"] or "UTC"
+        # Choosing a language does not move the school: keep the project's time zone (Dili).
+        timezone = timezone or self.current().get("timezone") or DEFAULT_TIMEZONE
         keyboard = keyboard or lang["keyboard"] or "us"
         if variant and not re.match(r"^[a-z0-9_,-]*$", variant):
             raise ValueError("Invalid keyboard variant: {}".format(variant))
@@ -127,7 +131,7 @@ class Language:
             lang = info(locale)
             kb = st.get("keyboard") if locale == st.get("default") else lang["keyboard"]
             # The language changes, the place does not: keep the chosen time zone.
-            tz = st.get("timezone") or lang["timezone"]
+            tz = st.get("timezone") or DEFAULT_TIMEZONE
             entries.append(("{} ({})".format(title, lang["native"]), boot_params(locale, kb, tz)))
         return entries
 

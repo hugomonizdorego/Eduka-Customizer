@@ -12,6 +12,7 @@ from eduka_customizer.core.apt import Packages
 from eduka_customizer.core.chroot import Chroot
 from eduka_customizer.core.distro import format_os_release, parse_os_release, resolve_in_root
 from eduka_customizer.core import fsutil
+from eduka_customizer.core.config import DEFAULT_TIMEZONE
 from eduka_customizer.core.log import log
 
 BACKGROUNDS = "usr/share/backgrounds/edukasaun"
@@ -91,8 +92,11 @@ class Branding:
         lsb.write_text('DISTRIB_ID="{}"\nDISTRIB_RELEASE="{}"\nDISTRIB_CODENAME="{}"\n'
                        'DISTRIB_DESCRIPTION="{}"\n'.format(name, version, debian_code, data["PRETTY_NAME"]))
         self.set_hostname(ident.get("hostname") or os_id)
-        self.set_live_user(ident.get("live_user") or "eduka", ident.get("live_fullname") or "Live User",
-                           ident.get("hostname") or os_id)
+        from eduka_customizer.core.users import Users
+        live = Users(self.project).live()
+        # Keep the live user chosen on the Users page unless the caller names one.
+        self.set_live_user(ident.get("live_user") or live["username"],
+                           ident.get("live_fullname") or live["fullname"], ident.get("hostname") or os_id)
         self.project.state["identity"].update(ident)
         self.project.record("identity", data["PRETTY_NAME"])
         log.info("Identity set to %s", data["PRETTY_NAME"])
@@ -121,16 +125,15 @@ class Branding:
         hosts.write_text("\n".join(lines) + "\n")
 
     def set_live_user(self, username, fullname, hostname):
-        if not USERNAME.match(username):
-            raise ValueError("Invalid user name: {}".format(username))
-        conf = self.rootfs / "etc/live/config.conf.d/50-edukasaun.conf"
-        conf.parent.mkdir(parents=True, exist_ok=True)
-        fullname = fullname.replace('"', "")
-        conf.write_text('# Written by Eduka-Customizer\nLIVE_HOSTNAME="{}"\nLIVE_USERNAME="{}"\n'
-                        'LIVE_USER_FULLNAME="{}"\n'.format(hostname, username, fullname))
+        """Name of the live user; the password and groups set on the Users page are kept."""
+        from eduka_customizer.core.users import Users
+        u = Users(self.project)
+        cur = u.live()
+        u.set_live(username, fullname, autologin=cur["autologin"], groups=cur["groups"], hostname=hostname,
+                   keep_password=True)
 
     # Locale --------------------------------------------------------------
-    def apply_locale(self, default, extra=(), timezone="UTC", keyboard="us", variant=""):
+    def apply_locale(self, default, extra=(), timezone=DEFAULT_TIMEZONE, keyboard="us", variant=""):
         locales = [default] + [l for l in extra if l and l != default]
         supported = self.rootfs / "usr/share/i18n/SUPPORTED"
         valid = set()

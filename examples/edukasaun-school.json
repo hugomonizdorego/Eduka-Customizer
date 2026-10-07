@@ -22,6 +22,22 @@
       "volume_label": "EDUKASAUN_OS_1_0"
     },
     {
+      "action": "users",
+      "live": {
+        "username": "siswa",
+        "fullname": "Siswa",
+        "password_mode": "none"
+      },
+      "accounts": [
+        {
+          "username": "guru",
+          "fullname": "Guru",
+          "admin": true,
+          "comment": "no password_hash given: the account has no password until you set one"
+        }
+      ]
+    },
+    {
       "action": "desktop",
       "id": "eduka",
       "dm": "lightdm"

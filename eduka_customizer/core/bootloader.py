@@ -235,7 +235,7 @@ def _grub_language_menu(text, entries):
                              else l for l in body.split("\n"))
             copies.append(indent + "    " + head.lstrip() + "\n" + "\n".join(
                 ("    " + l if l.strip() else l) for l in body.split("\n")))
-        menu = "\n{i}{b}\n{i}submenu \"Language / Língua / Bahasa\" {{\n{c}\n{i}}}\n{i}{e}".format(
+        menu = "\n{i}{b}\n{i}submenu \"Language\" {{\n{c}\n{i}}}\n{i}{e}".format(
             i=indent, b=LANG_BEGIN, e=LANG_END, c="\n".join(copies))
         return text[:j] + menu + text[j:]
     return text
@@ -256,7 +256,7 @@ def _isolinux_language_menu(text, entries):
         block = lines[i:end]
         if not any("boot=live" in l for l in block):
             continue
-        out = [LANG_BEGIN, "menu begin languages", "\tmenu title Language / Lingua / Bahasa"]
+        out = [LANG_BEGIN, "menu begin languages", "\tmenu title Language"]
         for n, (title, params) in enumerate(entries, 1):
             out.append("\tlabel lang{}".format(n))
             out.append("\t\tmenu label {}".format(title))

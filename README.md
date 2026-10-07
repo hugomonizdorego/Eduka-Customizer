@@ -1,4 +1,4 @@
-# Eduka-Customizer 0.12 Alpha
+# Eduka-Customizer 0.13 Alpha
 
 **Eduka-Customizer** is the ISO builder for **Edukasaun OS**. It takes a Debian
 live image (or an existing Edukasaun OS image, a fresh Debian base, or the
@@ -21,7 +21,8 @@ installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
 
 | Area | What you can do |
 |------|-----------------|
-| Language | Default language, keyboard, time zone, translations and spell checking, a *Language* submenu in the ISO boot menu, Calamares defaults; also chosen when a project is created |
+| Users | The live user with a password, **without a password** or with Debian's default, autologin and groups; accounts built into the image (with or without a password, administrator), change or remove passwords, delete accounts |
+| Language | Default language, keyboard, time zone (Asia/Dili by default), translations and spell checking, a *Language* submenu in the ISO boot menu, Calamares defaults; also chosen when a project is created |
 | Calamares | Edit the installer directly: name, logo and images, colors, slideshow, launcher, user and password rules, live user password, partitions (file systems, swap, EFI size, encryption), requirements, removed packages, every configuration file |
 | Plymouth | Install boot splash themes from .deb, .zip, .tar.*, folders or Debian packages; preview them in a window; apply; remove; create one from a logo |
 | Boot Menu | Title, timeout, kernel options, background; edit `grub.cfg`, `isolinux.cfg` and the GRUB files inside `efi.img` directly; edits survive every build; apply to the ISO in seconds |
@@ -34,7 +35,6 @@ installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
 | Developer logs | Every run writes `/tmp/eduka-customizer/eduka-customizer.log` and `errors.log`; Settings → Create bug report |
 | Source | Extract a Debian or Edukasaun OS live ISO, download an official Debian live ISO (SHA256 and GPG checked), bootstrap a new Debian base with mmdebstrap, or snapshot the running system (remastersys style) |
 | Identity | os-release (`ID=edukasaun`, `ID_LIKE=debian`), version, codename, host name, live user, Calamares branding, protected from `base-files` upgrades |
-| Language | Default and extra locales, time zone (e.g. `Asia/Dili`), keyboard, live-config defaults |
 | Repositories | Switch between stable, testing and sid with a clean deb822 `debian.sources`, add third-party repositories with their own `Signed-By` key, edit every sources file |
 | Packages | Search, install, remove, full-upgrade, install local `.deb` files, import/export package lists |
 | Flatpak | Enable Flathub, search Flathub, curated apps for schools, install into the ISO or on the first boot of the installed system |
@@ -66,11 +66,11 @@ All screenshots, including every Quick Wizard step: [docs/screenshots](docs/scre
 On Debian 13 (trixie), Edukasaun OS, Ubuntu 22.04/24.04 or an Ubuntu-based system:
 
 ```sh
-sudo apt install ./release/eduka-customizer_0.12.0~alpha_all.deb   # ready-made package
+sudo apt install ./release/eduka-customizer_0.13.0~alpha_all.deb   # ready-made package
 # or build it yourself:
 sudo apt install debhelper python3-pytest python3-yaml dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.12.0~alpha_all.deb
+sudo apt install ../eduka-customizer_0.13.0~alpha_all.deb
 ```
 
 Or run it from the source tree:
@@ -99,10 +99,11 @@ Every run writes logs for the developers:
 2. **Start / Project**: create a project, then choose a Debian live ISO, an
    Edukasaun OS ISO, *Download Debian*, or *New Debian base*.
    Choose the default language right there.
-3. Customize: **Identity**, **Language**, **Repositories**, **Packages**,
-   **Flatpak apps**, **Kernel**, **Desktop**, **Plymouth**, **Boot Menu**,
-   **Calamares**, **Terminal & Live** (APT, Synaptic in a window or a terminal).
-4. **Build & Test**: build the ISO and boot it in QEMU.
+3. Follow the numbered menu with **Next step**: 2. Repositories, 3. Identity,
+   4. Users, 5. Language, 6. Packages, 7. Flatpak apps, 8. Kernel, 9. Desktop,
+   10. Themes & Icons, 11. Wallpaper & Login, 12. Plymouth, 13. Distro Branding,
+   14. Calamares, 15. Boot Menu, 16. Package Workshop, 17. Terminal & Live.
+4. **18. Build & Test**: build the ISO and boot it in QEMU.
 5. Write the ISO to a USB stick: `sudo dd if=edukasaun.iso of=/dev/sdX bs=4M status=progress oflag=sync`.
 
 ## Quick start (command line)
@@ -120,6 +121,8 @@ sudo eduka-customizer themes apply --gtk Arc --icons Papirus --cursor Breeze_Sno
 sudo eduka-customizer desktop compositor picom --preset glass
 sudo eduka-customizer workshop open base-files   # edit files in ~/eduka/workshop/base-files
 sudo eduka-customizer workshop build base-files
+sudo eduka-customizer users live siswa --fullname "Siswa" --no-password   # live user without password
+sudo eduka-customizer users add guru --fullname "Guru" --admin              # asks for the password
 sudo eduka-customizer language set pt_PT.UTF-8 --extra en_US.UTF-8 id_ID.UTF-8 --timezone Asia/Dili --boot-menu all
 sudo eduka-customizer calamares users min_length=8 autologin=false root_password=true
 sudo eduka-customizer calamares partition fs=btrfs efi_size=512MiB "swap=[none, file]" initial_swap=file
@@ -151,14 +154,18 @@ compositor, tema & ikon, lalu edit sistem secara langsung (live) di jendela
 dan simpan ke ISO. **Distro Branding** membuat paket branding sendiri
 (pengganti identitas base-files, lsb-release, distro-info-data, desktop-base,
 logo Debian, GRUB, Calamares, keyring) dan **Package Workshop** membuka paket
-Debian terpasang untuk diedit langsung. Versi 0.12 menambah menu **Language**
+Debian terpasang untuk diedit langsung. Versi 0.13 menambah menu **Users**
+(user live dengan password, tanpa password atau default Debian; akun di
+dalam image; ubah/hapus password; hapus user), zona waktu default
+**Asia/Dili**, dan menu bernomor sesuai urutan kerja sampai Build ISO.
+Versi 0.12 menambah menu **Language**
 (bahasa default, juga saat membuat/menyesuaikan ISO, pilihan bahasa di menu
 boot), **Calamares** (gambar, slideshow, password, partisi, dll.),
 **Plymouth** (pasang dari .deb/.zip/.tar, pratinjau, terapkan, hapus),
 **Boot Menu** (edit grub.cfg, isolinux dan GRUB EFI langsung lalu terapkan
 ke ISO dalam hitungan detik) dan **Kernel** (kernel Debian, backports,
 Liquorix, XanMod, repositori sendiri atau .deb, hapus kernel, GRUB, firmware).
-Paket siap pasang: `release/eduka-customizer_0.12.0~alpha_all.deb`. Cara tercepat: **Quick Wizard**
+Paket siap pasang: `release/eduka-customizer_0.13.0~alpha_all.deb`. Cara tercepat: **Quick Wizard**
 (Next, Next, Finish). ISO hasil build bisa langsung diuji di QEMU (BIOS/UEFI).
 Aplikasi ini bisa dipasang di Debian, Edukasaun OS, Ubuntu dan turunannya;
 ISO sumber harus Debian atau Edukasaun OS. Log error: `/tmp/eduka-customizer/`.

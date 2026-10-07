@@ -106,6 +106,19 @@ class WizardPage(Page):
                         ("Codename:", self.w_codename), ("Home page:", self.w_home),
                         ("Host name:", self.w_host), ("Live user:", self.w_user)):
             f.addRow(text, w)
+        from eduka_customizer.core.users import PASSWORD_MODES
+        self.w_pwmode = combo(list(PASSWORD_MODES.items()), "none")
+        self.w_pw = QLineEdit()
+        self.w_pw2 = QLineEdit()
+        for e, hint in ((self.w_pw, "password"), (self.w_pw2, "repeat the password")):
+            e.setEchoMode(QLineEdit.EchoMode.Password)
+            e.setPlaceholderText(hint)
+        self.w_pwmode.currentIndexChanged.connect(
+            lambda _i: [e.setEnabled(self.w_pwmode.currentData() == "custom") for e in (self.w_pw, self.w_pw2)])
+        self.w_pw.setEnabled(False)
+        self.w_pw2.setEnabled(False)
+        f.addRow("Live password:", hbox(self.w_pwmode, self.w_pw, self.w_pw2))
+        self._pw_hash = (None, None)
         self.w_logo = FilePicker("Logo", "Images (*.png *.svg)")
         self.w_logo_prev = ImagePreview(80, 80)
         self.w_logo.changed.connect(lambda p: self.w_logo_prev.show_file(p))
@@ -330,7 +343,29 @@ class WizardPage(Page):
                 return "The ID must be lower case letters, digits and '-' (e.g. edukasaun)."
             if not self.w_name.text().strip():
                 return "Enter a name."
+            from eduka_customizer.core.users import check_username
+            try:
+                check_username(self.w_user.text().strip())
+            except ValueError as e:
+                return str(e)
+            if self.w_pwmode.currentData() == "custom":
+                if not self.w_pw.text():
+                    return "Type the live password twice, or choose another password option."
+                if self.w_pw.text() != self.w_pw2.text():
+                    return "The two passwords are not the same."
         return ""
+
+    def _live_user(self):
+        """Live user for the recipe; a password is stored only as its hash."""
+        mode = self.w_pwmode.currentData()
+        live = {"username": self.w_user.text().strip() or "user",
+                "fullname": "{} Live User".format(self.w_name.text().strip()), "password_mode": mode}
+        if mode == "custom" and self.w_pw.text():
+            from eduka_customizer.core.users import sha512_crypt
+            if self._pw_hash[0] != self.w_pw.text():
+                self._pw_hash = (self.w_pw.text(), sha512_crypt(self.w_pw.text()))
+            live["password_hash"] = self._pw_hash[1]
+        return live
 
     def recipe(self):
         name, os_id = self.w_name.text().strip(), self.w_id.text().strip()
@@ -343,6 +378,7 @@ class WizardPage(Page):
                       "hostname": self.w_host.text().strip() or os_id, "live_user": self.w_user.text().strip() or "user",
                       "live_fullname": "{} Live User".format(name),
                       "volume_label": (name.upper().replace(" ", "_") + "_" + self.w_version.text().strip())[:32]})
+        steps.append({"action": "users", "live": self._live_user()})
         de = self.w_de.currentData()
         steps.append({"action": "desktop", "id": de, "dm": self.w_dm.currentData(),
                       "remove_others": self.w_remove.isChecked()})

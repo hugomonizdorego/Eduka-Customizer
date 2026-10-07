@@ -195,7 +195,8 @@ def test_language_catalog_and_packs():
     assert {"pt_PT.UTF-8", "id_ID.UTF-8", "en_US.UTF-8"} <= {l["locale"] for l in cat}
     pt = language.info("pt_PT.UTF-8")
     assert pt["native"] == "Português" and pt["keyboard"] == "pt"
-    assert language.boot_params("pt_PT.UTF-8") == "locales=pt_PT.UTF-8 keyboard-layouts=pt timezone=Europe/Lisbon"
+    # The time zone stays Asia/Dili whatever the language.
+    assert language.boot_params("pt_PT.UTF-8") == "locales=pt_PT.UTF-8 keyboard-layouts=pt timezone=Asia/Dili"
     names = language.pack_candidates(["pt_PT.UTF-8", "ja_JP.UTF-8"], {"libreoffice-core", "firefox-esr"})
     assert "libreoffice-l10n-pt" in names and "firefox-esr-l10n-pt-pt" in names and "hunspell-pt-pt" in names
     assert "thunderbird-l10n-pt-pt" not in names  # Thunderbird is not installed
@@ -211,12 +212,12 @@ def test_language_apply(project, nochroot, monkeypatch):
     monkeypatch.setattr(language.Language, "install_packs", lambda self, locales: ["hunspell-pt-pt"])
     out = language.Language(project).apply("pt_PT.UTF-8", ["en_US.UTF-8"], boot_menu=["pt_PT.UTF-8", "en_US.UTF-8"])
     assert out == ["hunspell-pt-pt"]
-    assert seen["locale"] == ("pt_PT.UTF-8", ["en_US.UTF-8"], "Europe/Lisbon", "pt", "")
+    assert seen["locale"] == ("pt_PT.UTF-8", ["en_US.UTF-8"], "Asia/Dili", "pt", "")
     st = project.state["language"]
     assert st["boot_menu"] == ["pt_PT.UTF-8", "en_US.UTF-8"] and st["keyboard"] == "pt"
     entries = language.Language(project).boot_entries("Edukasaun OS")
     assert entries[0] == ("Edukasaun OS (Português)",
-                          "locales=pt_PT.UTF-8 keyboard-layouts=pt timezone=Europe/Lisbon")
+                          "locales=pt_PT.UTF-8 keyboard-layouts=pt timezone=Asia/Dili")
     assert entries[1][1].startswith("locales=en_US.UTF-8 keyboard-layouts=us")
 
 
@@ -265,7 +266,7 @@ def test_language_entries_grub_and_isolinux(isotree):
                ("Edukasaun OS (English)", "locales=en_US.UTF-8 keyboard-layouts=us")]
     assert bootloader.set_language_entries(iso, entries)
     grub = (iso / "boot/grub/grub.cfg").read_text()
-    assert grub.count('submenu "Language') == 1 and 'menuentry "Edukasaun OS (Português)"' in grub
+    assert grub.count('submenu "Language"') == 1 and 'menuentry "Edukasaun OS (Português)"' in grub
     assert "--hotkey" not in grub.split("submenu", 1)[1].split("menuentry \"Live system (amd64 fail")[0]
     assert "quiet splash findiso=${iso_path} locales=pt_PT.UTF-8 keyboard-layouts=pt" in grub
     if shutil.which("grub-script-check"):
@@ -507,7 +508,7 @@ from eduka_customizer.gui.main_window import MainWindow
 w = MainWindow()
 w.project = Project.open(sys.argv[1])
 names = [p.__class__.__name__ for p in w.pages]
-for wanted in ("LanguagePage", "CalamaresPage", "PlymouthPage", "BootMenuPage", "KernelPage"):
+for wanted in ("LanguagePage", "CalamaresPage", "PlymouthPage", "BootMenuPage", "KernelPage", "UsersPage"):
     w.pages[names.index(wanted)].refresh()
 assert w.pages[names.index("BootMenuPage")].files.count() >= 2
 assert w.pages[names.index("CalamaresPage")].s["productName"].text() == "Debian"
@@ -523,7 +524,7 @@ def test_new_pages_build_and_refresh(cal_project, isotree):
     res = subprocess.run([sys.executable, "-c", GUI_SMOKE, str(cal_project.path)], capture_output=True,
                          text=True, env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
-    assert res.stdout.startswith("ok 19")
+    assert res.stdout.startswith("ok 20")
 
 
 def test_every_data_file_is_installed():

@@ -71,7 +71,7 @@ class CalamaresPage(Page):
                    button("Apply slideshow", self.apply_slides, "primary")))
 
         # Users ---------------------------------------------------------------------------
-        a, b = self.row(self.card("Users and passwords"), self.card("Live session"))
+        a, b = self.row(self.card("Users and passwords"), self.card("Live user"))
         f = a.form()
         self.autologin = QCheckBox("Log in automatically (default of the checkbox)")
         self.root_pw = QCheckBox("Ask for a root password")
@@ -97,17 +97,12 @@ class CalamaresPage(Page):
         f.addRow("Computer name:", self.hostname)
         a.add(hbox(None, button("Apply user settings", self.apply_users, "primary")))
 
-        b.add(label("Debian's live user logs in automatically; its password is 'live' (needed for sudo "
-                    "or the lock screen). Set another one here, or leave it empty for Debian's default.",
-                    "muted"))
-        self.live_pw = QLineEdit()
-        self.live_pw.setEchoMode(QLineEdit.EchoMode.Password)
-        self.live_pw.setPlaceholderText("new live password")
+        b.add(label("These are the rules for the accounts the installer creates. The user of the live "
+                    "session, its password (or no password) and accounts built into the image are set on "
+                    "the Users page.", "muted"))
         self.live_pw_state = label("", "muted")
-        b.add(self.live_pw)
         b.add(self.live_pw_state)
-        b.add(hbox(button("Use Debian default", lambda: self.set_live_password("")), None,
-                   button("Set live password", lambda: self.set_live_password(self.live_pw.text()), "primary")))
+        b.add(hbox(None, button("Users and passwords...", lambda: self.main.go("UsersPage"))))
 
         # Partitions -------------------------------------------------------------------------
         c = self.card("Partitions")
@@ -218,8 +213,10 @@ class CalamaresPage(Page):
         self.sudo.setText(u["sudo_group"])
         self.shell.setCurrentText(u["shell"])
         self.hostname.setText(u["hostname"])
-        self.live_pw_state.setText("A custom live password is set." if c.live_password_set()
-                                   else "Debian default password: live")
+        from eduka_customizer.core.users import PASSWORD_MODES, Users
+        live = Users(self.project).live()
+        self.live_pw_state.setText("Live user: <b>{}</b> — {}".format(live["username"],
+                                                                     PASSWORD_MODES[live["password"]]))
         p = sm["partition"]
         self.initial.setCurrentIndex(max(0, self.initial.findData(p["initial"])))
         self.fs.setCurrentIndex(max(0, self.fs.findData(p["fs"])))
@@ -325,12 +322,6 @@ class CalamaresPage(Page):
                   shell=self.shell.currentText().strip(), sudo_group=self.sudo.text().strip(),
                   hostname=self.hostname.text().strip())
         self._run("Calamares users", lambda t: cal.Calamares(proj).set_users(**kw))
-
-    def set_live_password(self, pw):
-        proj = self.project
-        self.live_pw.clear()
-        self.task("Live user password", lambda t: cal.Calamares(proj).set_live_password(pw),
-                  lambda _r: self.refresh())
 
     def apply_partition(self):
         proj = self.project

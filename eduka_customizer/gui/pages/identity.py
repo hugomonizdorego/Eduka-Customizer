@@ -8,13 +8,12 @@ from eduka_customizer.gui.widgets import Page, button, hbox
 class IdentityPage(Page):
     title = "Identity"
     nav_title = "Identity"
-    subtitle = "How the system names itself (os-release, boot menu, installer) and the live user."
+    subtitle = "How the system names itself: os-release, computer name, boot menu and installer."
     icon_names = ("preferences-desktop-personal", "user-info")
 
     FIELDS = [("name", "System name"), ("version", "Version"), ("codename", "Codename"),
               ("id", "OS ID"), ("home_url", "Home page"), ("support_url", "Support URL"),
               ("bug_url", "Bug report URL"), ("hostname", "Host name"),
-              ("live_user", "Live user name"), ("live_fullname", "Live user full name"),
               ("volume_label", "ISO volume label")]
 
     def build(self):
@@ -36,9 +35,9 @@ class IdentityPage(Page):
         f.addRow("", self.calamares)
         c.add(hbox(None, button("Apply identity", self.apply_identity, "primary")))
 
-        c = self.card("Language", "Default language, keyboard, time zone and language packs have "
-                                  "their own page.")
-        c.add(hbox(None, button("Open the Language page", lambda: self.main.go("LanguagePage"))))
+        c = self.card("More", "The live user and passwords, and the default language, have their own pages.")
+        c.add(hbox(button("Users and passwords...", lambda: self.main.go("UsersPage")),
+                   button("Language...", lambda: self.main.go("LanguagePage")), None))
 
     def refresh(self):
         if not self.project:
@@ -49,7 +48,8 @@ class IdentityPage(Page):
 
     def apply_identity(self):
         from eduka_customizer.core.branding import Branding
-        ident = {k: e.text().strip() for k, e in self.edits.items()}
+        ident = dict(self.project.state.get("identity", {}))
+        ident.update({k: e.text().strip() for k, e in self.edits.items()})
         proj, protect, cal = self.project, self.protect.isChecked(), self.calamares.isChecked()
 
         def work(t):
