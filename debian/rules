@@ -1,13 +1,15 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@ --with python3
+	dh $@
 
 override_dh_auto_build:
-	dh_auto_build
+	$(MAKE) check
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	python3 -m pytest -q tests
+endif
 
 override_dh_auto_install:
-	dh_auto_install
-
-override_dh_auto_clean:
-	dh_auto_clean
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/eduka-customizer PREFIX=/usr

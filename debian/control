@@ -1,24 +1,64 @@
-Source: customizer
-Section: x11
+Source: eduka-customizer
+Section: admin
 Priority: optional
-Maintainer: Graham Cantin <kamilion@gmail.com>
-Homepage: https://github.com/kamilion/customizer
-Vcs-Git: git://github.com/kamilion/customizer
-Vcs-browser: https://github.com/kamilion/customizer
-Standards-Version: 4.2.0
-X-Python-Version: >= 3.3
-Build-Depends: debhelper (>= 9~), g++, python3-dev (>= 3.3~), pyqt5-dev-tools,
- qttools5-dev-tools
+Maintainer: Edukasaun OS Developers <dev@edukasaun.org>
+Build-Depends: debhelper-compat (= 13), python3, python3-pytest <!nocheck>, dpkg-dev
+Standards-Version: 4.7.0
+Homepage: https://github.com/hugomonizdorego/Eduka-Customizer
+Vcs-Git: https://github.com/hugomonizdorego/Eduka-Customizer.git
+Vcs-Browser: https://github.com/hugomonizdorego/Eduka-Customizer
+Rules-Requires-Root: no
 
-Package: customizer
+Package: eduka-customizer
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
- python3-pyqt5, syslinux, initramfs-tools,
- squashfs-tools (>= 4.2~), xorriso, x11-xserver-utils, xserver-xephyr,
- qemu-kvm, policykit-1, hicolor-icon-theme, isolinux
-Recommends: policykit-1-gnome | polkit-kde-1, libgtk2.0-bin | libgtk-3-bin
-Description: Ubuntu Live CD remastering tool
- Customizer, formerly known as U-Customizer, is an advanced Live CD
- customization and remastering tool. Use any supported Ubuntu-based ISO
- image, such as Ubuntu Mini Remix, Ubuntu or its derivatives ISO image
- to build your own remix with a few mouse clicks.
+Depends: ${misc:Depends},
+ python3 (>= 3.9),
+ python3-pyqt6 | python3-pyqt5,
+ python3-pyqt6.qtsvg | python3-pyqt5.qtsvg,
+ squashfs-tools (>= 1:4.5),
+ xorriso,
+ mtools,
+ dosfstools,
+ isolinux,
+ syslinux-common,
+ grub-common,
+ git,
+ rsync,
+ gpg,
+ pkexec | policykit-1,
+ polkitd | policykit-1,
+ mount,
+ util-linux
+Recommends: mmdebstrap | debootstrap,
+ debian-archive-keyring,
+ grub-efi-amd64-bin,
+ shim-signed,
+ grub-efi-amd64-signed,
+ xserver-xephyr,
+ qemu-system-x86,
+ qemu-utils,
+ ovmf,
+ gpgv,
+ gpg,
+ debian-keyring,
+ xdg-utils,
+ qterminal | x-terminal-emulator
+Suggests: calamares-settings-debian
+Description: ISO builder and customizer for Edukasaun OS
+ Eduka-Customizer builds Edukasaun OS live images from Debian stable,
+ testing or sid. It extracts a Debian or Edukasaun OS live ISO (or
+ bootstraps a new Debian base, or snapshots the running system), lets you
+ install packages and Flatpak applications, choose the desktop
+ (Eduka-Desktop, LXQt, Xfce, KDE Plasma, GNOME, window managers), change
+ the Plymouth boot splash, login screen, wallpaper, APT sources and boot
+ menu, edit the system live in a nested window, and builds a hybrid
+ BIOS/UEFI ISO that can be tested in QEMU.
+ .
+ It also builds your own branding packages (replacing the identity of
+ base-files, lsb-release, distro-info-data, desktop-base, the Debian logos,
+ GRUB and the Calamares installer) and lets you edit any installed Debian
+ package directly in the Package Workshop.
+ .
+ Eduka-Customizer runs on Debian, Edukasaun OS, Ubuntu and Ubuntu-based
+ systems. The images it builds are always Debian stable, testing, sid or
+ Edukasaun OS; Ubuntu-based images are not supported as a source.

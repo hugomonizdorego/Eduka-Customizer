@@ -1,0 +1,5 @@
+#!/bin/sh
+# Eduka-Customizer launcher
+export EDUKA_CUSTOMIZER_DATA="${EDUKA_CUSTOMIZER_DATA:-@DATADIR@}"
+export PYTHONPATH="@LIBDIR@${PYTHONPATH:+:$PYTHONPATH}"
+exec /usr/bin/python3 -m eduka_customizer "$@"

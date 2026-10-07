@@ -1,0 +1,487 @@
+{
+ "desktops": [
+  {
+   "id": "eduka",
+   "name": "Eduka-Desktop",
+   "kind": "de",
+   "description": "Edukasaun OS desktop: Eduka-Panel and Eduka-Menu on top of LXQt. Light, accessible and made for schools.",
+   "packages": [
+    "lxqt-core",
+    "lxqt-session",
+    "openbox",
+    "pcmanfm-qt",
+    "qterminal",
+    "featherpad",
+    "lximage-qt",
+    "pavucontrol-qt",
+    "network-manager-gnome",
+    "papirus-icon-theme",
+    "xorg"
+   ],
+   "eduka_desktop": true,
+   "session": "edukasaun-desktop",
+   "dm": "lightdm",
+   "task": "",
+   "sessions": {
+    "x11": "edukasaun-desktop"
+   }
+  },
+  {
+   "id": "lxqt",
+   "name": "LXQt",
+   "kind": "de",
+   "description": "Lightweight Qt desktop (base of Eduka-Desktop).",
+   "packages": [
+    "task-lxqt-desktop"
+   ],
+   "session": "lxqt",
+   "dm": "sddm",
+   "task": "task-lxqt-desktop",
+   "sessions": {
+    "x11": "lxqt",
+    "wayland": "lxqt-wayland",
+    "wayland_packages": [
+     "lxqt-wayland-session",
+     "labwc"
+    ]
+   }
+  },
+  {
+   "id": "xfce",
+   "name": "Xfce",
+   "kind": "de",
+   "description": "Fast, traditional GTK desktop.",
+   "packages": [
+    "task-xfce-desktop"
+   ],
+   "session": "xfce",
+   "dm": "lightdm",
+   "task": "task-xfce-desktop",
+   "sessions": {
+    "x11": "xfce"
+   }
+  },
+  {
+   "id": "kde",
+   "name": "KDE Plasma",
+   "kind": "de",
+   "description": "Full-featured, modern Qt desktop.",
+   "packages": [
+    "task-kde-desktop"
+   ],
+   "session": "plasma",
+   "dm": "sddm",
+   "task": "task-kde-desktop",
+   "sessions": {
+    "x11": "plasmax11",
+    "wayland": "plasma",
+    "x11_packages": [
+     "plasma-session-x11"
+    ]
+   }
+  },
+  {
+   "id": "gnome",
+   "name": "GNOME",
+   "kind": "de",
+   "description": "Debian's default desktop. Needs more RAM.",
+   "packages": [
+    "task-gnome-desktop"
+   ],
+   "session": "gnome",
+   "dm": "gdm3",
+   "task": "task-gnome-desktop",
+   "sessions": {
+    "x11": "gnome-xorg",
+    "wayland": "gnome"
+   }
+  },
+  {
+   "id": "mate",
+   "name": "MATE",
+   "kind": "de",
+   "description": "Classic GNOME 2 style desktop.",
+   "packages": [
+    "task-mate-desktop"
+   ],
+   "session": "mate",
+   "dm": "lightdm",
+   "task": "task-mate-desktop",
+   "sessions": {
+    "x11": "mate"
+   }
+  },
+  {
+   "id": "cinnamon",
+   "name": "Cinnamon",
+   "kind": "de",
+   "description": "Familiar desktop from Linux Mint.",
+   "packages": [
+    "task-cinnamon-desktop"
+   ],
+   "session": "cinnamon",
+   "dm": "lightdm",
+   "task": "task-cinnamon-desktop",
+   "sessions": {
+    "x11": "cinnamon",
+    "wayland": "cinnamon-wayland"
+   }
+  },
+  {
+   "id": "lxde",
+   "name": "LXDE",
+   "kind": "de",
+   "description": "Very light GTK2 desktop for old computers.",
+   "packages": [
+    "task-lxde-desktop"
+   ],
+   "session": "LXDE",
+   "dm": "lightdm",
+   "task": "task-lxde-desktop",
+   "sessions": {
+    "x11": "LXDE"
+   }
+  },
+  {
+   "id": "budgie",
+   "name": "Budgie",
+   "kind": "de",
+   "description": "Simple and elegant desktop.",
+   "packages": [
+    "budgie-desktop",
+    "xorg"
+   ],
+   "session": "budgie-desktop",
+   "dm": "lightdm",
+   "task": "",
+   "sessions": {
+    "x11": "budgie-desktop"
+   }
+  },
+  {
+   "id": "openbox",
+   "name": "Openbox",
+   "kind": "wm",
+   "description": "Minimal stacking window manager.",
+   "packages": [
+    "openbox",
+    "obconf",
+    "tint2",
+    "xorg"
+   ],
+   "session": "openbox",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "openbox"
+   }
+  },
+  {
+   "id": "i3",
+   "name": "i3",
+   "kind": "wm",
+   "description": "Tiling window manager.",
+   "packages": [
+    "i3",
+    "i3status",
+    "dmenu",
+    "xorg"
+   ],
+   "session": "i3",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "i3"
+   }
+  },
+  {
+   "id": "fluxbox",
+   "name": "Fluxbox",
+   "kind": "wm",
+   "description": "Light stacking window manager.",
+   "packages": [
+    "fluxbox",
+    "xorg"
+   ],
+   "session": "fluxbox",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "fluxbox"
+   }
+  },
+  {
+   "id": "icewm",
+   "name": "IceWM",
+   "kind": "wm",
+   "description": "Windows-like window manager with taskbar.",
+   "packages": [
+    "icewm",
+    "xorg"
+   ],
+   "session": "icewm-session",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "icewm-session"
+   }
+  },
+  {
+   "id": "awesome",
+   "name": "awesome",
+   "kind": "wm",
+   "description": "Configurable tiling window manager.",
+   "packages": [
+    "awesome",
+    "xorg"
+   ],
+   "session": "awesome",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "awesome"
+   }
+  },
+  {
+   "id": "sway",
+   "name": "Sway (Wayland)",
+   "kind": "wm",
+   "description": "i3-compatible Wayland compositor.",
+   "packages": [
+    "sway",
+    "swaybg",
+    "swayidle",
+    "swaylock",
+    "foot"
+   ],
+   "session": "sway",
+   "dm": "lightdm",
+   "sessions": {
+    "wayland": "sway"
+   }
+  },
+  {
+   "id": "labwc",
+   "name": "labwc (Wayland)",
+   "kind": "wm",
+   "description": "Openbox-like Wayland compositor.",
+   "packages": [
+    "labwc",
+    "foot"
+   ],
+   "session": "labwc",
+   "dm": "lightdm",
+   "sessions": {
+    "wayland": "labwc"
+   }
+  }
+ ],
+ "display_managers": [
+  {
+   "id": "lightdm",
+   "name": "LightDM - GTK greeter",
+   "description": "Light and simple, themable with GTK themes. Good default.",
+   "packages": [
+    "lightdm",
+    "lightdm-gtk-greeter",
+    "lightdm-gtk-greeter-settings"
+   ],
+   "binary": "/usr/sbin/lightdm",
+   "service": "lightdm",
+   "greeter": "lightdm-gtk-greeter"
+  },
+  {
+   "id": "lightdm-slick",
+   "name": "LightDM - Slick greeter",
+   "description": "Modern full-screen greeter (Linux Mint style).",
+   "packages": [
+    "lightdm",
+    "slick-greeter",
+    "lightdm-settings"
+   ],
+   "binary": "/usr/sbin/lightdm",
+   "service": "lightdm",
+   "greeter": "slick-greeter"
+  },
+  {
+   "id": "lightdm-arctica",
+   "name": "LightDM - Arctica greeter",
+   "description": "Elegant greeter with large user list.",
+   "packages": [
+    "lightdm",
+    "arctica-greeter"
+   ],
+   "binary": "/usr/sbin/lightdm",
+   "service": "lightdm",
+   "greeter": "arctica-greeter"
+  },
+  {
+   "id": "lightdm-kde",
+   "name": "LightDM - KDE greeter",
+   "description": "Qt/KDE style greeter for LightDM.",
+   "packages": [
+    "lightdm",
+    "lightdm-kde-greeter"
+   ],
+   "binary": "/usr/sbin/lightdm",
+   "service": "lightdm",
+   "greeter": "lightdm-kde-greeter"
+  },
+  {
+   "id": "sddm",
+   "name": "SDDM",
+   "description": "Qt login manager (KDE, LXQt). Choose a theme below.",
+   "packages": [
+    "sddm"
+   ],
+   "binary": "/usr/bin/sddm",
+   "service": "sddm"
+  },
+  {
+   "id": "gdm3",
+   "name": "GDM",
+   "description": "GNOME's login manager, Wayland by default.",
+   "packages": [
+    "gdm3"
+   ],
+   "binary": "/usr/sbin/gdm3",
+   "service": "gdm3"
+  },
+  {
+   "id": "lxdm",
+   "name": "LXDM",
+   "description": "Very light login manager.",
+   "packages": [
+    "lxdm"
+   ],
+   "binary": "/usr/sbin/lxdm",
+   "service": "lxdm"
+  },
+  {
+   "id": "ly",
+   "name": "Ly (console)",
+   "description": "Text-mode login manager for minimal systems.",
+   "packages": [
+    "ly"
+   ],
+   "binary": "/usr/bin/ly",
+   "service": "ly"
+  },
+  {
+   "id": "greetd",
+   "name": "greetd + tuigreet",
+   "description": "Minimal greeter daemon, good for Wayland compositors.",
+   "packages": [
+    "greetd",
+    "tuigreet"
+   ],
+   "binary": "/usr/sbin/greetd",
+   "service": "greetd"
+  }
+ ],
+ "window_managers_for_lxqt": [
+  "openbox",
+  "xfwm4",
+  "kwin-x11",
+  "labwc"
+ ],
+ "sddm_themes": [
+  [
+   "debian-breeze",
+   "sddm-theme-debian-breeze"
+  ],
+  [
+   "breeze",
+   "sddm-theme-breeze"
+  ],
+  [
+   "maui",
+   "sddm-theme-maui"
+  ],
+  [
+   "elarun",
+   "sddm-theme-elarun"
+  ],
+  [
+   "maldives",
+   "sddm-theme-maldives"
+  ],
+  [
+   "debian-maui",
+   "sddm-theme-debian-maui"
+  ],
+  [
+   "debian-elarun",
+   "sddm-theme-debian-elarun"
+  ]
+ ],
+ "compositors": [
+  {
+   "id": "none",
+   "name": "No compositor",
+   "kind": "x11",
+   "description": "Fastest, no transparency or shadows."
+  },
+  {
+   "id": "picom",
+   "name": "picom",
+   "kind": "x11",
+   "packages": [
+    "picom"
+   ],
+   "description": "Shadows, fading, transparency and blur for any X11 desktop (needed by Eduka-Desktop Liquid Glass blur)."
+  },
+  {
+   "id": "xcompmgr",
+   "name": "xcompmgr",
+   "kind": "x11",
+   "packages": [
+    "xcompmgr"
+   ],
+   "description": "Very light compositor: simple transparency."
+  },
+  {
+   "id": "builtin",
+   "name": "Desktop built-in",
+   "kind": "x11",
+   "description": "Use the compositor of Xfce (xfwm4), KDE (KWin), GNOME (Mutter), MATE (Marco) or Cinnamon (Muffin)."
+  },
+  {
+   "id": "labwc",
+   "name": "labwc",
+   "kind": "wayland",
+   "packages": [
+    "labwc"
+   ],
+   "description": "Openbox-like Wayland compositor (LXQt Wayland default)."
+  },
+  {
+   "id": "kwin_wayland",
+   "name": "KWin",
+   "kind": "wayland",
+   "packages": [
+    "kwin-wayland"
+   ],
+   "description": "KDE's compositor, rich effects."
+  },
+  {
+   "id": "wayfire",
+   "name": "Wayfire",
+   "kind": "wayland",
+   "packages": [
+    "wayfire"
+   ],
+   "description": "3D effects Wayland compositor."
+  },
+  {
+   "id": "sway",
+   "name": "Sway",
+   "kind": "wayland",
+   "packages": [
+    "sway"
+   ],
+   "description": "Tiling Wayland compositor."
+  }
+ ],
+ "picom_presets": [
+  "light",
+  "shadows",
+  "glass",
+  "off"
+ ]
+}
