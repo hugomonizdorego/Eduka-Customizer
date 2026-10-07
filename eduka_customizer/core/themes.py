@@ -267,7 +267,7 @@ class Themes:
                 for m in tf.getmembers():
                     if m.name.startswith("/") or ".." in Path(m.name).parts or m.isdev() or m.islnk():
                         raise ValueError("Unsafe entry in archive: {}".format(m.name))
-                    if m.issym() and (m.linkname.startswith("/") or ".." in Path(m.linkname).parts):
+                    if m.issym() and not fsutil.link_stays_inside(m.name, m.linkname):
                         raise ValueError("Unsafe link in archive: {}".format(m.name))
                 try:
                     tf.extractall(tmp, filter="data")

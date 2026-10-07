@@ -19,10 +19,12 @@ QSS = """
 QWidget {{ color: {text}; font-size: 10pt; }}
 QMainWindow, QWidget#pageArea, QScrollArea, QScrollArea > QWidget > QWidget {{ background: {bg}; }}
 QFrame#sidebar {{ background: {side}; }}
+QFrame#dropZone {{ border: 2px dashed {accent}; border-radius: 12px; background: transparent; }}
+QFrame#dropZone[hover="true"] {{ background: rgba(0,168,121,0.12); }}
 QLabel#brand {{ color: white; font-size: 13.5pt; font-weight: 700; padding: 18px 12px 2px 18px; }}
 QLabel#brandSub {{ color: {side_text}; padding: 0 16px 14px 18px; font-size: 9pt; }}
 QListWidget#nav {{ background: transparent; border: none; outline: 0; padding: 4px 8px; }}
-QListWidget#nav::item {{ color: {side_text}; padding: 9px 10px; border-radius: 9px; margin: 1px 0; }}
+QListWidget#nav::item {{ color: {side_text}; padding: 5px 8px; border-radius: 9px; margin: 1px 0; }}
 QListWidget#nav::item:hover {{ background: rgba(255,255,255,0.08); }}
 QListWidget#nav::item:selected {{ background: {side_sel}; color: white; font-weight: 600; }}
 QListWidget#nav::item:disabled {{ color: rgba(215,239,231,0.35); }}

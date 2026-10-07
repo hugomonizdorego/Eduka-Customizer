@@ -13,7 +13,7 @@ from eduka_customizer.core import doctor
 from eduka_customizer.core import log as logmod
 from eduka_customizer import qt as qtmod
 from eduka_customizer.core.config import reload, settings
-from eduka_customizer.gui.pages.packages import fill, table
+from eduka_customizer.gui.widgets import fill, table
 from eduka_customizer.gui.widgets import Page, button, hbox, label
 
 FIELDS = [

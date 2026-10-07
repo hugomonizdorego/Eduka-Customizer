@@ -13,7 +13,7 @@ import re
 import shutil
 
 from eduka_customizer.core import debpkg, runner
-from eduka_customizer.core.apt import APT, Packages, parse_deb822
+from eduka_customizer.core.apt import APT, Packages, is_installed_status, parse_deb822
 from eduka_customizer.core.chroot import Chroot
 from eduka_customizer.core.log import log
 
@@ -49,7 +49,7 @@ class Workshop:
     def _stanza(self, package):
         status = self.project.rootfs / "var/lib/dpkg/status"
         for st in parse_deb822(status.read_text(errors="replace")):
-            if st.get("Package") == package and "install ok installed" in st.get("Status", ""):
+            if st.get("Package") == package and is_installed_status(st.get("Status", "")):
                 return st
         raise ValueError("{} is not installed in the image".format(package))
 

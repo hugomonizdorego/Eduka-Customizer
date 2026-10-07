@@ -12,7 +12,9 @@ from pathlib import Path
 from eduka_customizer.core.config import settings
 
 ALLOWED_IDS = ("debian", "edukasaun")
-UBUNTU_MARKERS = ("ubuntu", "linuxmint", "pop", "elementary", "zorin", "neon",
+# Ubuntu and systems built on it. Linux Mint is only refused when it is Ubuntu-based:
+# Linux Mint Debian Edition (LMDE, ID_LIKE=debian) is a Debian derivative and welcome.
+UBUNTU_MARKERS = ("ubuntu", "pop", "elementary", "zorin", "neon",
                   "kubuntu", "xubuntu", "lubuntu", "tuxedo")
 
 # Debian major version -> codename (used when /etc/debian_version is numeric).
@@ -231,10 +233,10 @@ def detect(rootfs):
 
 
 def validate(info, rootfs=None):
-    """Raise UnsupportedDistro unless this is Debian or Edukasaun OS."""
+    """Raise UnsupportedDistro unless this is Debian, Edukasaun OS or a Debian derivative."""
     ids = [info.id] + list(info.id_like)
     if any(m in ids for m in UBUNTU_MARKERS) or "ubuntu" in info.name.lower() \
-            or "ubuntu" in info.pretty_name.lower():
+            or "ubuntu" in info.pretty_name.lower() or (info.id == "linuxmint" and "debian" not in info.id_like):
         raise UnsupportedDistro(
             "Ubuntu and Ubuntu-based systems are not supported. Eduka-Customizer "
             "only builds Edukasaun OS from Debian stable, testing or sid.")
@@ -244,10 +246,10 @@ def validate(info, rootfs=None):
             raise UnsupportedDistro("This filesystem identifies itself as Ubuntu (/etc/lsb-release).")
     if not info.debian_version:
         raise UnsupportedDistro("/etc/debian_version is missing: this is not a Debian system.")
-    if info.id not in ALLOWED_IDS and not info.is_edukasaun:
+    if info.id not in ALLOWED_IDS and not info.is_edukasaun and "debian" not in info.id_like:
         raise UnsupportedDistro(
-            "'{}' is not supported. Only Debian and Edukasaun OS can be customized.".format(
-                info.pretty_name or info.id or "Unknown system"))
+            "'{}' is not supported. Debian, Edukasaun OS and Debian derivatives (such as LMDE) "
+            "can be customized.".format(info.pretty_name or info.id or "Unknown system"))
     if info.suite == "oldstable" and not settings().getbool("debian", "allow_oldstable"):
         raise UnsupportedDistro(
             "Debian oldstable ({}) is not supported. Upgrade the base to stable, testing or sid "

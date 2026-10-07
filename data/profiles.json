@@ -1,0 +1,164 @@
+{
+ "comment": "Purposes offered when a project gets its system; each one recommends a desktop, login screen, look, applications and more. Every recommendation can be unticked.",
+ "profiles": [
+  {
+   "id": "education",
+   "name": "Education",
+   "icon": "applications-education",
+   "description": "Schools and learning: light Eduka-Desktop, learning programs, accessibility, simple for children and teachers.",
+   "desktop": "eduka",
+   "dm": "lightdm",
+   "session_type": "x11",
+   "compositor": "auto",
+   "picom_preset": "light",
+   "icons": [
+    "papirus-icon-theme",
+    "Papirus"
+   ],
+   "gtk": [
+    "arc-theme",
+    "Arc"
+   ],
+   "dark": false,
+   "packages": [
+    "libreoffice",
+    "libreoffice-gtk3",
+    "firefox-esr",
+    "gcompris-qt",
+    "kgeography",
+    "kalzium",
+    "stellarium",
+    "tuxpaint",
+    "tuxmath",
+    "marble",
+    "kturtle",
+    "orca",
+    "onboard",
+    "vlc",
+    "evince",
+    "gnome-calculator",
+    "synaptic"
+   ],
+   "flatpaks": [
+    "org.geogebra.GeoGebra"
+   ],
+   "plymouth": "generate",
+   "firmware": true,
+   "calamares": true
+  },
+  {
+   "id": "server",
+   "name": "Server",
+   "icon": "network-server",
+   "description": "No desktop: remote administration over SSH, firewall, automatic security updates. Start from the Debian live standard ISO (no desktop).",
+   "desktop": null,
+   "packages": [
+    "openssh-server",
+    "ufw",
+    "fail2ban",
+    "unattended-upgrades",
+    "htop",
+    "curl",
+    "rsync",
+    "vim",
+    "tmux",
+    "needrestart",
+    "bash-completion"
+   ],
+   "flatpaks": [],
+   "plymouth": null,
+   "firmware": true,
+   "calamares": false
+  },
+  {
+   "id": "professional",
+   "name": "Professional",
+   "icon": "applications-office",
+   "description": "Office work and design: KDE Plasma, office, mail, graphics, remote desktop and password manager.",
+   "desktop": "kde",
+   "dm": "sddm",
+   "session_type": "wayland",
+   "compositor": "auto",
+   "icons": [
+    "breeze-icon-theme",
+    "breeze"
+   ],
+   "gtk": [
+    "breeze-gtk-theme",
+    "Breeze"
+   ],
+   "dark": false,
+   "packages": [
+    "libreoffice",
+    "libreoffice-qt6",
+    "thunderbird",
+    "firefox-esr",
+    "okular",
+    "gimp",
+    "inkscape",
+    "krita",
+    "vlc",
+    "remmina",
+    "keepassxc",
+    "git",
+    "flameshot",
+    "kcalc",
+    "ark"
+   ],
+   "flatpaks": [],
+   "plymouth": "generate",
+   "firmware": true,
+   "calamares": true
+  },
+  {
+   "id": "home",
+   "name": "Home",
+   "icon": "user-home",
+   "description": "Families: Cinnamon (familiar, like Linux Mint), internet, music, photos, video and games.",
+   "desktop": "cinnamon",
+   "dm": "lightdm-slick",
+   "session_type": "x11",
+   "compositor": "auto",
+   "icons": [
+    "papirus-icon-theme",
+    "Papirus"
+   ],
+   "gtk": [
+    "arc-theme",
+    "Arc"
+   ],
+   "dark": false,
+   "packages": [
+    "firefox-esr",
+    "thunderbird",
+    "libreoffice",
+    "vlc",
+    "rhythmbox",
+    "shotwell",
+    "transmission-gtk",
+    "gnome-mines",
+    "aisleriot",
+    "simple-scan",
+    "gnome-calculator",
+    "file-roller",
+    "synaptic"
+   ],
+   "flatpaks": [],
+   "plymouth": "generate",
+   "firmware": true,
+   "calamares": true
+  },
+  {
+   "id": "other",
+   "name": "Other / my own",
+   "icon": "applications-other",
+   "description": "No recommendations: build everything yourself, page by page.",
+   "desktop": null,
+   "packages": [],
+   "flatpaks": [],
+   "plymouth": null,
+   "firmware": false,
+   "calamares": false
+  }
+ ]
+}

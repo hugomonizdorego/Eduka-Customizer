@@ -22,14 +22,12 @@
       "volume_label": "EDUKASAUN_OS_1_0"
     },
     {
-      "action": "locale",
-      "default": "pt_PT.UTF-8",
-      "extra": [
-        "en_US.UTF-8",
-        "id_ID.UTF-8"
-      ],
-      "timezone": "Asia/Dili",
-      "keyboard": "pt"
+      "action": "users",
+      "live": {
+        "username": "live",
+        "fullname": "Live",
+        "password_mode": "none"
+      }
     },
     {
       "action": "desktop",
@@ -94,12 +92,73 @@
       "timeout": 10
     },
     {
+      "action": "language",
+      "default": "pt_PT.UTF-8",
+      "extra": [
+        "en_US.UTF-8",
+        "id_ID.UTF-8"
+      ],
+      "timezone": "Asia/Dili",
+      "keyboard": "pt",
+      "packs": true,
+      "boot_menu": [
+        "pt_PT.UTF-8",
+        "en_US.UTF-8",
+        "id_ID.UTF-8"
+      ]
+    },
+    {
       "action": "branding",
       "comment": "put logo.png and wallpaper.png next to this recipe",
       "logo": "logo.png",
       "wallpaper": "wallpaper.png",
       "grub_name": true,
       "keyring": false
+    },
+    {
+      "action": "calamares",
+      "install": true,
+      "users": {
+        "autologin": false,
+        "root_password": false,
+        "min_length": 6,
+        "weak": true
+      },
+      "partition": {
+        "fs": "ext4",
+        "filesystems": [
+          "ext4",
+          "btrfs"
+        ],
+        "swap": [
+          "none",
+          "file"
+        ],
+        "initial_swap": "file",
+        "efi_size": "512MiB"
+      },
+      "requirements": {
+        "storage": 15,
+        "ram": 2,
+        "internet": false,
+        "power": false
+      },
+      "remove_packages": [
+        "live-boot",
+        "live-config",
+        "live-config-systemd",
+        "live-tools",
+        "calamares",
+        "calamares-settings-debian"
+      ]
+    },
+    {
+      "action": "kernel",
+      "firmware": true,
+      "grub": {
+        "GRUB_TIMEOUT": "3",
+        "GRUB_CMDLINE_LINUX_DEFAULT": "quiet splash"
+      }
     },
     {
       "action": "build",

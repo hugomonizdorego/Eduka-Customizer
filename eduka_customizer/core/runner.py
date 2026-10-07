@@ -28,9 +28,12 @@ class CommandError(RuntimeError):
         super().__init__(msg)
 
 
-class Cancelled(RuntimeError):
+class Canceled(RuntimeError):
     def __init__(self):
-        super().__init__("Operation cancelled by user")
+        super().__init__("Operation canceled by user")
+
+
+Cancelled = Canceled  # old name, kept for scripts written for 0.12 and earlier
 
 
 def which(program):
@@ -47,7 +50,7 @@ def require(*programs):
 
 def check_cancel():
     if CANCEL.is_set():
-        raise Cancelled()
+        raise Canceled()
 
 
 def run(cmd, cwd=None, env=None, input=None, check=True, capture=False,
@@ -115,7 +118,7 @@ def run(cmd, cwd=None, env=None, input=None, check=True, capture=False,
     if capture:
         err_thread.join(1)
     if CANCEL.is_set():
-        raise Cancelled()
+        raise Canceled()
     out = b"".join(captured).decode("utf-8", "replace")
     if check and proc.returncode not in ok_codes:
         raise CommandError(cmd, proc.returncode, stderr_lines if capture else tail)

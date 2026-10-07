@@ -57,11 +57,25 @@ class BuildPage(Page):
             grid.addWidget(cb, i // 2, i % 2)
         c.add(grid)
 
+        c = self.card("Last changes before building",
+                      "Install more applications or change settings right before the build: everything "
+                      "done here goes into this ISO.")
+        self.apt_line = QLineEdit()
+        self.apt_line.setPlaceholderText("package names to install now, e.g. vlc gimp")
+        self.apt_line.returnPressed.connect(self.apt_install)
+        c.add(hbox(self.apt_line, button("Install", self.apt_install)))
+        c.add(hbox(button("Live desktop / Synaptic / terminal...", lambda: self.main.go("TerminalPage")),
+                   button("Kernel...", lambda: self.main.go("KernelPage")),
+                   button("Boot menu...", lambda: self.main.go("BootMenuPage")), None))
+
         c = self.card()
         self.build_btn = button("Build ISO image", self.start_build, "primary", ("media-optical-burn",))
         self.build_btn.setMinimumHeight(42)
+        self.quick_btn = button("Rebuild boot files only", self.quick_build,
+                                tooltip="Seconds instead of minutes: keeps the compressed system of the last "
+                                        "build and only renews the boot menu, kernel and initrd.")
         c.add(hbox(label("Building takes 10-40 minutes depending on size and compression.", "muted"),
-                   None, self.build_btn))
+                   None, self.quick_btn, self.build_btn))
 
         c = self.card("Result")
         self.result = label("No image built yet.")
@@ -164,6 +178,23 @@ class BuildPage(Page):
             self.refresh()
             QMessageBox.information(self, "ISO ready", "Your Edukasaun OS image is ready:\n{}".format(out))
         self.task("Build ISO", lambda t: build(proj, opts, t.set_progress, t.set_stage), done)
+
+    def apt_install(self):
+        names = self.apt_line.text().split()
+        if names:
+            from eduka_customizer.core.apt import Packages
+            proj = self.project
+            self.task("Install " + " ".join(names), lambda t: Packages(proj).install(names),
+                      lambda _r: self.apt_line.clear())
+
+    def quick_build(self):
+        from eduka_customizer.core.isobuild import quick_build
+        proj, opts = self.project, self.options()
+
+        def done(out):
+            self.result.setText("ISO image (boot files renewed): <b>{}</b>".format(out))
+            self.test_iso.setText(str(out))
+        self.task("Rebuild boot files", lambda t: quick_build(proj, opts, t.set_progress, t.set_stage), done)
 
     def open_output(self):
         opener = shutil.which("xdg-open")

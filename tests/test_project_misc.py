@@ -153,7 +153,7 @@ def test_identity_files(project, monkeypatch):
     osr = (project.rootfs / "etc/os-release").read_text()
     assert "ID=edukasaun" in osr and "ID_LIKE=debian" in osr and "VERSION_CODENAME=trixie" in osr
     assert (project.rootfs / "etc/hostname").read_text() == "edukasaun\n"
-    assert 'LIVE_USERNAME="eduka"' in (project.rootfs / "etc/live/config.conf.d/50-edukasaun.conf").read_text()
+    assert 'LIVE_USERNAME="live"' in (project.rootfs / "etc/live/config.conf.d/50-edukasaun.conf").read_text()
     with pytest.raises(ValueError):
         b.set_hostname("Bad_Host")
 

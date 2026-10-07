@@ -1,4 +1,4 @@
-.TH EDUKA-CUSTOMIZER 1 "October 2026" "Eduka-Customizer 0.11 Alpha" "Edukasaun OS"
+.TH EDUKA-CUSTOMIZER 1 "October 2026" "Eduka-Customizer 0.14 Alpha" "Edukasaun OS"
 .SH NAME
 eduka-customizer \- ISO builder and customizer for Edukasaun OS
 .SH SYNOPSIS
@@ -67,6 +67,43 @@ rebuild and install it (held by default), or restore Debian's version.
 .TP
 .B themes list|apply|packs|import [ITEMS...] [\-\-gtk T] [\-\-icons T] [\-\-cursor T] [\-\-font F] [\-\-dark]
 Default look for all desktops, theme packs and theme import.
+.TP
+.B language list|show|set [LOCALE] [\-\-extra L...] [\-\-timezone TZ] [\-\-keyboard K] [\-\-variant V] [\-\-no\-packs] [\-\-boot\-menu L...|all] [\-\-no\-calamares]
+Default language, keyboard, time zone, translations, the Language submenu of
+the ISO boot menu and the Calamares defaults.
+.TP
+.B purpose list|show ID|apply ID [\-\-only KEY,KEY]
+What the distribution is for (education, server, professional, home, other) and its
+recommendations (desktop, session, compositor, look, apps, flatpak, firmware, installer, plymouth).
+.TP
+.B assets FILES...
+Add themes, icon and cursor themes, fonts, wallpapers, Plymouth and SDDM themes
+from files, folders or archives; each is placed where it belongs.
+.TP
+.B wallpapers list|add FILES|default NAME|remove NAME
+The wallpaper gallery of the image and its default.
+.TP
+.B users show|live NAME|live\-remove|add NAME|passwd NAME|delete NAME [\-\-fullname F] [\-\-no\-password] [\-\-password\-stdin] [\-\-debian\-default] [\-\-no\-autologin] [\-\-groups G,G] [\-\-admin] [\-\-shell S] [\-\-keep\-home]
+The live user (with a password, without a password or Debian's default) and
+accounts in the image. Passwords are asked for, or read from standard input
+with \-\-password\-stdin; \-\-no\-password creates a user without a password.
+.TP
+.B calamares show|install|set MODULE KEY=VALUE...|branding|slides FILES|users|partition|live\-password [PASSWORD]
+Edit the Calamares installer. Values are YAML, e.g.
+.B calamares users min_length=8 autologin=false
+or
+.B calamares set welcome requirements="{requiredStorage: 15}".
+.TP
+.B plymouth list|install SOURCE...|apply NAME|remove NAME|packages [PKG...]|preview NAME [\-\-apply] [\-\-seconds N]
+Plymouth themes from .deb, .zip, .tar.*, folders or Debian packages.
+.TP
+.B kernel list|available|install PKG...|third\-party backports|liquorix|xanmod|xanmod\-lts|deb FILES|remove VERSION|iso VERSION|initramfs|firmware|grub KEY=VALUE... [\-\-headers]
+Kernels of the image and the GRUB defaults of the installed system.
+.TP
+.B bootmenu list|show FILE|edit FILE [\-\-from F] [\-\-once]|revert FILE|apply
+Edit GRUB, ISOLINUX and EFI image boot files (e.g. efi.img:EFI/boot/grub.cfg);
+.B apply
+rebuilds the ISO in seconds without recompressing the system.
 .TP
 .B live [\-\-session S] [\-\-resolution WxH] [\-\-mode skel|root|sandbox]
 Run the image's desktop in a nested Xephyr window; changes are saved into the image.

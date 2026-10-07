@@ -272,9 +272,12 @@ class DesktopPage(Page):
     def _compositors(self):
         kind = self.st_type.currentData() or "x11"
         self.comp.clear()
-        for c in dsk.catalog()["compositors"]:
-            if c["kind"] == kind:
-                self.comp.addItem(c["name"], c["id"])
+        de = self.st_desktop.currentData()
+        choices, best = dsk.compositors_for(de, kind)
+        for c in choices:
+            self.comp.addItem(c["name"] + ("  (recommended)" if c["id"] == best else ""), c["id"])
+        if self.comp.findData(best) >= 0:
+            self.comp.setCurrentIndex(self.comp.findData(best))
         self._comp_desc()
 
     def _comp_desc(self):

@@ -40,7 +40,7 @@ class Task(QThread):
         runner.CANCEL.clear()
         try:
             result = self.func(self)
-        except runner.Cancelled as e:
+        except runner.Canceled as e:
             self.done.emit(False, None, str(e))
             return
         except Exception as e:  # report everything to the user

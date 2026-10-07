@@ -23,6 +23,7 @@ from eduka_customizer.core.branding import Branding
 from eduka_customizer.core.desktop import DesktopManager
 from eduka_customizer.core.eduka_desktop import EdukaDesktop
 from eduka_customizer.core.flatpak import Flatpak
+from eduka_customizer.core.config import DEFAULT_TIMEZONE
 from eduka_customizer.core.log import log
 
 
@@ -84,6 +85,9 @@ def run_step(project, step, base, build=True):
                 setattr(spec, k, v)
         DistroBranding(project).apply(spec, with_keyring=step.get("keyring", False),
                                       email=step.get("email", ""))
+    elif action == "assets":
+        from eduka_customizer.core.assets import Assets
+        Assets(project).add([_path(base, f) for f in step.get("files", [])])
     elif action == "themes":
         from eduka_customizer.core.themes import Themes
         th = Themes(project)
@@ -117,19 +121,97 @@ def run_step(project, step, base, build=True):
         Branding(project).apply_identity(ident)
     elif action == "locale":
         Branding(project).apply_locale(step.get("default", "en_US.UTF-8"), step.get("extra", []),
-                                       step.get("timezone", "UTC"), step.get("keyboard", "us"))
+                                       step.get("timezone", DEFAULT_TIMEZONE), step.get("keyboard", "us"))
+    elif action == "language":
+        from eduka_customizer.core.language import Language
+        Language(project).apply(step.get("default", "en_US.UTF-8"), step.get("extra", []), step.get("timezone"),
+                                step.get("keyboard"), step.get("variant", ""), step.get("packs", True),
+                                step.get("boot_menu", []), step.get("calamares", True))
+    elif action == "calamares":
+        from eduka_customizer.core.calamares import Calamares
+        cal = Calamares(project)
+        if step.get("install") and not cal.installed():
+            cal.install()
+        if "branding" in step:
+            b = dict(step["branding"])
+            images = {k: str(_path(base, v)) for k, v in (b.get("images") or {}).items() if v}
+            slides = [str(_path(base, f)) for f in b["slides"]] if "slides" in b else None
+            cal.set_branding(strings=b.get("strings"), colors=b.get("colors"), images=images or None,
+                             slides=slides, slide_seconds=b.get("slide_seconds", 8))
+            if b.get("launcher"):
+                cal.set_launcher_name(b["launcher"])
+        if "users" in step:
+            cal.set_users(**step["users"])
+        if "partition" in step:
+            cal.set_partition(**step["partition"])
+        if "requirements" in step:
+            cal.set_requirements(**step["requirements"])
+        if "finished" in step:
+            cal.set_finished(step["finished"])
+        if "remove_packages" in step:
+            cal.set_removed_packages(step["remove_packages"])
+        if "live_password" in step:
+            cal.set_live_password(step["live_password"])
+    elif action == "users":
+        from eduka_customizer.core.users import Users
+        u = Users(project)
+        if step.get("live") == "remove":
+            u.remove_live()
+        elif step.get("live"):
+            u.set_live(**_args(step["live"]))
+        for name in step.get("delete", []):
+            u.delete_account(name)
+        for acc in step.get("accounts", []):
+            u.add_account(**_args(acc))
+        for name, pw in (step.get("passwords") or {}).items():
+            u.set_password(name, pw or None)
+    elif action == "kernel":
+        from eduka_customizer.core.kernel import Kernels
+        k = Kernels(project)
+        if step.get("third_party"):
+            k.install_third_party(step["third_party"], step.get("headers", True))
+        if step.get("install"):
+            k.install(step["install"], headers=step.get("headers", False),
+                      target_release=step.get("target_release"))
+        if step.get("debs"):
+            k.install_debs([_path(base, f) for f in step["debs"]])
+        for v in step.get("remove", []):
+            k.remove(v)
+        if step.get("iso"):
+            k.use_for_iso(step["iso"])
+        if step.get("grub"):
+            k.set_grub_defaults(step["grub"])
+        if step.get("firmware"):
+            k.install_firmware()
+    elif action == "boot-file":
+        from eduka_customizer.core import bootedit
+        text = _path(base, step["from"]).read_text() if step.get("from") else step["text"]
+        bootedit.save(project, step["file"], text, keep=step.get("keep", True))
     elif action == "plymouth":
         b = Branding(project)
         theme = step.get("theme")
+        if step.get("packages"):
+            from eduka_customizer.core.plymouth import Plymouth
+            Plymouth(project).install_packages(step["packages"])
         if step.get("import"):
-            theme = b.import_plymouth(_path(base, step["import"]))
+            from eduka_customizer.core.plymouth import Plymouth
+            with b.chroot:
+                b.ensure_plymouth()
+            theme = Plymouth(project).install(_path(base, step["import"]))
         elif step.get("logo"):
             theme = b.generate_plymouth(step.get("name", "edukasaun"), _path(base, step["logo"]),
                                         step.get("background", "#0b3d2e"), step.get("color", "#00a879"))
         if theme:
             b.set_plymouth(theme)
     elif action == "wallpaper":
-        Branding(project).set_wallpaper(_path(base, step["image"]))
+        # Every picture goes to the gallery; "image" (or the first one) becomes the default.
+        from eduka_customizer.core.assets import Wallpapers
+        w = Wallpapers(project)
+        names = [w.add_file(_path(base, f)) for f in step.get("images", [])]
+        if step.get("image"):
+            names.insert(0, w.add_file(_path(base, step["image"])))
+        if names:
+            w.set_default(names[0])
     elif action == "login":
         Branding(project).set_login_screen(
             background=_path(base, step["background"]) if step.get("background") else None,
@@ -167,7 +249,8 @@ def export(project):
     """Create a recipe from the current project settings and history."""
     st = project.state
     steps = [{"action": "identity", **{k: v for k, v in st["identity"].items()}},
-             {"action": "locale", **st["locale"]}]
+             {"action": "users", "live": _live_step(project)},
+             {"action": "language", **_language_step(st)}]
     installs, removes = [], []
     for h in st.get("history", []):
         if h["action"] == "apt-install":
@@ -187,3 +270,24 @@ def export(project):
     steps.append({"action": "build", "options": st.get("build", {})})
     return {"name": st.get("name", "Edukasaun OS"), "base": st.get("source", {}).get("label", ""),
             "steps": steps}
+
+
+def _language_step(st):
+    lang = dict(st.get("locale", {}))
+    for k, v in st.get("language", {}).items():
+        if k != "installed_packs":
+            lang[k] = v
+    return lang
+
+
+def _live_step(project):
+    """The live user without its password (a recipe should not carry secrets)."""
+    from eduka_customizer.core.users import Users
+    live = Users(project).live()
+    return {"username": live["username"], "fullname": live["fullname"], "autologin": live["autologin"],
+            "groups": live["groups"], "keep_password": True}
+
+
+def _args(values):
+    """Keyword arguments from a recipe object; "comment" keys are notes for people."""
+    return {k: v for k, v in values.items() if k != "comment"}

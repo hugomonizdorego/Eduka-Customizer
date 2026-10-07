@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from eduka_customizer import VERSION
+from eduka_customizer.core.config import DEFAULT_TIMEZONE
 from eduka_customizer.core.distro import DistroInfo
 
 STATE_FILE = "project.json"
@@ -27,12 +28,12 @@ DEFAULT_STATE = {
         "support_url": "",
         "bug_url": "",
         "hostname": "edukasaun",
-        "live_user": "eduka",
-        "live_fullname": "Edukasaun Live User",
+        "live_user": "live",
+        "live_fullname": "Live",
         "volume_label": "EDUKASAUN_OS",
     },
     "locale": {"default": "en_US.UTF-8", "extra": ["pt_PT.UTF-8", "id_ID.UTF-8"],
-               "timezone": "Asia/Dili", "keyboard": "us"},
+               "timezone": DEFAULT_TIMEZONE, "keyboard": "us"},
     "build": {},
     "boot": {"extra_params": "quiet splash", "timeout": 10, "title": ""},
     "flatpak": {"firstboot": []},

@@ -3,7 +3,7 @@
 import logging
 import time
 
-from eduka_customizer.qt.core import Qt, QTimer
+from eduka_customizer.qt.core import QSize, Qt, QTimer
 from eduka_customizer.qt.gui import QAction, QFont, QKeySequence, QTextCharFormat, QColor
 from eduka_customizer.qt.widgets import (QFrame, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
                              QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
@@ -19,6 +19,39 @@ from eduka_customizer.gui.widgets import icon
 from eduka_customizer.gui.worker import LogBridge, QtLogHandler, Task
 
 
+# Bundled Papirus icons (GPL-3.0), see data/icons/menu/README.md.
+MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "sources",
+              "IdentityPage": "identity", "UsersPage": "users", "LanguagePage": "language",
+              "PackagesPage": "packages", "FlatpakPage": "flatpak", "KernelPage": "kernel",
+              "DesktopPage": "desktop", "ThemesPage": "themes", "AppearancePage": "wallpaper",
+              "PlymouthPage": "plymouth", "BrandingPage": "branding", "CalamaresPage": "calamares",
+              "BootMenuPage": "bootmenu", "WorkshopPage": "workshop", "TerminalPage": "terminal",
+              "BuildPage": "build", "SettingsPage": "settings"}
+
+
+def menu_icon(key, *fallback):
+    """The bundled menu icon, or the icon theme's when it is missing."""
+    from eduka_customizer.qt.gui import QIcon
+    from eduka_customizer.core.config import data_file
+    if key:
+        path = data_file("icons", "menu", key + ".svg")
+        if path.exists():
+            return QIcon(str(path))
+    return icon(*fallback)
+
+
+def app_icon():
+    from eduka_customizer.qt.gui import QIcon
+    from eduka_customizer.core.config import data_file
+    ic = icon("eduka-customizer")
+    if ic.isNull():
+        for path in (data_file("icons", "eduka-customizer.svg"),
+                     data_file("..", "icons", "eduka-customizer.svg")):
+            if path.exists():
+                return QIcon(str(path))
+    return ic
+
+
 class MainWindow(QMainWindow):
     def __init__(self, dark=False):
         super().__init__()
@@ -29,7 +62,7 @@ class MainWindow(QMainWindow):
         self._file_handler = None
         self._task_started = 0
         self.setWindowTitle("{} {}".format(APP_NAME, VERSION_LABEL))
-        self.setWindowIcon(icon("eduka-customizer", "media-optical", "drive-optical"))
+        self.setWindowIcon(app_icon())
         self.resize(1280, 860)
 
         self.bridge = LogBridge()
@@ -94,7 +127,7 @@ class MainWindow(QMainWindow):
         v.addWidget(sub)
         self.nav = QListWidget()
         self.nav.setObjectName("nav")
-        self.nav.setIconSize(self.nav.iconSize() * 1.2)
+        self.nav.setIconSize(QSize(22, 22))
         self.nav.currentRowChanged.connect(self._show_page)
         v.addWidget(self.nav, 1)
         self.theme_btn = QPushButton("Dark mode")
@@ -150,21 +183,49 @@ class MainWindow(QMainWindow):
         return s
 
     def _build_pages(self):
-        from eduka_customizer.gui.pages import (appearance, branding, build, desktop, flatpak,
-                                                identity, packages, project, settings_page, sources,
-                                                terminal, themes, wizard, workshop)
+        from eduka_customizer.gui.pages import (appearance, bootmenu, branding, build, calamares, desktop,
+                                                flatpak, identity, kernel, language, packages, plymouth,
+                                                project, settings_page, sources, terminal, themes, users,
+                                                wizard, workshop)
+        # The order of the work, from the source to the ISO. Pages marked False are
+        # not steps (the wizard does everything at once; settings are global).
+        order = [(project.ProjectPage, True), (wizard.WizardPage, False),
+                 (sources.SourcesPage, True), (identity.IdentityPage, True), (users.UsersPage, True),
+                 (language.LanguagePage, True), (packages.PackagesPage, True), (flatpak.FlatpakPage, True),
+                 (kernel.KernelPage, True), (desktop.DesktopPage, True), (themes.ThemesPage, True),
+                 (appearance.AppearancePage, True), (plymouth.PlymouthPage, True),
+                 (branding.BrandingPage, True), (calamares.CalamaresPage, True),
+                 (bootmenu.BootMenuPage, True), (workshop.WorkshopPage, True), (terminal.TerminalPage, True),
+                 (build.BuildPage, True), (settings_page.SettingsPage, False)]
         self.pages = []
-        for cls in (project.ProjectPage, wizard.WizardPage, identity.IdentityPage,
-                    branding.BrandingPage, sources.SourcesPage, packages.PackagesPage,
-                    flatpak.FlatpakPage, desktop.DesktopPage, themes.ThemesPage,
-                    appearance.AppearancePage, workshop.WorkshopPage, terminal.TerminalPage,
-                    build.BuildPage, settings_page.SettingsPage):
+        steps = []
+        for cls, is_step in order:
             page = cls(self)
             self.pages.append(page)
             self.stack.addWidget(page)
-            item = QListWidgetItem(icon(*page.icon_names), page.nav_title if hasattr(page, "nav_title") else page.title)
+            name = page.nav_title if hasattr(page, "nav_title") else page.title
+            if is_step:
+                steps.append(page)
+                name = "{}. {}".format(len(steps), name)
+            page.step = len(steps) if is_step else 0
+            item = QListWidgetItem(menu_icon(MENU_ICONS.get(cls.__name__), *page.icon_names), name)
             self.nav.addItem(item)
+        # "Next step" at the bottom of every step leads on to Build & Test.
+        for here, nxt in zip(steps, steps[1:]):
+            label_ = nxt.nav_title if hasattr(nxt, "nav_title") else nxt.title
+            here.layout_.addWidget(self._next_button(here, nxt, label_))
         self.nav.setCurrentRow(0)
+
+    def _next_button(self, here, nxt, text):
+        from eduka_customizer.gui.widgets import button, hbox
+        prev_steps = [p for p in self.pages if getattr(p, "step", 0) == here.step - 1 and here.step > 1]
+        widgets = []
+        if prev_steps:
+            prev = prev_steps[0]
+            widgets.append(button("◀  Back", lambda: self.go(prev.__class__.__name__)))
+        widgets += [None, button("Next step: {}. {}  ▶".format(nxt.step, text),
+                                 lambda: self.go(nxt.__class__.__name__), "primary")]
+        return hbox(*widgets)
 
     def _actions(self):
         quit_ = QAction("Quit", self)
@@ -350,7 +411,7 @@ class MainWindow(QMainWindow):
         if self.task:
             runner.CANCEL.set()
             self.cancel_btn.setEnabled(False)
-            self.stage_label.setText("Cancelling...")
+            self.stage_label.setText("Canceling...")
 
     # Log ------------------------------------------------------------------------
     def _append_log(self, level, text):

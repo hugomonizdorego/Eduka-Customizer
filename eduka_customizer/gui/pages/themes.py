@@ -1,11 +1,11 @@
 """Themes & Icons page: system-wide look for every new user."""
 
 from eduka_customizer.qt.core import Qt
-from eduka_customizer.qt.widgets import (QCheckBox, QFileDialog, QGridLayout, QLineEdit, QListWidgetItem,
+from eduka_customizer.qt.widgets import (QCheckBox, QGridLayout, QLineEdit, QListWidgetItem,
                                           QListWidget)
 
 from eduka_customizer.core.themes import THEME_PACKS, Themes
-from eduka_customizer.gui.widgets import Page, button, combo, hbox
+from eduka_customizer.gui.widgets import DropZone, Page, button, combo, hbox, label
 
 KINDS = {"icons": "Icons", "gtk": "GTK theme", "cursor": "Cursor", "font": "Font", "qt": "Qt",
          "compositor": "Effects"}
@@ -14,11 +14,24 @@ KINDS = {"icons": "Icons", "gtk": "GTK theme", "cursor": "Cursor", "font": "Font
 class ThemesPage(Page):
     title = "Themes & Icons"
     subtitle = ("Choose the default GTK theme, icons, mouse cursor and font for Eduka-Desktop/LXQt, "
-                "Xfce, KDE, GNOME, Cinnamon and MATE. Install theme packs with one click or import "
-                "themes downloaded from the internet.")
+                "Xfce, KDE, GNOME, Cinnamon and MATE. Add your own themes by drag and drop, or install "
+                "theme packs with one click.")
     icon_names = ("preferences-desktop-icons", "preferences-desktop-theme")
 
     def build(self):
+        c = self.card("Add your own themes, icons, cursors and fonts",
+                      "Drop them here: folders, archives (.zip, .tar.gz, .tar.xz) or files (.ttf, .otf, "
+                      ".deb). Eduka-Customizer recognizes each one and puts it where it belongs: themes in "
+                      "/usr/share/themes, icons and cursors in /usr/share/icons, fonts in /usr/share/fonts, "
+                      "wallpapers in the wallpaper gallery, Plymouth and SDDM themes in theirs.")
+        self.drop = DropZone("Drop themes, icon or cursor themes, fonts, wallpapers or their archives here",
+                             "Themes and fonts (*.zip *.tar *.tar.gz *.tgz *.tar.xz *.txz *.tar.bz2 *.ttf *.otf "
+                             "*.ttc *.deb *.png *.jpg *.jpeg *.svg *.webp *.plymouth);;All files (*)")
+        self.drop.dropped.connect(self.add_assets)
+        c.add(self.drop)
+        self.added = label("", "muted")
+        c.add(self.added)
+
         c = self.card("Install theme packs", "Availability is checked for the Debian suite of the image.")
         self.packs = QListWidget()
         self.packs.setMinimumHeight(220)
@@ -29,8 +42,7 @@ class ThemesPage(Page):
             it.setCheckState(Qt.CheckState.Unchecked)
             self.packs.addItem(it)
         c.add(self.packs)
-        c.add(hbox(button("Import theme file or folder...", self.import_theme), None,
-                   button("Install ticked packs", self.install_packs, "primary")))
+        c.add(hbox(None, button("Install ticked packs", self.install_packs, "primary")))
 
         c = self.card("Default look")
         f = c.form()
@@ -91,14 +103,14 @@ class ThemesPage(Page):
             self.main.stage_label.setText(msg.replace("\n", " · "))
         self.task("Install theme packs", lambda t: Themes(proj).install_packs(pkgs), done)
 
-    def import_theme(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Theme archive", "",
-                                              "Theme archives (*.tar *.tar.gz *.tgz *.tar.xz *.zip);;All (*)")
-        if not path:
-            path = QFileDialog.getExistingDirectory(self, "Or choose a theme folder")
-        if path:
-            proj = self.project
-            self.task("Import theme", lambda t: Themes(proj).import_theme(path))
+    def add_assets(self, paths):
+        from eduka_customizer.core.assets import KIND_LABEL, Assets
+        proj = self.project
+
+        def done(added):
+            self.added.setText("Added: " + ", ".join("{} ({})".format(n, KIND_LABEL.get(k, k)) for k, n in added))
+            self.refresh()
+        self.task("Add themes and fonts", lambda t: Assets(proj).add(paths), done)
 
     def apply(self):
         proj = self.project

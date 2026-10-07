@@ -28,6 +28,11 @@ KERNEL_PACKAGE = {"amd64": "linux-image-amd64", "i386": "linux-image-686-pae",
 LIVE_PACKAGES = ["live-boot", "live-config", "live-config-systemd"]
 
 
+IDENTITY_KEYS = ("title", "volume_label", "boot_params", "timeout")
+# Options that apply to one build only and are never remembered.
+ONE_TIME_KEYS = ("reuse_squashfs",)
+
+
 @dataclass
 class BuildOptions:
     compression: str = "zstd"
@@ -55,15 +60,17 @@ class BuildOptions:
                 block_size=cfg.get("build", "block_size"),
                 iso_name=cfg.get("build", "iso_name"),
                 checksums=cfg.get("build", "checksums").split())
+        for k, v in project.state.get("build", {}).items():
+            if hasattr(o, k) and k not in IDENTITY_KEYS + ONE_TIME_KEYS:
+                setattr(o, k, v)
+        # The Identity and Boot Menu pages own these: a value saved by an
+        # earlier build must not hide a later rename.
         ident = project.state.get("identity", {})
-        o.volume_label = ident.get("volume_label") or o.volume_label
-        o.title = ident.get("name") or o.title
         boot = project.state.get("boot", {})
+        o.volume_label = ident.get("volume_label") or o.volume_label
+        o.title = boot.get("title") or ident.get("name") or o.title
         o.boot_params = boot.get("extra_params", o.boot_params)
         o.timeout = int(boot.get("timeout", o.timeout))
-        for k, v in project.state.get("build", {}).items():
-            if hasattr(o, k):
-                setattr(o, k, v)
         return o
 
     def to_dict(self):
@@ -154,7 +161,7 @@ def label_dependencies(project):
         listing = runner.output(["mdir", "-/", "-b", "-i", img, "::/"], check=False)
         for path in listing.split():
             if path.lower().endswith(".cfg"):
-                rel = path.split(":", 1)[-1]
+                rel = path.split("::", 1)[-1]
                 text = runner.output(["mtype", "-i", img, "::" + rel], check=False)
                 if pattern.search(text):
                     return True
@@ -230,6 +237,7 @@ class Builder:
             old.unlink()
         shutil.copy2(vmlinuz, live / "vmlinuz")
         shutil.copy2(initrd, live / "initrd.img")
+        self.kernel_version = version
         log.info("Kernel %s", version)
 
         mode = self.boot_mode()
@@ -247,12 +255,16 @@ class Builder:
                 for d in ("install", "install.amd", "d-i"):
                     if (p.isodir / d).is_dir():
                         shutil.rmtree(p.isodir / d)
-            bootloader.append_params(p.isodir, params)
+            bootloader.update_params(p, params)
             bootloader.set_titles(p.isodir, self.opts.title)
             bootloader.set_timeout(p.isodir, self.opts.timeout)
             splash = p.state.get("boot", {}).get("splash")
             if splash and Path(splash).exists():
                 bootloader.set_splash(p.isodir, splash)
+        from eduka_customizer.core import bootedit
+        from eduka_customizer.core.language import Language
+        Language(p).apply_boot_menu(self.opts.title)
+        bootedit.apply_overrides(p)
         info = p.distro
         disk_info = p.isodir / ".disk/info"
         disk_info.parent.mkdir(parents=True, exist_ok=True)
@@ -379,12 +391,45 @@ class Builder:
         out = self.xorriso()
         self.iso_checksums(out)
         p.state["last_iso"] = str(out)
-        p.state["build"] = self.opts.to_dict()
+        p.state["built_kernel"] = getattr(self, "kernel_version", None)
+        p.state["build"] = {k: v for k, v in self.opts.to_dict().items() if k not in ONE_TIME_KEYS}
         p.record("build", out.name)
         minutes = (time.time() - self.started) / 60
         log.info("Done: %s (%.2f GiB, %.1f min)", out, out.stat().st_size / 1024 ** 3, minutes)
         return out
 
 
+    def quick(self):
+        """Rebuild the ISO with the existing filesystem.squashfs: boot menu and kernel only."""
+        p = self.project
+        if not (p.isodir / "live/filesystem.squashfs").exists():
+            raise RuntimeError("There is no compressed system yet: build the ISO once first.")
+        built = p.state.get("built_kernel")
+        kernels = cleanup.kernels(p.rootfs)
+        wanted = p.state.get("boot", {}).get("kernel")
+        now = wanted if wanted in kernels else (kernels[-1] if kernels else None)
+        if built and now != built:
+            raise RuntimeError("The ISO kernel changed ({} -> {}): its modules are not in the compressed "
+                               "system yet. Build the ISO fully.".format(built, now))
+        if p.state.get("initramfs_dirty"):
+            raise RuntimeError("A change waits for the initramfs to be rebuilt (Plymouth, kernel, drivers). "
+                               "Build the ISO fully.")
+        self.stage("Rebuilding the ISO (boot files only, the system is not recompressed)")
+        self.opts.reuse_squashfs = True
+        runner.require("xorriso")
+        self.boot_files()
+        self.tree_checksums()
+        out = self.xorriso()
+        self.iso_checksums(out)
+        p.state["last_iso"] = str(out)
+        p.record("quick-build", out.name)
+        log.info("Done: %s (%.1f s)", out, time.time() - self.started)
+        return out
+
+
 def build(project, opts=None, progress=None, stage=None):
     return Builder(project, opts, progress, stage).run()
+
+
+def quick_build(project, opts=None, progress=None, stage=None):
+    return Builder(project, opts, progress, stage).quick()

@@ -1,145 +1,80 @@
-"""Packages page: search, install and remove Debian packages."""
+"""Packages page: every Debian package of the image's sources with tick boxes and a
+fast search, removal of default applications, and the other ways to install."""
 
-from eduka_customizer.qt.widgets import (QAbstractItemView, QCheckBox, QFileDialog, QHeaderView, QLineEdit,
-                             QListWidget, QMessageBox, QTableWidget, QTableWidgetItem)
+from eduka_customizer.qt.widgets import QCheckBox, QFileDialog, QLineEdit, QMessageBox
 
 from eduka_customizer.core.apt import Packages, read_package_list
-from eduka_customizer.gui.widgets import Page, button, hbox, label
-
-
-def table(headers):
-    t = QTableWidget(0, len(headers))
-    t.setHorizontalHeaderLabels(headers)
-    t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-    t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-    t.verticalHeader().setVisible(False)
-    t.horizontalHeader().setSectionResizeMode(len(headers) - 1, QHeaderView.ResizeMode.Stretch)
-    t.setMinimumHeight(220)
-    return t
-
-
-def fill(t, rows):
-    t.setRowCount(0)
-    t.setSortingEnabled(False)
-    for r, row in enumerate(rows):
-        t.insertRow(r)
-        for c, value in enumerate(row):
-            t.setItem(r, c, QTableWidgetItem(str(value)))
-    t.setSortingEnabled(True)
-    t.resizeColumnToContents(0)
+from eduka_customizer.gui.package_browser import AppRemover, PackageBrowser
+from eduka_customizer.gui.widgets import Page, button, hbox
 
 
 class PackagesPage(Page):
-    title = "Packages"
-    subtitle = "Install and remove Debian packages inside the image, or upgrade the whole system."
+    title = "Packages and Applications"
+    nav_title = "Packages"
+    subtitle = ("Every package of the Debian sources of the image: search, tick to install, untick to "
+                "remove. Or remove the applications that came with the ISO. Changes go straight into "
+                "the image.")
     icon_names = ("system-software-install", "package-x-generic")
 
     def build(self):
         c = self.card("Maintenance")
-        c.add(hbox(button("Update lists", self.update_lists), button("Upgrade all", self.upgrade, "primary"),
-                   button("Autoremove", self.autoremove), button("Install .deb files...", self.install_debs),
-                   None))
+        c.add(hbox(button("Refresh package lists", self.update_lists, "primary",
+                          tooltip="apt update inside the image (needs internet)"),
+                   button("Upgrade all", self.upgrade), button("Autoremove", self.autoremove),
+                   button("Install .deb files...", self.install_debs), None,
+                   button("Synaptic / terminal / live desktop...", lambda: self.main.go("TerminalPage"))))
 
-        c = self.card("Find packages", "Searches the package lists of the image (apt-cache search).")
-        self.query = QLineEdit()
-        self.query.setPlaceholderText("e.g. gcompris, libreoffice, scratch, firmware ...")
-        self.query.returnPressed.connect(self.search)
-        c.add(hbox(self.query, button("Search", self.search, "primary")))
-        self.results = table(["Package", "Description"])
-        self.results.doubleClicked.connect(lambda _i: self.queue_install())
-        c.add(self.results)
-        c.add(hbox(None, button("Add to install list", self.queue_install)))
-
-        a, b = self.row(self.card("To install"), self.card("To remove"))
-        self.to_install = QListWidget()
-        self.to_remove = QListWidget()
-        for card, lst in ((a, self.to_install), (b, self.to_remove)):
-            lst.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-            lst.setMinimumHeight(120)
-            card.add(lst)
-            card.add(hbox(None, button("Remove from list", lambda l=lst: self._drop(l))))
-        self.add_name = QLineEdit()
-        self.add_name.setPlaceholderText("package names, separated by spaces")
-        self.add_name.returnPressed.connect(self.add_names)
-        a.add(hbox(self.add_name, button("Add", self.add_names)))
-        c = self.card()
+        c = self.card("All Debian packages",
+                      "Ticked = installed in the ISO. Green: installed or to be installed; red: to be removed. "
+                      "'Applications' hides libraries and other parts nobody starts from the menu.")
+        self.browser = PackageBrowser()
+        c.add(self.browser)
         self.no_rec = QCheckBox("Do not install recommended packages (smaller image)")
+        self.names = QLineEdit()
+        self.names.setPlaceholderText("or type package names: vlc gimp ...")
+        self.names.returnPressed.connect(self.tick_names)
+        c.add(hbox(self.names, button("Tick", self.tick_names)))
         c.add(hbox(self.no_rec, None, button("Import list...", self.import_list),
-                   button("Export list...", self.export_list),
+                   button("Export list...", self.export_list), button("Reset", self.browser.reset),
                    button("Apply changes", self.apply, "primary")))
 
-        c = self.card("Installed packages")
-        self.filter = QLineEdit()
-        self.filter.setPlaceholderText("Filter installed packages")
-        self.filter.textChanged.connect(self.apply_filter)
-        self.count = label("", "muted")
-        c.add(hbox(self.filter, button("Reload", self.load_installed), self.count))
-        self.installed = table(["Package", "Version", "Size (KiB)", "Description"])
-        self.installed.setMinimumHeight(300)
-        c.add(self.installed)
-        c.add(hbox(None, button("Mark selected for removal", self.queue_remove, "danger")))
+        c = self.card("Remove applications of the ISO",
+                      "Applications that came with the source ISO (they have a menu entry). Tick the ones "
+                      "your distribution should not have; the parts nothing else needs are removed with them.")
+        self.remover = AppRemover()
+        c.add(self.remover)
+        c.add(hbox(None, button("Remove ticked applications", self.remove_apps, "danger")))
+        self._loaded_for = None
+
+    def _stamp(self):
+        """Changes when packages were installed or the lists refreshed (also by other pages)."""
+        r = self.project.rootfs
+        out = [str(self.project.path)]
+        for p in (r / "var/lib/dpkg/status", r / "var/lib/apt/lists"):
+            out.append(p.stat().st_mtime if p.exists() else 0)
+        return tuple(out)
 
     def refresh(self):
-        if self.project and self.installed.rowCount() == 0:
-            self.load_installed()
+        if self.project and self._loaded_for != self._stamp():
+            self.reload()
 
     def project_changed(self):
-        self.installed.setRowCount(0)
-        self.results.setRowCount(0)
-        self.to_install.clear()
-        self.to_remove.clear()
+        self._loaded_for = None
+
+    def reload(self):
+        self.browser.load(self.project.rootfs)
+        self.remover.load(self.project.rootfs)
+        self._loaded_for = self._stamp()
 
     # Actions ---------------------------------------------------------------------
-    def load_installed(self):
-        rows = Packages(self.project).installed()
-        fill(self.installed, rows)
-        total = sum(int(r[2]) for r in rows if str(r[2]).isdigit())
-        self.count.setText("{} packages, {:.1f} GiB".format(len(rows), total / 1024 ** 2))
-        self.apply_filter(self.filter.text())
-
-    def apply_filter(self, text):
-        text = text.lower().strip()
-        for r in range(self.installed.rowCount()):
-            name = self.installed.item(r, 0).text().lower()
-            desc = self.installed.item(r, 3).text().lower()
-            self.installed.setRowHidden(r, bool(text) and text not in name and text not in desc)
-
-    def search(self):
-        term = self.query.text().strip()
-        if not term:
-            return
-        proj = self.project
-        self.task("Search packages", lambda t: Packages(proj).search(term), lambda rows: fill(self.results, rows))
-
-    def _add(self, lst, names):
-        have = {lst.item(i).text() for i in range(lst.count())}
-        for n in names:
-            if n and n not in have:
-                lst.addItem(n)
-                have.add(n)
-
-    def _drop(self, lst):
-        for it in lst.selectedItems():
-            lst.takeItem(lst.row(it))
-
-    def queue_install(self):
-        rows = {i.row() for i in self.results.selectedIndexes()}
-        self._add(self.to_install, [self.results.item(r, 0).text() for r in sorted(rows)])
-
-    def queue_remove(self):
-        rows = {i.row() for i in self.installed.selectedIndexes()}
-        self._add(self.to_remove, [self.installed.item(r, 0).text() for r in sorted(rows)])
-
-    def add_names(self):
-        self._add(self.to_install, self.add_name.text().split())
-        self.add_name.clear()
-
-    def _items(self, lst):
-        return [lst.item(i).text() for i in range(lst.count())]
+    def tick_names(self):
+        self.browser.select(self.names.text().split())
+        self.names.clear()
 
     def apply(self):
-        inst, rem = self._items(self.to_install), self._items(self.to_remove)
+        inst, rem = self.browser.changes()
         if not inst and not rem:
+            QMessageBox.information(self, "Packages", "Nothing to change: tick or untick packages first.")
             return
         msg = []
         if inst:
@@ -159,43 +94,54 @@ class PackagesPage(Page):
                 if inst:
                     t.set_stage("Installing packages")
                     pk.install(inst, no_recommends=no_rec)
+        self.task("Apply package changes", work, lambda _r: self.reload())
 
-        def done(_):
-            self.to_install.clear()
-            self.to_remove.clear()
-            self.load_installed()
-        self.task("Apply package changes", work, done)
+    def remove_apps(self):
+        names = self.remover.selected()
+        if not names:
+            return
+        if QMessageBox.question(self, "Remove applications", "Remove from the image:\n\n" + " ".join(names)) != \
+                QMessageBox.StandardButton.Yes:
+            return
+        proj = self.project
+        self.task("Remove applications", lambda t: Packages(proj).remove(names), lambda _r: self.reload())
 
     def update_lists(self):
         proj = self.project
-        self.task("Update package lists", lambda t: Packages(proj).update())
+        self.task("Refresh package lists", lambda t: Packages(proj).update(), lambda _r: self.reload())
 
     def upgrade(self):
         proj = self.project
-        self.task("Upgrade all packages", lambda t: Packages(proj).upgrade(), lambda _: self.load_installed())
+        self.task("Upgrade all packages", lambda t: Packages(proj).upgrade(), lambda _r: self.reload())
 
     def autoremove(self):
         proj = self.project
-        self.task("Autoremove", lambda t: Packages(proj).autoremove(), lambda _: self.load_installed())
+
+        def work(t):
+            pk = Packages(proj)
+            with pk.chroot:
+                pk.autoremove()
+        self.task("Autoremove", work, lambda _r: self.reload())
 
     def install_debs(self):
         files, _ = QFileDialog.getOpenFileNames(self, "Install .deb packages", "", "Debian packages (*.deb)")
         if files:
             proj = self.project
-            self.task("Install .deb files", lambda t: Packages(proj).install_debs(files),
-                      lambda _: self.load_installed())
+            self.task("Install .deb files", lambda t: Packages(proj).install_debs(files), lambda _r: self.reload())
 
     def import_list(self):
         path, _ = QFileDialog.getOpenFileName(self, "Import package list", "", "Text files (*.txt *.list);;All (*)")
         if path:
             inst, rem = read_package_list(path)
-            self._add(self.to_install, inst)
-            self._add(self.to_remove, rem)
+            self.browser.select(inst)
+            self.browser.model.checked -= set(rem)
+            self.browser._apply_filter()
 
     def export_list(self):
         path, _ = QFileDialog.getSaveFileName(self, "Export package list", "packages.txt", "Text files (*.txt)")
         if path:
-            lines = ["# Eduka-Customizer package list. '-name' means remove."]
-            lines += self._items(self.to_install) + ["-" + n for n in self._items(self.to_remove)]
+            inst, rem = self.browser.changes()
+            lines = ["# Eduka-Customizer package list. '-name' means remove."] + inst + ["-" + n for n in rem]
             with open(path, "w") as fh:
                 fh.write("\n".join(lines) + "\n")
+

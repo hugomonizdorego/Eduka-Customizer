@@ -83,6 +83,34 @@ def installed_desktops(rootfs):
     return [d["id"] for d in catalog()["desktops"] if d["session"] in have]
 
 
+def compositors_for(de_id, kind="x11"):
+    """Compositors that fit a desktop and session type, and the recommended one."""
+    de = desktop(de_id) if de_id else None
+    comps = catalog()["compositors"]
+    if kind == "wayland" and de and de["id"] != "lxqt":
+        # GNOME, KDE, Cinnamon, ... are their own Wayland compositor: nothing else can be used.
+        own = [c for c in comps if c["kind"] == "native" and c.get("desktop") == de["id"]]
+        return own, (own[0]["id"] if own else "none")
+    out = []
+    for c in comps:
+        if c["kind"] == "native":
+            if kind == "x11" and de and c.get("desktop") == de["id"]:
+                out.append(c)
+            continue
+        if c["kind"] != kind or c["id"] == "builtin":
+            continue
+        if c["id"] in ("picom", "xcompmgr") and de and de.get("always_composited"):
+            continue
+        out.append(c)
+    if kind == "wayland":
+        best = "labwc"
+    elif de and de.get("native_compositor"):
+        best = de["native_compositor"]
+    else:
+        best = (de or {}).get("recommended_compositor", "none")
+    return out, best
+
+
 class DesktopManager:
     def __init__(self, project):
         self.project = project
@@ -104,6 +132,9 @@ class DesktopManager:
             if dm_id:
                 self.set_display_manager(dm_id)
             self.set_default_session(d["session"])
+        self.project.state.setdefault("desktop", {})["id"] = de_id
+        self.project.save()
+        self.guard_compositors()
         self.project.record("desktop-install", de_id)
 
     def remove_other_desktops(self, keep):
@@ -261,11 +292,71 @@ class DesktopManager:
         log.info("Default session type: %s", kind)
 
     # Compositor ---------------------------------------------------------
+    def current_desktop(self):
+        """The desktop of the image (as chosen here, or found from the default session)."""
+        st = self.project.state.get("desktop", {})
+        known = {d["id"]: d for d in catalog()["desktops"]}
+        if st.get("id") in known:
+            return known[st["id"]]
+        session = st.get("session", "")
+        for d in known.values():
+            if session and session in [d.get("session")] + [v for k, v in (d.get("sessions") or {}).items()
+                                                            if isinstance(v, str)]:
+                return d
+        for d in known.values():
+            if d["kind"] == "de" and d.get("task") and self.pkgs.is_installed(d["task"]):
+                return d
+        return None
+
+    def compositor_choices(self):
+        """Compositors that fit the image's desktop (natives of other desktops are left out)."""
+        d = self.current_desktop()
+        out = []
+        for c in catalog()["compositors"]:
+            if c["kind"] == "native" and (not d or c.get("desktop") != d["id"]):
+                continue
+            if c["id"] in ("picom", "xcompmgr") and d and d.get("always_composited"):
+                continue
+            out.append(c)
+        return out
+
+    def recommended_compositor(self):
+        d = self.current_desktop()
+        if d and d.get("native_compositor"):
+            return d["native_compositor"]
+        return d.get("recommended_compositor", "none") if d else "none"
+
+    def guard_compositors(self):
+        """Never start picom/xcompmgr in desktops that composite themselves (double compositing
+        makes windows flicker, black or slow): restrict their system autostart entries."""
+        native = "GNOME;GNOME-Flashback;X-Cinnamon;KDE;MATE;XFCE;Budgie;Unity;Pantheon;"
+        for name in ("picom", "compton", "xcompmgr"):
+            f = self.rootfs / "etc/xdg/autostart" / (name + ".desktop")
+            if not f.is_file():
+                continue
+            text = f.read_text(errors="replace")
+            text = re.sub(r"(?m)^(NotShowIn|OnlyShowIn)=.*\n?", "", text)
+            text = re.sub(r"(?m)^(\[Desktop Entry\]\n)", lambda m: m.group(1) + "NotShowIn=" + native + "\n",
+                          text, count=1)
+            f.write_text(text)
+
     def set_compositor(self, comp_id, preset="shadows"):
         comps = {c["id"]: c for c in catalog()["compositors"]}
+        if comp_id in ("auto", "builtin"):
+            comp_id = self.recommended_compositor() if comp_id == "auto" else (
+                (self.current_desktop() or {}).get("native_compositor") or "none")
+            if comp_id == "picom":
+                preset = preset or "light"
         if comp_id not in comps:
             raise KeyError("Unknown compositor: {}".format(comp_id))
         c = comps[comp_id]
+        de = self.current_desktop()
+        if comp_id in ("picom", "xcompmgr") and de and de.get("always_composited"):
+            raise ValueError("{} always composites with its own compositor ({}); {} next to it would conflict. "
+                             "Choose '{}' instead.".format(de["name"], de["native_compositor"], c["name"],
+                                                          comps[de["native_compositor"]]["name"]))
+        if c["kind"] == "native":
+            return self._set_native(c)
         r = self.rootfs
         with self.chroot:
             pk = [p for p in c.get("packages", []) if not self.pkgs.is_installed(p)]
@@ -318,9 +409,60 @@ class DesktopManager:
             conf.parent.mkdir(parents=True, exist_ok=True)
             with open(conf, "w") as fh:
                 cp.write(fh)
+        self.guard_compositors()
         self.project.state.setdefault("desktop", {})["compositor"] = {"id": comp_id, "preset": preset}
+        self.project.save()
         self.project.record("compositor", "{} {}".format(comp_id, preset))
         log.info("Compositor: %s (%s)", c["name"], preset)
+
+    def _set_native(self, c):
+        """Use the desktop's own compositor and make sure no other one starts."""
+        r = self.rootfs
+        skel_auto = Path(r, "etc/skel/.config/autostart")
+        for name in ("picom", "xcompmgr"):
+            if Path(r, "usr/bin", name).exists() or (skel_auto / (name + ".desktop")).exists():
+                skel_auto.mkdir(parents=True, exist_ok=True)
+                (skel_auto / (name + ".desktop")).write_text(
+                    "[Desktop Entry]\nType=Application\nName={0}\nExec={0}\nHidden=true\n".format(name))
+        ours = Path(r, "etc/xdg/autostart/picom.desktop")
+        if ours.exists() and "NoDisplay=true" in ours.read_text(errors="replace") and \
+                "Exec=picom\n" in ours.read_text(errors="replace"):
+            ours.unlink()  # the entry Eduka-Customizer wrote for picom
+        if c["id"] == "xfwm4":
+            xml = Path(r, "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml")
+            if xml.exists():
+                text = xml.read_text()
+                text = re.sub(r'(<property name="use_compositing" type="bool" value=")\w+(")',
+                              lambda m: m.group(1) + "true" + m.group(2), text)
+                xml.write_text(text)
+            else:
+                xml.parent.mkdir(parents=True, exist_ok=True)
+                xml.write_text(XFWM4_XML)
+        elif c["id"] == "marco":
+            Path(r, "usr/share/glib-2.0/schemas").mkdir(parents=True, exist_ok=True)
+            Path(r, "usr/share/glib-2.0/schemas/92_eduka-compositor.gschema.override").write_text(
+                "[org.mate.Marco.general]\ncompositing-manager=true\n")
+            if Path(r, "usr/bin/glib-compile-schemas").exists():
+                with self.chroot:
+                    self.chroot.run(["glib-compile-schemas", "/usr/share/glib-2.0/schemas"], check=False, quiet=True)
+        elif c["id"] == "kwin":
+            kwinrc = Path(r, "etc/xdg/kwinrc")
+            cp = configparser.ConfigParser(interpolation=None)
+            cp.optionxform = str
+            if kwinrc.exists():
+                cp.read(kwinrc)
+            if not cp.has_section("Compositing"):
+                cp.add_section("Compositing")
+            cp.set("Compositing", "Enabled", "true")
+            kwinrc.parent.mkdir(parents=True, exist_ok=True)
+            with open(kwinrc, "w") as fh:
+                cp.write(fh, space_around_delimiters=False)
+        # Mutter, Muffin and Budgie always composite: nothing to switch on.
+        self.guard_compositors()
+        self.project.state.setdefault("desktop", {})["compositor"] = {"id": c["id"], "preset": ""}
+        self.project.save()
+        self.project.record("compositor", c["id"])
+        log.info("Compositor: %s", c["name"])
 
 
 PICOM = {
@@ -336,3 +478,13 @@ PICOM = {
              "corner-radius = 12;\nblur-background-exclude = [ \"window_type = 'desktop'\" ];\n",
     "off": "# picom disabled effects\nbackend = \"xrender\";\nshadow = false;\nfading = false;\n",
 }
+
+
+XFWM4_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfwm4" version="1.0">
+  <property name="general" type="empty">
+    <property name="use_compositing" type="bool" value="true"/>
+    <property name="show_frame_shadow" type="bool" value="true"/>
+  </property>
+</channel>
+"""

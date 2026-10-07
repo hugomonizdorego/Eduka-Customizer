@@ -44,6 +44,8 @@ class LiveSession:
 
     @property
     def running(self):
+        if self.session is not None and self.session.poll() is not None:
+            return False  # the desktop or program ended; the empty window is closed by stop()
         return self.xephyr is not None and self.xephyr.poll() is None
 
     def _home(self):
@@ -122,11 +124,11 @@ class LiveSession:
         self.project.record("live-session", "{} ({})".format(command, self.mode))
         return self.display
 
-    def run_app(self, command):
+    def run_app(self, command, home=None):
         """Start one more program inside the running nested session."""
         if not self.running:
             raise RuntimeError("Start a live session first")
-        env = {"DISPLAY": ":{}".format(self.display), "HOME": self._current_home(),
+        env = {"DISPLAY": ":{}".format(self.display), "HOME": home or self._current_home(),
                "XDG_RUNTIME_DIR": "/run/eduka-live-runtime"}
         subprocess.Popen(self.chroot.command(["/bin/sh", "-c", command], env=env, interactive=True),
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)

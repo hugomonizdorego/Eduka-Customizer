@@ -331,7 +331,7 @@ class Packages:
         if not status.is_file():
             return result
         for st in parse_deb822(status.read_text(errors="replace")):
-            if "install ok installed" in st.get("Status", ""):
+            if is_installed_status(st.get("Status", "")):
                 result.append((st.get("Package", ""), st.get("Version", ""),
                                st.get("Installed-Size", "0"),
                                st.get("Description", "").split("\n")[0]))
@@ -344,6 +344,11 @@ class Packages:
 
     def is_installed(self, name):
         return any(p[0] == name for p in self.installed())
+
+
+def is_installed_status(status):
+    """True for 'install ok installed' and held packages ('hold ok installed')."""
+    return status.strip().endswith(" ok installed")
 
 
 def read_package_list(path):
