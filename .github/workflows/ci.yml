@@ -17,7 +17,7 @@ jobs:
             isolinux syslinux-common grub-efi-amd64-bin grub-common make
       - uses: actions/checkout@v4
       - name: Lint
-        run: python3 -m pyflakes eduka_customizer tests
+        run: python3 -m pyflakes eduka_customizer/core eduka_customizer/gui eduka_customizer/cli.py tests
       - name: Unit tests
         run: python3 -m pytest -q tests
       - name: CLI smoke test

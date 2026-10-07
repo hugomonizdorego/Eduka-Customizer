@@ -1,6 +1,6 @@
 """Identity page: OS name, version, live user, language, time zone."""
 
-from PyQt6.QtWidgets import QCheckBox, QLineEdit, QListWidget, QAbstractItemView
+from eduka_customizer.qt.widgets import QCheckBox, QLineEdit, QListWidget, QAbstractItemView
 
 from eduka_customizer.gui.widgets import Page, button, combo, hbox, label
 

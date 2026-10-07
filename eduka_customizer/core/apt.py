@@ -230,6 +230,10 @@ class Packages:
         self.project = project
         self.chroot = Chroot(project.rootfs)
 
+    def recover(self):
+        """Finish interrupted dpkg runs (after a crash or a failed install)."""
+        self.chroot.run(["dpkg", "--configure", "-a"], check=False, quiet=True)
+
     def update(self):
         log.info("Updating package lists")
         self.chroot.run(APT + ["update"])
@@ -249,6 +253,7 @@ class Packages:
         _check_names(packages)
         log.info("Installing: %s", " ".join(packages))
         with self.chroot:
+            self.recover()
             if update:
                 self.update()
             extra = ["--no-install-recommends"] if no_recommends else []
@@ -274,7 +279,7 @@ class Packages:
     def clean(self):
         self.chroot.run(APT + ["clean"])
 
-    def install_debs(self, files):
+    def install_debs(self, files, reinstall=False):
         """Install local .deb files, resolving their dependencies with APT."""
         files = [Path(f) for f in files]
         tmp = self.project.rootfs / "tmp/eduka-debs"
@@ -287,8 +292,19 @@ class Packages:
                 shutil.copy2(f, tmp / f.name)
                 inside.append("/tmp/eduka-debs/" + f.name)
             with self.chroot:
+                self.recover()
                 self.update()
-                self.chroot.run(APT + ["install"] + inside)
+                if reinstall:
+                    # dpkg -i always (re)installs our own rebuilt packages, even with
+                    # an unchanged version; APT then pulls in missing dependencies.
+                    self.chroot.run(["dpkg", "--force-confdef", "--force-confold", "-i"] + inside,
+                                    check=False)
+                    self.chroot.run(APT + ["install", "-f"])
+                    bad = [n for n in (Path(f).name.split("_")[0] for f in files) if not self.is_installed(n)]
+                    if bad:
+                        raise RuntimeError("Could not install: {}".format(" ".join(bad)))
+                else:
+                    self.chroot.run(APT + ["install"] + inside)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
         self.project.mark_initramfs_dirty()
@@ -320,6 +336,11 @@ class Packages:
                                st.get("Installed-Size", "0"),
                                st.get("Description", "").split("\n")[0]))
         return sorted(result)
+
+    def available(self, names):
+        """Return the subset of *names* that APT can install in the image."""
+        out = self.chroot.output(["apt-cache", "show", "--no-all-versions"] + list(names), check=False)
+        return {st.get("Package") for st in parse_deb822(out)} & set(names)
 
     def is_installed(self, name):
         return any(p[0] == name for p in self.installed())

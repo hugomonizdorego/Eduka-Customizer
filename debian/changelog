@@ -1,3 +1,24 @@
+eduka-customizer (0.11.0~alpha) unstable; urgency=medium
+
+  * Quick Wizard: build a complete distribution with Next, Next, Finish.
+  * Distro Branding Studio: <id>-branding package replacing the identity of
+    base-files, lsb-release, distro-info-data, desktop-base, Debian logos,
+    GRUB (live and installed) and Calamares with dpkg diversions; optional
+    <id>-archive-keyring with a generated signing key; editable Debian
+    source trees.
+  * Package Workshop: open installed packages, edit them directly, rebuild,
+    install and hold; restore Debian's version.
+  * Themes & Icons page, theme packs, theme import, desktop icons.
+  * Login screens: LightDM GTK, Slick, Arctica, KDE greeters, SDDM themes,
+    GDM, LXDM, Ly, greetd.
+  * X11 / Wayland session choice and compositors (picom presets, built-in,
+    labwc, KWin, Wayfire, Sway).
+  * Live session: open the desktop's settings apps inside the session.
+  * Developer logs and error reports in /tmp/eduka-customizer/.
+  * Installable on Ubuntu and derivatives (PyQt6 or PyQt5, Python >= 3.9).
+
+ -- Edukasaun OS Developers <dev@edukasaun.org>  Wed, 07 Oct 2026 18:00:00 +0900
+
 eduka-customizer (0.10.0~alpha) unstable; urgency=medium
 
   * Complete rewrite of Customizer as Eduka-Customizer for Edukasaun OS.

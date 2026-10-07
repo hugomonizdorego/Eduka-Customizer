@@ -189,6 +189,12 @@ def cmd_desktop(args):
         dm.set_default_session(args.name)
     elif args.action == "dm":
         dm.set_display_manager(args.name)
+    elif args.action == "session-type":
+        dm.set_session_type(args.name, args.type)
+    elif args.action == "compositor":
+        dm.set_compositor(args.name, args.preset)
+    elif args.action == "sddm-theme":
+        dm.set_sddm_theme(args.name)
     elif args.action == "list":
         for s in desktop.sessions(p.rootfs):
             print("{:24} {:8} {}".format(s["id"], s["type"], s["name"]))
@@ -247,6 +253,72 @@ def cmd_brand(args):
     elif args.what == "locale":
         default, tz, kb = (args.values + ["en_US.UTF-8", "Asia/Dili", "us"][len(args.values):])[:3]
         b.apply_locale(default, [], tz, kb)
+    return 0
+
+
+def cmd_branding(args):
+    from dataclasses import asdict
+    from eduka_customizer.core.distrobrand import BrandingSpec, DistroBranding
+    p = _locked(args)
+    db = DistroBranding(p)
+    spec = BrandingSpec.from_project(p)
+    for key in ("logo", "wallpaper", "login_background", "grub_background", "accent", "dark"):
+        v = getattr(args, key, None)
+        if v:
+            setattr(spec, key, os.path.abspath(v) if key not in ("accent", "dark") else v)
+    if args.no_grub_name:
+        spec.grub_name = False
+    if args.action == "apply":
+        for d in db.apply(spec, with_keyring=args.keyring, email=args.email or ""):
+            print(d)
+    elif args.action == "generate":
+        print(db.generate(spec))
+    elif args.action == "build":
+        debs = db.build()
+        db.install(debs)
+        print("\n".join(str(d) for d in debs))
+    elif args.action == "key":
+        print(db.generate_key(spec, args.email or "archive@{}.org".format(spec.os_id)))
+    elif args.action == "show":
+        print(json.dumps(asdict(spec), indent=2))
+        print("Installed:", db.installed())
+    return 0
+
+
+def cmd_workshop(args):
+    from eduka_customizer.core.workshop import Workshop
+    p = _locked(args)
+    ws = Workshop(p)
+    if args.action == "open":
+        print(ws.open(args.package))
+    elif args.action == "build":
+        print(ws.build(args.package, hold=not args.no_hold))
+    elif args.action == "restore":
+        ws.restore(args.package)
+    elif args.action == "list":
+        for name in ws.opened():
+            print(name, ws.path(name))
+    return 0
+
+
+def cmd_themes(args):
+    from eduka_customizer.core.themes import THEME_PACKS, Themes
+    p = _locked(args)
+    th = Themes(p)
+    if args.action == "list":
+        print("GTK:    ", ", ".join(th.gtk_themes()))
+        print("Icons:  ", ", ".join(th.icon_themes()))
+        print("Cursors:", ", ".join(th.cursor_themes()))
+        print("Current:", th.current())
+        print("Packs:  ", ", ".join(p for p, _k, _t in THEME_PACKS))
+    elif args.action == "apply":
+        th.apply(args.gtk or "", args.icons or "", args.cursor or "", args.font or "", args.dark)
+    elif args.action == "packs":
+        ok, missing = th.install_packs(args.items)
+        print("installed:", " ".join(ok), "| not available:", " ".join(missing))
+    elif args.action == "import":
+        for item in args.items:
+            print(th.import_theme(item))
     return 0
 
 
@@ -329,7 +401,8 @@ def cmd_doctor(args):
     host = doctor.host_info()
     print("Host system: {}".format(host["distro"].summary()))
     if not host["supported"]:
-        print("  WARNING: {}".format(host["reason"]))
+        print("  Note: fine as a build computer. Only 'snapshot this computer' needs Debian or "
+              "Edukasaun OS.")
     print("Root: {}   KVM: {}".format("yes" if host["root"] else "no", "yes" if host["kvm"] else "no"))
     for r in doctor.check():
         print("  [{}] {:52} {:24} {}".format("ok" if r["ok"] else ("!!" if r["required"] else "--"),
@@ -339,6 +412,7 @@ def cmd_doctor(args):
         print("\nInstall the missing tools with:\n  sudo apt install " + " ".join(missing))
         if args.fix:
             doctor.install_missing(missing)
+    print("\nLogs: {}  (errors: {})".format(logmod.DEBUG_LOG, logmod.ERROR_LOG))
     return 0
 
 
@@ -418,9 +492,13 @@ def build_parser():
     s.set_defaults(func=cmd_flatpak)
 
     s = sub.add_parser("desktop", help="desktop environments, window managers and sessions")
-    s.add_argument("action", choices=["catalog", "install", "session", "dm", "list"])
+    s.add_argument("action", choices=["catalog", "install", "session", "dm", "list", "session-type",
+                                      "compositor", "sddm-theme"])
     s.add_argument("name", nargs="?")
     s.add_argument("--dm")
+    s.add_argument("--type", choices=["x11", "wayland"], default="x11", help="for session-type")
+    s.add_argument("--preset", choices=["light", "shadows", "glass", "off"], default="shadows",
+                   help="picom effects for compositor")
     s.add_argument("--remove-others", action="store_true")
     s.set_defaults(func=cmd_desktop)
 
@@ -438,6 +516,35 @@ def build_parser():
                                     "login", "locale"])
     s.add_argument("values", nargs="*")
     s.set_defaults(func=cmd_brand)
+
+    s = sub.add_parser("branding", help="full distro branding (base-files, lsb-release, logos, GRUB, ...)")
+    s.add_argument("action", choices=["apply", "generate", "build", "key", "show"])
+    s.add_argument("--logo")
+    s.add_argument("--wallpaper")
+    s.add_argument("--login-background", dest="login_background")
+    s.add_argument("--grub-background", dest="grub_background")
+    s.add_argument("--accent")
+    s.add_argument("--dark")
+    s.add_argument("--keyring", action="store_true", help="also create and install <id>-archive-keyring")
+    s.add_argument("--email")
+    s.add_argument("--no-grub-name", action="store_true")
+    s.set_defaults(func=cmd_branding)
+
+    s = sub.add_parser("workshop", help="edit an installed Debian package directly")
+    s.add_argument("action", choices=["open", "build", "restore", "list"])
+    s.add_argument("package", nargs="?")
+    s.add_argument("--no-hold", action="store_true")
+    s.set_defaults(func=cmd_workshop)
+
+    s = sub.add_parser("themes", help="GTK/icon/cursor themes and fonts")
+    s.add_argument("action", choices=["list", "apply", "packs", "import"])
+    s.add_argument("items", nargs="*")
+    s.add_argument("--gtk")
+    s.add_argument("--icons")
+    s.add_argument("--cursor")
+    s.add_argument("--font")
+    s.add_argument("--dark", action="store_true")
+    s.set_defaults(func=cmd_themes)
 
     s = sub.add_parser("build", help="build the ISO image")
     s.add_argument("--compression", choices=["zstd", "xz", "gzip", "lz4", "lzo"])
@@ -493,6 +600,7 @@ def main(argv=None):
     ap = build_parser()
     args = ap.parse_args(argv)
     logmod.setup_console(args.debug)
+    logmod.setup_debug_log(args.command or "gui")
     if not getattr(args, "func", None):
         args.func = cmd_gui
         args.command = "gui"
@@ -510,9 +618,12 @@ def main(argv=None):
         return 130
     except (UnsupportedDistro, ProjectLocked, runner.CommandError, runner.Cancelled,
             FileNotFoundError, ValueError, RuntimeError) as e:
-        log.error("%s", e)
+        log.error("%s", e, exc_info=True)
         if args.debug:
             raise
+        return 1
+    except Exception as e:
+        log.critical("Unexpected error: %s (details in %s)", e, logmod.ERROR_LOG, exc_info=True)
         return 1
 
 

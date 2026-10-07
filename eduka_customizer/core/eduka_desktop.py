@@ -15,6 +15,7 @@ from pathlib import Path
 from eduka_customizer.core import runner
 from eduka_customizer.core.apt import Packages, parse_deb822
 from eduka_customizer.core.config import settings
+from eduka_customizer.core import fsutil
 from eduka_customizer.core.log import log
 
 COMMON_REL = "usr/lib/edukasaun-desktop/eduka_common.py"
@@ -101,7 +102,7 @@ class EdukaDesktop:
             log.info("Using local Eduka-Desktop source %s", repo)
             if self.src.exists():
                 shutil.rmtree(self.src)
-            shutil.copytree(repo, self.src, symlinks=True, ignore=shutil.ignore_patterns(".git"))
+            fsutil.copytree(repo, self.src, symlinks=True, ignore=shutil.ignore_patterns(".git"))
             return self.src
         runner.require("git")
         env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
@@ -155,7 +156,7 @@ class EdukaDesktop:
                 continue
             dest = stage / item.name
             if item.is_dir():
-                shutil.copytree(item, dest, symlinks=True)
+                fsutil.copytree(item, dest, symlinks=True)
             else:
                 shutil.copy2(item, dest)
         self._fix_permissions(stage)

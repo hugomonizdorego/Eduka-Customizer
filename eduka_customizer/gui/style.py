@@ -19,7 +19,7 @@ QSS = """
 QWidget {{ color: {text}; font-size: 10pt; }}
 QMainWindow, QWidget#pageArea, QScrollArea, QScrollArea > QWidget > QWidget {{ background: {bg}; }}
 QFrame#sidebar {{ background: {side}; }}
-QLabel#brand {{ color: white; font-size: 15pt; font-weight: 700; padding: 18px 16px 2px 18px; }}
+QLabel#brand {{ color: white; font-size: 13.5pt; font-weight: 700; padding: 18px 12px 2px 18px; }}
 QLabel#brandSub {{ color: {side_text}; padding: 0 16px 14px 18px; font-size: 9pt; }}
 QListWidget#nav {{ background: transparent; border: none; outline: 0; padding: 4px 8px; }}
 QListWidget#nav::item {{ color: {side_text}; padding: 9px 10px; border-radius: 9px; margin: 1px 0; }}
@@ -71,3 +71,27 @@ def stylesheet(dark=False):
 
 def colors(dark=False):
     return DARK if dark else LIGHT
+
+
+def palette(dark=False):
+    """Qt palette so native widgets (combo boxes, spin boxes) match the theme."""
+    from eduka_customizer.qt.gui import QColor, QPalette
+    from eduka_customizer.qt.widgets import QStyleFactory
+    pal = QStyleFactory.create("Fusion").standardPalette()
+    if not dark:
+        pal.setColor(QPalette.ColorRole.Highlight, QColor(ACCENT))
+        return pal
+    c = DARK
+    roles = {
+        QPalette.ColorRole.Window: c["bg"], QPalette.ColorRole.WindowText: c["text"],
+        QPalette.ColorRole.Base: c["input"], QPalette.ColorRole.AlternateBase: c["panel"],
+        QPalette.ColorRole.Text: c["text"], QPalette.ColorRole.Button: c["panel"],
+        QPalette.ColorRole.ButtonText: c["text"], QPalette.ColorRole.ToolTipBase: c["panel"],
+        QPalette.ColorRole.ToolTipText: c["text"], QPalette.ColorRole.Highlight: ACCENT,
+        QPalette.ColorRole.HighlightedText: "#ffffff", QPalette.ColorRole.PlaceholderText: c["muted"],
+    }
+    for role, color in roles.items():
+        pal.setColor(role, QColor(color))
+    pal.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(c["muted"]))
+    pal.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(c["muted"]))
+    return pal

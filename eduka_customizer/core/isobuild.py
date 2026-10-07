@@ -250,6 +250,9 @@ class Builder:
             bootloader.append_params(p.isodir, params)
             bootloader.set_titles(p.isodir, self.opts.title)
             bootloader.set_timeout(p.isodir, self.opts.timeout)
+            splash = p.state.get("boot", {}).get("splash")
+            if splash and Path(splash).exists():
+                bootloader.set_splash(p.isodir, splash)
         info = p.distro
         disk_info = p.isodir / ".disk/info"
         disk_info.parent.mkdir(parents=True, exist_ok=True)

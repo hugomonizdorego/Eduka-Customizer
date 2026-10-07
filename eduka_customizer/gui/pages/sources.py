@@ -1,8 +1,8 @@
 """Repositories page: Debian suite presets and a sources file editor."""
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QInputDialog,
+from eduka_customizer.qt.core import Qt
+from eduka_customizer.qt.gui import QFont
+from eduka_customizer.qt.widgets import (QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QInputDialog,
                              QLineEdit, QListWidget, QMessageBox, QPlainTextEdit, QSplitter)
 
 from eduka_customizer.core.apt import Packages, Sources, debian_sources, format_deb822

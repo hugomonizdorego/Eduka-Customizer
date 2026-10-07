@@ -25,9 +25,11 @@ def _relaunch_as_root(args):
 
 
 def run(project=None, iso=None):
-    from PyQt6.QtCore import Qt
-    from PyQt6.QtGui import QPalette
-    from PyQt6.QtWidgets import QApplication, QMessageBox
+    from eduka_customizer.core.log import setup_debug_log
+    setup_debug_log("gui")
+    from eduka_customizer.qt.core import Qt
+    from eduka_customizer.qt.gui import QPalette
+    from eduka_customizer.qt.widgets import QApplication, QMessageBox
 
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName(APP_NAME)

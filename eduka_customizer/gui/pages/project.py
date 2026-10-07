@@ -3,8 +3,8 @@
 import os
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (QFileDialog, QInputDialog, QLineEdit, QListWidget, QMessageBox,
+from eduka_customizer.qt.core import Qt
+from eduka_customizer.qt.widgets import (QFileDialog, QInputDialog, QLineEdit, QListWidget, QMessageBox,
                              QTabWidget, QVBoxLayout, QWidget)
 
 from eduka_customizer.core.config import settings

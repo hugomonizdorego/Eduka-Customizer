@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PyQt6.QtWidgets import QColorDialog, QFileDialog, QLineEdit, QMessageBox, QPushButton, QSpinBox
+from eduka_customizer.qt.widgets import QColorDialog, QFileDialog, QLineEdit, QMessageBox, QPushButton, QSpinBox
 
 from eduka_customizer.core import bootloader
 from eduka_customizer.core.branding import Branding
@@ -24,7 +24,7 @@ class ColorButton(QPushButton):
         self.setStyleSheet("background: {0}; color: white; border-radius: 8px; padding: 6px 12px;".format(color))
 
     def pick(self):
-        from PyQt6.QtGui import QColor
+        from eduka_customizer.qt.gui import QColor
         c = QColorDialog.getColor(QColor(self.color), self, "Choose color")
         if c.isValid():
             self.set(c.name())

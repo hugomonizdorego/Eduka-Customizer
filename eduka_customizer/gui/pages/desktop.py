@@ -1,12 +1,12 @@
 """Desktop page: desktop environments, window managers and Eduka-Desktop."""
 
-from PyQt6.QtWidgets import (QButtonGroup, QCheckBox, QFileDialog, QFormLayout, QGridLayout,
-                             QLineEdit, QMessageBox, QPushButton, QTabWidget, QWidget)
+from eduka_customizer.qt.widgets import (QButtonGroup, QCheckBox, QFileDialog, QFormLayout, QGridLayout,
+                             QLineEdit, QMessageBox, QTabWidget, QWidget)
 
 from eduka_customizer.core import desktop as dsk
 from eduka_customizer.core.config import settings
 from eduka_customizer.core.eduka_desktop import CHOICES, EdukaDesktop
-from eduka_customizer.gui.widgets import (Page, button, combo, hbox, label, value_widget,
+from eduka_customizer.gui.widgets import (Page, button, combo, hbox, label, tile, value_widget,
                                           widget_value)
 
 HIDDEN_KEYS = {"menu_icon", "_settings_revision", "locked", "reserve_workarea",
@@ -27,11 +27,8 @@ class DesktopPage(Page):
         self.group.setExclusive(True)
         self.tiles = {}
         for i, d in enumerate(dsk.catalog()["desktops"]):
-            b = QPushButton("{}\n{}".format(d["name"], "Window manager" if d["kind"] == "wm" else "Desktop"))
-            b.setObjectName("tile")
-            b.setCheckable(True)
-            b.setToolTip(d["description"] + "\n\nPackages: " + " ".join(d["packages"]))
-            b.setMinimumHeight(58)
+            b = tile("{}\n{}".format(d["name"], "Window manager" if d["kind"] == "wm" else "Desktop"),
+                     d["description"] + "\n\nPackages: " + " ".join(d["packages"]))
             self.group.addButton(b)
             self.tiles[d["id"]] = b
             grid.addWidget(b, i // 4, i % 4)
@@ -50,16 +47,48 @@ class DesktopPage(Page):
         f.addRow("", self.no_rec)
         c.add(hbox(None, button("Install selected desktop", self.install, "primary")))
 
-        c = self.card("Session and login manager", "What starts after login and in the live session.")
-        f = c.form()
-        self.session = combo([])
-        f.addRow("Default session:", hbox(self.session, button("Set", self.set_session)))
-        self.dm = combo([(d["id"], d["name"]) for d in dsk.catalog()["display_managers"]])
-        f.addRow("Login manager:", hbox(self.dm, button("Set", self.set_dm)))
-        self.wm = combo(dsk.catalog()["window_managers_for_lxqt"])
-        f.addRow("LXQt / Eduka window manager:", hbox(self.wm, button("Set", self.set_wm)))
+        c = self.card("Login screen", "Pick the login screen (display manager and greeter).")
+        grid = QGridLayout()
+        grid.setSpacing(10)
+        self.dm_group = QButtonGroup(self)
+        self.dm_tiles = {}
+        for i, d in enumerate(dsk.catalog()["display_managers"]):
+            b = tile("{}\n{}".format(d["name"], d["description"]),
+                     d["description"] + "\n\nPackages: " + " ".join(d["packages"]))
+            self.dm_group.addButton(b)
+            self.dm_tiles[d["id"]] = b
+            grid.addWidget(b, i // 3, i % 3)
+        c.add(grid)
+        self.sddm_theme = combo([(t, t) for t, _p in dsk.catalog()["sddm_themes"]])
+        c.add(hbox(button("Check availability", self.check_dms), None,
+                   button("Use this login screen", self.set_dm, "primary")))
+        c.add(hbox(label("SDDM theme"), self.sddm_theme, button("Apply SDDM theme", self.set_sddm_theme), None))
         self.current = label("", "muted")
         c.add(self.current)
+
+        c = self.card("Session type and compositor",
+                      "X11 is the most compatible (Eduka-Desktop needs it). Wayland is newer and smoother "
+                      "on modern hardware. The compositor draws shadows, transparency and blur.")
+        f = c.form()
+        self.st_desktop = combo([(d["id"], d["name"]) for d in dsk.catalog()["desktops"]])
+        self.st_desktop.currentIndexChanged.connect(self._session_types)
+        self.st_type = combo([])
+        f.addRow("Desktop:", self.st_desktop)
+        f.addRow("Session type:", hbox(self.st_type, button("Apply session type", self.set_session_type)))
+        self.comp = combo([])
+        self.preset = combo([("shadows", "Shadows and fading"), ("light", "Light (fading only)"),
+                             ("glass", "Glass (blur, needs OpenGL)"), ("off", "Effects off")])
+        self.st_type.currentIndexChanged.connect(self._compositors)
+        f.addRow("Compositor:", self.comp)
+        f.addRow("Effects (picom):", hbox(self.preset, button("Apply compositor", self.set_compositor)))
+        self.comp_desc = label("", "muted")
+        self.comp.currentIndexChanged.connect(self._comp_desc)
+        f.addRow("", self.comp_desc)
+        self.session = combo([])
+        f.addRow("Default session:", hbox(self.session, button("Set", self.set_session)))
+        self.wm = combo(dsk.catalog()["window_managers_for_lxqt"])
+        f.addRow("LXQt / Eduka window manager:", hbox(self.wm, button("Set", self.set_wm)))
+        self._session_types()
 
         c = self.card("Eduka-Desktop", "Eduka-Panel, Eduka-Menu and Eduka-Menu-Settings, built from "
                                        "git into a .deb and installed into the image.")
@@ -114,8 +143,28 @@ class DesktopPage(Page):
         if cur and self.session.findData(cur) >= 0:
             self.session.setCurrentIndex(self.session.findData(cur))
         dm = dsk.detect_display_manager(rootfs)
-        if self.dm.findData(dm) >= 0:
-            self.dm.setCurrentIndex(self.dm.findData(dm))
+        greeter = ""
+        conf = rootfs / "etc/lightdm/lightdm.conf.d/50-edukasaun.conf"
+        if conf.exists():
+            import re
+            m = re.search(r"greeter-session\s*=\s*(\S+)", conf.read_text())
+            greeter = m.group(1) if m else ""
+        for d in dsk.catalog()["display_managers"]:
+            if d.get("service") == dm and (not d.get("greeter") or d.get("greeter") == greeter
+                                           or (not greeter and d["id"] == "lightdm")):
+                self.dm_tiles[d["id"]].setChecked(True)
+                break
+        for i in range(self.st_desktop.count()):
+            if self.st_desktop.itemData(i) in installed:
+                self.st_desktop.setCurrentIndex(i)
+                break
+        st = self.project.state.get("desktop", {})
+        if st.get("session_type") and self.st_type.findData(st["session_type"]) >= 0:
+            self.st_type.setCurrentIndex(self.st_type.findData(st["session_type"]))
+        comp = st.get("compositor", {})
+        if comp.get("id") and self.comp.findData(comp["id"]) >= 0:
+            self.comp.setCurrentIndex(self.comp.findData(comp["id"]))
+            self.preset.setCurrentIndex(max(0, self.preset.findData(comp.get("preset"))))
         self.current.setText("Login manager in the image: {}  ·  default session: {}".format(
             dm or "none", cur or "not set"))
         ed = EdukaDesktop(self.project)
@@ -170,10 +219,79 @@ class DesktopPage(Page):
             proj = self.project
             self.task("Set default session", lambda t: dsk.DesktopManager(proj).set_default_session(sid))
 
+    def _dm_selected(self):
+        for dm_id, b in self.dm_tiles.items():
+            if b.isChecked():
+                return dm_id
+        return None
+
     def set_dm(self):
-        dm = self.dm.currentData()
+        dm = self._dm_selected()
+        if not dm:
+            QMessageBox.information(self, "Login screen", "Choose a login screen first.")
+            return
         proj = self.project
-        self.task("Set login manager", lambda t: dsk.DesktopManager(proj).set_display_manager(dm))
+        self.task("Set login screen", lambda t: dsk.DesktopManager(proj).set_display_manager(dm))
+
+    def check_dms(self):
+        proj = self.project
+        dms = dsk.catalog()["display_managers"]
+
+        def work(t):
+            from eduka_customizer.core.apt import Packages
+            pk = Packages(proj)
+            with pk.chroot:
+                pk.update()
+                return pk.available(sorted({p for d in dms for p in d["packages"]}))
+
+        def done(avail):
+            for d in dms:
+                ok = all(p in avail for p in d["packages"])
+                b = self.dm_tiles[d["id"]]
+                b.setEnabled(ok)
+                if not ok:
+                    b.setToolTip("Not available for this Debian suite")
+        self.task("Check login screens", work, done)
+
+    def set_sddm_theme(self):
+        theme = self.sddm_theme.currentData()
+        proj = self.project
+        self.task("SDDM theme", lambda t: dsk.DesktopManager(proj).set_sddm_theme(theme))
+
+    def _session_types(self):
+        de = self.st_desktop.currentData()
+        if not de:
+            return
+        types = dsk.desktop(de).get("sessions", {})
+        self.st_type.clear()
+        for kind, text in (("x11", "X11 (Xorg)"), ("wayland", "Wayland")):
+            if kind in types:
+                self.st_type.addItem(text, kind)
+        self._compositors()
+
+    def _compositors(self):
+        kind = self.st_type.currentData() or "x11"
+        self.comp.clear()
+        for c in dsk.catalog()["compositors"]:
+            if c["kind"] == kind:
+                self.comp.addItem(c["name"], c["id"])
+        self._comp_desc()
+
+    def _comp_desc(self):
+        cid = self.comp.currentData()
+        for c in dsk.catalog()["compositors"]:
+            if c["id"] == cid:
+                self.comp_desc.setText(c["description"])
+
+    def set_session_type(self):
+        de, kind = self.st_desktop.currentData(), self.st_type.currentData()
+        proj = self.project
+        self.task("Session type", lambda t: dsk.DesktopManager(proj).set_session_type(de, kind))
+
+    def set_compositor(self):
+        cid, preset = self.comp.currentData(), self.preset.currentData()
+        proj = self.project
+        self.task("Compositor", lambda t: dsk.DesktopManager(proj).set_compositor(cid, preset))
 
     def set_wm(self):
         dsk.DesktopManager(self.project).set_lxqt_window_manager(self.wm.currentData())

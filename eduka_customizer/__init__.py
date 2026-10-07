@@ -9,6 +9,6 @@ __all__ = ["APP_NAME", "APP_ID", "VERSION", "VERSION_LABEL"]
 
 APP_NAME = "Eduka-Customizer"
 APP_ID = "org.edukasaun.customizer"
-VERSION = "0.10.0a0"
-VERSION_LABEL = "0.10 Alpha"
+VERSION = "0.11.0a0"
+VERSION_LABEL = "0.11 Alpha"
 HOMEPAGE = "https://github.com/hugomonizdorego/Eduka-Customizer"

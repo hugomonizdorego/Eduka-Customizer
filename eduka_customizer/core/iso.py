@@ -14,6 +14,7 @@ import tempfile
 from pathlib import Path
 
 from eduka_customizer.core import distro, runner
+from eduka_customizer.core import fsutil
 from eduka_customizer.core.log import log
 
 SQUASHFS_CANDIDATES = ("live/filesystem.squashfs",)
@@ -177,11 +178,11 @@ def extract(project, iso, progress=None):
         for item in src_root.iterdir():
             dest = project.isodir / item.name
             if item.is_dir():
-                shutil.copytree(item, dest, symlinks=True,
+                fsutil.copytree(item, dest, symlinks=True,
                                 ignore=lambda d, names: [n for n in names
                                                          if os.path.join(d, n) == str(squash)])
             else:
-                shutil.copy2(item, dest)
+                fsutil.copy_regular(item, dest)
         runner.run(["chmod", "-R", "u+w", project.isodir], quiet=True)
 
         log.info("Unpacking the root filesystem (this takes a while)")

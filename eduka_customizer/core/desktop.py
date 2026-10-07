@@ -3,6 +3,7 @@
 import configparser
 import json
 import os
+import re
 from pathlib import Path
 
 from eduka_customizer.core.apt import Packages
@@ -118,6 +119,11 @@ class DesktopManager:
         with self.chroot:
             missing = [p for p in dm["packages"] if not self.pkgs.is_installed(p)]
             if missing:
+                self.pkgs.update()
+                unavailable = set(missing) - self.pkgs.available(missing)
+                if unavailable:
+                    raise RuntimeError("{} is not available in this Debian suite (missing: {})".format(
+                        dm["name"], " ".join(sorted(unavailable))))
                 self.pkgs.install(missing, update=False)
             log.info("Default display manager: %s", dm["name"])
             Path(self.rootfs, "etc/X11").mkdir(parents=True, exist_ok=True)
@@ -131,10 +137,8 @@ class DesktopManager:
             if not Path(self.rootfs, unit.lstrip("/")).exists():
                 unit = "/usr/lib/systemd/system/{}.service".format(service)
             link.symlink_to(unit)
-            if dm_id == "lightdm-slick":
-                self._lightdm_conf({"greeter-session": "slick-greeter"})
-            elif dm_id == "lightdm":
-                self._lightdm_conf({"greeter-session": "lightdm-gtk-greeter"})
+            if dm.get("greeter"):
+                self._lightdm_conf({"greeter-session": dm["greeter"]})
         self.project.record("display-manager", dm_id)
 
     def _lightdm_conf(self, values):
@@ -202,3 +206,133 @@ class DesktopManager:
         with open(p, "w") as fh:
             cp.write(fh)
         log.info("LXQt window manager: %s", wm)
+
+    # Login screen themes ------------------------------------------------
+    def set_sddm_theme(self, theme):
+        pkg = dict(catalog().get("sddm_themes", [])).get(theme)
+        with self.chroot:
+            if pkg and not self.pkgs.is_installed(pkg):
+                self.pkgs.install([pkg])
+            if not Path(self.rootfs, "usr/share/sddm/themes", theme).is_dir():
+                raise RuntimeError("SDDM theme not installed: {}".format(theme))
+        p = Path(self.rootfs, "etc/sddm.conf.d/10-edukasaun-theme.conf")
+        p.parent.mkdir(parents=True, exist_ok=True)
+        cp = configparser.ConfigParser(interpolation=None)
+        cp.optionxform = str
+        if p.exists():
+            cp.read(p)
+        if not cp.has_section("Theme"):
+            cp.add_section("Theme")
+        cp.set("Theme", "Current", theme)
+        with open(p, "w") as fh:
+            cp.write(fh)
+        self.project.record("sddm-theme", theme)
+
+    # X11 or Wayland ------------------------------------------------------
+    def session_types(self, de_id):
+        return sorted(desktop(de_id).get("sessions", {}).keys() & {"x11", "wayland"})
+
+    def set_session_type(self, de_id, kind):
+        d = desktop(de_id)
+        sess = d.get("sessions", {})
+        if kind not in sess:
+            raise ValueError("{} has no {} session".format(d["name"], "Wayland" if kind == "wayland" else "X11"))
+        with self.chroot:
+            extra = sess.get(kind + "_packages", [])
+            missing = [p for p in extra if not self.pkgs.is_installed(p)]
+            if missing:
+                self.pkgs.install(missing)
+            self.set_default_session(sess[kind])
+        gdm = Path(self.rootfs, "etc/gdm3/daemon.conf")
+        if gdm.exists():
+            text = gdm.read_text()
+            value = "true" if kind == "wayland" else "false"
+            if re.search(r"(?m)^#?\s*WaylandEnable\s*=", text):
+                text = re.sub(r"(?m)^#?\s*WaylandEnable\s*=.*$", "WaylandEnable=" + value, text)
+            else:
+                text = text.replace("[daemon]", "[daemon]\nWaylandEnable=" + value, 1)
+            gdm.write_text(text)
+        if Path(self.rootfs, "usr/bin/sddm").exists() and kind == "x11":
+            p = Path(self.rootfs, "etc/sddm.conf.d/20-edukasaun-display.conf")
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text("[General]\nDisplayServer=x11\n")
+        self.project.state.setdefault("desktop", {})["session_type"] = kind
+        self.project.save()
+        log.info("Default session type: %s", kind)
+
+    # Compositor ---------------------------------------------------------
+    def set_compositor(self, comp_id, preset="shadows"):
+        comps = {c["id"]: c for c in catalog()["compositors"]}
+        if comp_id not in comps:
+            raise KeyError("Unknown compositor: {}".format(comp_id))
+        c = comps[comp_id]
+        r = self.rootfs
+        with self.chroot:
+            pk = [p for p in c.get("packages", []) if not self.pkgs.is_installed(p)]
+            if pk:
+                self.pkgs.install(pk)
+        skel_auto = Path(r, "etc/skel/.config/autostart")
+        if c["kind"] == "x11":
+            for name in ("picom", "xcompmgr"):
+                f = skel_auto / (name + ".desktop")
+                if name == comp_id:
+                    if f.exists():
+                        f.unlink()
+                    if name == "xcompmgr":
+                        skel_auto.mkdir(parents=True, exist_ok=True)
+                        f.write_text("[Desktop Entry]\nType=Application\nName=xcompmgr\n"
+                                     "Exec=xcompmgr -c -f -n\nNoDisplay=true\n")
+                elif name == "picom" or f.exists():
+                    skel_auto.mkdir(parents=True, exist_ok=True)
+                    f.write_text("[Desktop Entry]\nType=Application\nName={}\nExec={}\nHidden=true\n".format(name, name))
+            if comp_id == "picom":
+                Path(r, "etc/xdg").mkdir(parents=True, exist_ok=True)
+                Path(r, "etc/xdg/picom.conf").write_text(PICOM.get(preset, PICOM["shadows"]))
+                if not Path(r, "etc/xdg/autostart/picom.desktop").exists():
+                    Path(r, "etc/xdg/autostart").mkdir(parents=True, exist_ok=True)
+                    Path(r, "etc/xdg/autostart/picom.desktop").write_text(
+                        "[Desktop Entry]\nType=Application\nName=picom\nExec=picom\nNoDisplay=true\n")
+            xfwm = Path(r, "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml")
+            if xfwm.exists():
+                on = "true" if comp_id == "builtin" else "false"
+                text = xfwm.read_text()
+                text = re.sub(r'(<property name="use_compositing" type="bool" value=")\w+(")',
+                              lambda m: m.group(1) + on + m.group(2), text)
+                xfwm.write_text(text)
+            marco = "true" if comp_id == "builtin" else "false"
+            Path(r, "usr/share/glib-2.0/schemas").mkdir(parents=True, exist_ok=True)
+            Path(r, "usr/share/glib-2.0/schemas/92_eduka-compositor.gschema.override").write_text(
+                "[org.mate.Marco.general]\ncompositing-manager={}\n".format(marco))
+            if Path(r, "usr/bin/glib-compile-schemas").exists():
+                self.chroot.run(["glib-compile-schemas", "/usr/share/glib-2.0/schemas"], check=False, quiet=True)
+        else:
+            # LXQt Wayland session: compositor used by lxqt-wayland-session.
+            conf = Path(r, "etc/xdg/lxqt/session.conf")
+            cp = configparser.ConfigParser(interpolation=None)
+            cp.optionxform = str
+            if conf.exists():
+                cp.read(conf)
+            if not cp.has_section("General"):
+                cp.add_section("General")
+            cp.set("General", "compositor", comp_id)
+            conf.parent.mkdir(parents=True, exist_ok=True)
+            with open(conf, "w") as fh:
+                cp.write(fh)
+        self.project.state.setdefault("desktop", {})["compositor"] = {"id": comp_id, "preset": preset}
+        self.project.record("compositor", "{} {}".format(comp_id, preset))
+        log.info("Compositor: %s (%s)", c["name"], preset)
+
+
+PICOM = {
+    "light": "# picom (Eduka-Customizer preset: light)\nbackend = \"xrender\";\nvsync = true;\n"
+             "shadow = false;\nfading = true;\nfade-delta = 6;\n",
+    "shadows": "# picom (Eduka-Customizer preset: shadows)\nbackend = \"xrender\";\nvsync = true;\n"
+               "shadow = true;\nshadow-radius = 12;\nshadow-opacity = 0.35;\nshadow-offset-x = -10;\n"
+               "shadow-offset-y = -10;\nshadow-exclude = [ \"class_g = 'eduka-panel'\", \"_GTK_FRAME_EXTENTS@:c\" ];\n"
+               "fading = true;\nfade-delta = 5;\ncorner-radius = 8;\n",
+    "glass": "# picom (Eduka-Customizer preset: glass, needs OpenGL)\nbackend = \"glx\";\nvsync = true;\n"
+             "shadow = true;\nshadow-radius = 16;\nshadow-opacity = 0.3;\nfading = true;\n"
+             "blur-method = \"dual_kawase\";\nblur-strength = 6;\nblur-background = true;\n"
+             "corner-radius = 12;\nblur-background-exclude = [ \"window_type = 'desktop'\" ];\n",
+    "off": "# picom disabled effects\nbackend = \"xrender\";\nshadow = false;\nfading = false;\n",
+}

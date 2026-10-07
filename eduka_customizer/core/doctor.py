@@ -47,7 +47,10 @@ def check():
 def missing_packages(results=None, required_only=False):
     results = results or check()
     pkgs = []
+    have = {r["item"] for r in results if r["ok"]}
     for r in results:
+        if r["item"] == "debootstrap" and "mmdebstrap" in have:
+            continue
         if not r["ok"] and (r["required"] or not required_only) and r["package"] not in pkgs:
             pkgs.append(r["package"])
     return pkgs

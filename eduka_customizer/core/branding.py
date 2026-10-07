@@ -10,6 +10,7 @@ from pathlib import Path
 from eduka_customizer.core.apt import Packages
 from eduka_customizer.core.chroot import Chroot
 from eduka_customizer.core.distro import format_os_release, parse_os_release, resolve_in_root
+from eduka_customizer.core import fsutil
 from eduka_customizer.core.log import log
 
 BACKGROUNDS = "usr/share/backgrounds/edukasaun"
@@ -255,7 +256,7 @@ class Branding:
             shutil.rmtree(tmp)
         tmp.mkdir(parents=True)
         if source.is_dir():
-            shutil.copytree(source, tmp / source.name)
+            fsutil.copytree(source, tmp / source.name)
         elif tarfile.is_tarfile(source):
             with tarfile.open(source) as tf:
                 for member in tf.getmembers():
@@ -284,7 +285,7 @@ class Branding:
         target = dest_root / name
         if target.exists():
             shutil.rmtree(target)
-        shutil.copytree(theme_dir, target)
+        fsutil.copytree(theme_dir, target)
         # Fix ImageDir/ScriptFile paths to the installed location.
         pf = target / (name + ".plymouth")
         text = pf.read_text(errors="replace")
@@ -305,7 +306,8 @@ class Branding:
                 raise ValueError("Colors must look like #RRGGBB")
         target = self.rootfs / PLYMOUTH_THEMES / name
         target.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(logo, target / "logo.png")
+        from eduka_customizer.core import imaging
+        imaging.write_png(logo, target / "logo.png")
         bg = [int(background[i:i + 2], 16) / 255 for i in (1, 3, 5)]
         fg = [int(spinner_color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
         (target / (name + ".plymouth")).write_text(

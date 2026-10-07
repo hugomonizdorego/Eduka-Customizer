@@ -1,10 +1,11 @@
 """Small reusable widgets that keep the pages short and consistent."""
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QIcon, QPixmap
-from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout,
-                             QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea,
-                             QSizePolicy, QSpinBox, QVBoxLayout, QWidget)
+from eduka_customizer.qt.core import Qt, pyqtSignal
+from eduka_customizer.qt.gui import QIcon, QPixmap
+from eduka_customizer.qt.widgets import (QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout,
+                                          QFrame, QHBoxLayout, QLabel, QLineEdit, QMessageBox,
+                                          QPushButton, QScrollArea, QSizePolicy, QSpinBox, QVBoxLayout,
+                                          QWidget)
 
 
 def icon(*names):
@@ -106,6 +107,8 @@ class Page(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        from eduka_customizer.qt.core import Qt as _Qt
+        scroll.setHorizontalScrollBarPolicy(_Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         outer.addWidget(scroll)
         inner = QWidget()
         inner.setObjectName("pageArea")
@@ -256,3 +259,142 @@ def widget_value(w, original):
         return w.currentData() if w.currentData() is not None else w.currentText()
     text = w.text()
     return type(original)(text) if isinstance(original, (int, float)) and text else text
+
+
+TEXT_LIMIT = 2 << 20
+
+
+class FileTreeEditor(QWidget):
+    """Browse a folder, edit text files in place, add/replace/delete files."""
+
+    def __init__(self, title_hint=""):
+        from eduka_customizer.qt.gui import QFileSystemModel, QFont
+        from eduka_customizer.qt.widgets import QPlainTextEdit, QSplitter, QTreeView
+        super().__init__()
+        self.root = None
+        self.current = None
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        split = QSplitter()
+        self.model = QFileSystemModel()
+        self.tree = QTreeView()
+        self.tree.setModel(self.model)
+        for col in (1, 2, 3):
+            self.tree.hideColumn(col)
+        self.tree.setHeaderHidden(True)
+        self.tree.setMinimumWidth(260)
+        self.tree.clicked.connect(self._open_index)
+        split.addWidget(self.tree)
+        self.editor = QPlainTextEdit()
+        self.editor.setFont(QFont("monospace"))
+        self.editor.setPlaceholderText(title_hint or "Select a text file on the left to edit it.")
+        self.editor.setMinimumHeight(300)
+        split.addWidget(self.editor)
+        split.setStretchFactor(1, 3)
+        lay.addWidget(split)
+        self.path_label = label("", "muted")
+        lay.addWidget(self.path_label)
+        lay.addWidget(hbox(button("New file...", self.new_file), button("Add / replace from disk...", self.add_file),
+                           button("Delete", self.delete, "danger"), None,
+                           button("Save file", self.save, "primary")))
+
+    def set_root(self, path):
+        from pathlib import Path
+        self.root = Path(path) if path else None
+        self.current = None
+        self.editor.clear()
+        if self.root and self.root.exists():
+            idx = self.model.setRootPath(str(self.root))
+            self.tree.setRootIndex(idx)
+            self.setEnabled(True)
+        else:
+            self.setEnabled(False)
+
+    def _selected_dir(self):
+        from pathlib import Path
+        idx = self.tree.currentIndex()
+        if idx.isValid():
+            p = Path(self.model.filePath(idx))
+            return p if p.is_dir() else p.parent
+        return self.root
+
+    def _open_index(self, idx):
+        from pathlib import Path
+        p = Path(self.model.filePath(idx))
+        if p.is_dir():
+            return
+        self.current = p
+        self.path_label.setText(str(p.relative_to(self.root)) if self.root else str(p))
+        try:
+            if p.is_symlink():
+                self.editor.setPlainText("(symbolic link to {})".format(p.readlink()))
+                self.editor.setReadOnly(True)
+                return
+            data = p.read_bytes()[:TEXT_LIMIT]
+            if b"\0" in data[:8192]:
+                self.editor.setPlainText("(binary file, {} bytes) - use 'Add / replace from disk' "
+                                         "to replace it".format(p.stat().st_size))
+                self.editor.setReadOnly(True)
+            else:
+                self.editor.setPlainText(data.decode("utf-8", "replace"))
+                self.editor.setReadOnly(False)
+        except OSError as e:
+            self.editor.setPlainText(str(e))
+
+    def save(self):
+        if self.current and not self.editor.isReadOnly():
+            self.current.write_text(self.editor.toPlainText())
+            self.path_label.setText("Saved " + str(self.current.relative_to(self.root)))
+
+    def new_file(self):
+        from eduka_customizer.qt.widgets import QInputDialog
+        base = self._selected_dir()
+        if not base:
+            return
+        name, ok = QInputDialog.getText(self, "New file", "Name (sub/folders/allowed):")
+        if ok and name and ".." not in name.split("/"):
+            p = base / name.strip("/")
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.touch()
+
+    def add_file(self):
+        import shutil
+        base = self._selected_dir()
+        files, _ = QFileDialog.getOpenFileNames(self, "Add files", "")
+        for f in files:
+            if self.current and len(files) == 1 and self.current.parent == base \
+                    and QMessageBox.question(self, "Replace", "Replace {} with {}?".format(
+                        self.current.name, f)) == QMessageBox.StandardButton.Yes:
+                shutil.copy2(f, self.current)
+            else:
+                shutil.copy2(f, base / f.split("/")[-1])
+
+    def delete(self):
+        import shutil
+        idx = self.tree.currentIndex()
+        if not idx.isValid():
+            return
+        from pathlib import Path
+        p = Path(self.model.filePath(idx))
+        if p == self.root or QMessageBox.question(self, "Delete", "Delete {}?".format(p.name)) != \
+                QMessageBox.StandardButton.Yes:
+            return
+        if p.is_dir() and not p.is_symlink():
+            shutil.rmtree(p)
+        else:
+            p.unlink()
+        self.current = None
+        self.editor.clear()
+
+
+def tile(text, tooltip=""):
+    """A checkable card-like button that may shrink with the window."""
+    b = QPushButton(text)
+    b.setObjectName("tile")
+    b.setCheckable(True)
+    b.setMinimumHeight(58)
+    b.setMinimumWidth(120)
+    b.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+    if tooltip:
+        b.setToolTip(tooltip)
+    return b

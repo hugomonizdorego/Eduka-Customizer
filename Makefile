@@ -1,5 +1,5 @@
 # Eduka-Customizer - ISO builder for Edukasaun OS
-VERSION   = 0.10.0~alpha
+VERSION   = 0.11.0~alpha
 PYTHON   ?= python3
 DESTDIR  ?=
 PREFIX   ?= /usr
@@ -12,7 +12,7 @@ all: check
 
 check:
 	$(PYTHON) -m compileall -q eduka_customizer
-	@$(PYTHON) -m pyflakes eduka_customizer 2>/dev/null || echo "pyflakes not installed, skipped"
+	@$(PYTHON) -m pyflakes eduka_customizer/core eduka_customizer/gui eduka_customizer/cli.py tests 2>/dev/null || echo "pyflakes not installed, skipped"
 
 test:
 	$(PYTHON) -m pytest -q tests

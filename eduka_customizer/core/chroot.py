@@ -54,7 +54,7 @@ def mounts_under(path):
 def unmount_all(path):
     """Unmount everything below *path*, deepest first."""
     for mp in sorted(set(mounts_under(path)), key=lambda m: m.count("/"), reverse=True):
-        log.info("Unmounting %s", mp)
+        log.debug("Unmounting %s", mp)
         try:
             runner.run(["umount", mp], quiet=True)
         except runner.CommandError:

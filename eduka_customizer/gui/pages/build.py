@@ -4,7 +4,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from PyQt6.QtWidgets import QCheckBox, QGridLayout, QLineEdit, QMessageBox, QSpinBox
+from eduka_customizer.qt.widgets import QCheckBox, QGridLayout, QLineEdit, QMessageBox, QSpinBox
 
 from eduka_customizer.core import cleanup, qemu
 from eduka_customizer.core.isobuild import COMPRESSORS, BuildOptions, build, iso_filename

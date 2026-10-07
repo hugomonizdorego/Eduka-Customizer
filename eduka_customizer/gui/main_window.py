@@ -3,9 +3,9 @@
 import logging
 import time
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QAction, QFont, QKeySequence, QTextCharFormat, QColor
-from PyQt6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
+from eduka_customizer.qt.core import Qt, QTimer
+from eduka_customizer.qt.gui import QAction, QFont, QKeySequence, QTextCharFormat, QColor
+from eduka_customizer.qt.widgets import (QFrame, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
                              QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
                              QSplitter, QStackedWidget, QVBoxLayout, QWidget)
 
@@ -34,8 +34,11 @@ class MainWindow(QMainWindow):
 
         self.bridge = LogBridge()
         self.bridge.message.connect(self._append_log)
+        self.bridge.crashed.connect(self._show_crash)
+        from eduka_customizer.core import log as logmod
+        logmod.on_unhandled_error(lambda t, e, tb: self.bridge.crashed.emit("{}: {}".format(t.__name__, e)))
         self.log_handler = QtLogHandler(self.bridge)
-        self.log_handler.setLevel(logging.DEBUG)
+        self.log_handler.setLevel(OUTPUT)  # debug details go to /tmp/eduka-customizer
         get_logger().addHandler(self.log_handler)
         get_logger().setLevel(logging.DEBUG)
 
@@ -78,7 +81,7 @@ class MainWindow(QMainWindow):
     def _sidebar(self):
         side = QFrame()
         side.setObjectName("sidebar")
-        side.setFixedWidth(232)
+        side.setFixedWidth(240)
         v = QVBoxLayout(side)
         v.setContentsMargins(0, 0, 0, 10)
         v.setSpacing(0)
@@ -147,13 +150,15 @@ class MainWindow(QMainWindow):
         return s
 
     def _build_pages(self):
-        from eduka_customizer.gui.pages import (appearance, build, desktop, flatpak, identity,
-                                                packages, project, settings_page, sources, terminal)
+        from eduka_customizer.gui.pages import (appearance, branding, build, desktop, flatpak,
+                                                identity, packages, project, settings_page, sources,
+                                                terminal, themes, wizard, workshop)
         self.pages = []
-        for cls in (project.ProjectPage, identity.IdentityPage, sources.SourcesPage,
-                    packages.PackagesPage, flatpak.FlatpakPage, desktop.DesktopPage,
-                    appearance.AppearancePage, terminal.TerminalPage, build.BuildPage,
-                    settings_page.SettingsPage):
+        for cls in (project.ProjectPage, wizard.WizardPage, identity.IdentityPage,
+                    branding.BrandingPage, sources.SourcesPage, packages.PackagesPage,
+                    flatpak.FlatpakPage, desktop.DesktopPage, themes.ThemesPage,
+                    appearance.AppearancePage, workshop.WorkshopPage, terminal.TerminalPage,
+                    build.BuildPage, settings_page.SettingsPage):
             page = cls(self)
             self.pages.append(page)
             self.stack.addWidget(page)
@@ -173,8 +178,10 @@ class MainWindow(QMainWindow):
             self.addAction(a)
 
     def apply_style(self):
-        from PyQt6.QtWidgets import QApplication
-        QApplication.instance().setStyleSheet(style.stylesheet(self.dark))
+        from eduka_customizer.qt.widgets import QApplication
+        app = QApplication.instance()
+        app.setPalette(style.palette(self.dark))
+        app.setStyleSheet(style.stylesheet(self.dark))
         self.theme_btn.setText("Light mode" if self.dark else "Dark mode")
 
     def toggle_theme(self):
@@ -358,6 +365,12 @@ class MainWindow(QMainWindow):
         cursor.insertText(text + "\n", fmt)
         bar = self.log.verticalScrollBar()
         bar.setValue(bar.maximum())
+
+    def _show_crash(self, text):
+        from eduka_customizer.core import log as logmod
+        QMessageBox.critical(self, "Unexpected error",
+                             "{}\n\nThe details were written to {}.\nPlease send that file to the "
+                             "developers (Settings → Create bug report).".format(text, logmod.ERROR_LOG))
 
     def showEvent(self, event):
         super().showEvent(event)

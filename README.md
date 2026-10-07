@@ -1,4 +1,4 @@
-# Eduka-Customizer 0.10 Alpha
+# Eduka-Customizer 0.11 Alpha
 
 **Eduka-Customizer** is the ISO builder for **Edukasaun OS**. It takes a Debian
 live image (or an existing Edukasaun OS image, a fresh Debian base, or the
@@ -7,8 +7,11 @@ You can change anything on the way: packages, Flatpak apps, desktop,
 Plymouth splash, login screen, APT sources and the boot menu. You can also run
 the system's desktop in a window and edit it live.
 
-It only works with **Debian stable, testing and sid** and **Edukasaun OS**.
-Ubuntu, Linux Mint and other Ubuntu-based images are refused on purpose.
+The images it builds are always **Debian stable, testing or sid** or **Edukasaun OS**
+(Ubuntu-based images are refused as a source). Eduka-Customizer itself can be
+installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
+
+![Quick Wizard](docs/screenshots/02-wizard-step4.png)
 
 > Eduka-Customizer is a complete rewrite of *Customizer* (Ivailo Monev,
 > Mubiin Kimura, Graham Cantin and contributors). It takes ideas from
@@ -18,6 +21,12 @@ Ubuntu, Linux Mint and other Ubuntu-based images are refused on purpose.
 
 | Area | What you can do |
 |------|-----------------|
+| Quick Wizard | Build a whole distribution with Next, Next, Finish: source, identity, base, desktop, look, apps, branding, build |
+| Distro Branding | Your own `<id>-branding` package replacing the identity of base-files, lsb-release, distro-info-data, desktop-base, Debian logos, GRUB (live and installed) and the Calamares installer, plus an optional `<id>-archive-keyring` with your own signing key. Debian source trees are editable |
+| Package Workshop | Open any installed package (base-files, desktop-base, ...), edit files and control data directly, rebuild, install, hold, or restore Debian's version |
+| Themes & Icons | GTK, icon, cursor and LXQt themes, fonts, dark style, one-click theme packs, theme import, desktop icons |
+| Login & session | LightDM (GTK, Slick, Arctica, KDE greeters), SDDM with themes, GDM, LXDM, Ly, greetd; X11 or Wayland; compositor (picom presets, built-in, labwc, KWin, Wayfire, Sway) |
+| Developer logs | Every run writes `/tmp/eduka-customizer/eduka-customizer.log` and `errors.log`; Settings → Create bug report |
 | Source | Extract a Debian or Edukasaun OS live ISO, download an official Debian live ISO (SHA256 and GPG checked), bootstrap a new Debian base with mmdebstrap, or snapshot the running system (remastersys style) |
 | Identity | os-release (`ID=edukasaun`, `ID_LIKE=debian`), version, codename, host name, live user, Calamares branding, protected from `base-files` upgrades |
 | Language | Default and extra locales, time zone (e.g. `Asia/Dili`), keyboard, live-config defaults |
@@ -33,14 +42,27 @@ Ubuntu, Linux Mint and other Ubuntu-based images are refused on purpose.
 | Test | Boot the ISO in QEMU with BIOS, UEFI or UEFI + Secure Boot, with an optional virtual disk to test installation |
 | Automation | Full CLI and JSON recipes for reproducible builds and CI |
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Start](docs/screenshots/01-start.png) | ![Distro Branding](docs/screenshots/04-distro-branding.png) |
+| ![Edit packages directly](docs/screenshots/04b-distro-branding-build.png) | ![Package Workshop](docs/screenshots/11-package-workshop.png) |
+| ![Desktop](docs/screenshots/08-desktop.png) | ![Login screen, X11/Wayland, compositor](docs/screenshots/08b-desktop-login-session.png) |
+| ![Themes & Icons](docs/screenshots/09-themes-icons.png) | ![Appearance](docs/screenshots/10-appearance.png) |
+| ![Terminal & Live](docs/screenshots/12-terminal-live.png) | ![Build & Test](docs/screenshots/13-build-test.png) |
+| ![Dark mode](docs/screenshots/15-dark-mode.png) | ![Settings and logs](docs/screenshots/14-settings.png) |
+
+All screenshots, including every Quick Wizard step: [docs/screenshots](docs/screenshots).
+
 ## Install
 
-On Debian 13 (trixie) or Edukasaun OS:
+On Debian 13 (trixie), Edukasaun OS, Ubuntu 22.04/24.04 or an Ubuntu-based system:
 
 ```sh
 sudo apt install debhelper python3-pytest dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.10.0~alpha_all.deb
+sudo apt install ../eduka-customizer_0.11.0~alpha_all.deb
 ```
 
 Or run it from the source tree:
@@ -51,11 +73,21 @@ sudo apt install python3-pyqt6 xorriso squashfs-tools mtools dosfstools isolinux
 sudo make run
 ```
 
-Check the computer with `eduka-customizer doctor`.
+Check the computer with `eduka-customizer doctor`. The package works with PyQt6 or
+PyQt5 and Python 3.9 or newer.
+
+### When something goes wrong
+
+Every run writes logs for the developers:
+
+* `/tmp/eduka-customizer/eduka-customizer.log` — full debug log
+* `/tmp/eduka-customizer/errors.log` — errors with tracebacks
+* Settings → **Create bug report** packs both with the project state.
 
 ## Quick start (GUI)
 
 1. Start **Eduka-Customizer** from the menu (it asks for the administrator password).
+   The fastest way: **Quick Wizard** → Next, Next, Finish.
 2. **Start / Project**: create a project, then choose a Debian live ISO, an
    Edukasaun OS ISO, *Download Debian*, or *New Debian base*.
 3. Customize: **Identity & Language**, **Repositories**, **Packages**,
@@ -73,6 +105,11 @@ sudo eduka-customizer desktop install eduka --dm lightdm
 sudo eduka-customizer apt install libreoffice vlc gcompris-qt
 sudo eduka-customizer flatpak install org.geogebra.GeoGebra --firstboot
 sudo eduka-customizer brand identity name="Edukasaun OS" version=1.0 codename=Kameli
+sudo eduka-customizer branding apply --logo logo.png --wallpaper wallpaper.png --keyring --email archive@edukasaun.org
+sudo eduka-customizer themes apply --gtk Arc --icons Papirus --cursor Breeze_Snow
+sudo eduka-customizer desktop compositor picom --preset glass
+sudo eduka-customizer workshop open base-files   # edit files in ~/eduka/workshop/base-files
+sudo eduka-customizer workshop build base-files
 sudo eduka-customizer build
 eduka-customizer test --firmware uefi
 ```
@@ -92,9 +129,15 @@ Eduka-Customizer adalah pembangun ISO khusus **Edukasaun OS** berbasis
 **Debian stable, testing dan sid**. Ambil ISO sumber (Debian live atau
 Edukasaun OS), bangun desktop (Eduka-Desktop, LXQt, Xfce, KDE, GNOME, WM),
 pasang aplikasi lewat APT atau Flatpak/Flathub, edit `sources.list`, ganti
-Plymouth, layar login, wallpaper dan menu boot, lalu edit sistem secara
-langsung (live) di jendela dan simpan ke ISO. ISO hasil build bisa langsung
-diuji di QEMU (BIOS/UEFI). Ubuntu dan turunannya tidak didukung.
+Plymouth, layar login (LightDM GTK, Slick, SDDM, ...), pilih X11/Wayland dan
+compositor, tema & ikon, lalu edit sistem secara langsung (live) di jendela
+dan simpan ke ISO. **Distro Branding** membuat paket branding sendiri
+(pengganti identitas base-files, lsb-release, distro-info-data, desktop-base,
+logo Debian, GRUB, Calamares, keyring) dan **Package Workshop** membuka paket
+Debian terpasang untuk diedit langsung. Cara tercepat: **Quick Wizard**
+(Next, Next, Finish). ISO hasil build bisa langsung diuji di QEMU (BIOS/UEFI).
+Aplikasi ini bisa dipasang di Debian, Edukasaun OS, Ubuntu dan turunannya;
+ISO sumber harus Debian atau Edukasaun OS. Log error: `/tmp/eduka-customizer/`.
 
 ## License
 

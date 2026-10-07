@@ -213,22 +213,8 @@ def set_splash(isodir, image):
 
 
 def _write_png(src, dest, size=None):
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        from PyQt6.QtCore import Qt
-        from PyQt6.QtGui import QImage
-        img = QImage(str(src))
-        if img.isNull():
-            raise ValueError
-        if size:
-            img = img.scaled(size[0], size[1], Qt.AspectRatioMode.KeepAspectRatioByExpanding,
-                             Qt.TransformationMode.SmoothTransformation)
-            x = (img.width() - size[0]) // 2
-            y = (img.height() - size[1]) // 2
-            img = img.copy(x, y, size[0], size[1])
-        img.save(str(dest), "PNG")
-    except (ImportError, ValueError):
-        shutil.copy2(src, dest)
+    from eduka_customizer.core import imaging
+    imaging.write_png(src, dest, size)
 
 
 # --------------------------------------------------------------------------

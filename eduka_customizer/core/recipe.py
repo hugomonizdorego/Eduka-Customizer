@@ -74,6 +74,31 @@ def run_step(project, step, base, build=True):
     elif action == "desktop":
         DesktopManager(project).install(step["id"], dm_id=step.get("dm"),
                                         remove_others=step.get("remove_others", False))
+    elif action == "branding":
+        from eduka_customizer.core.distrobrand import BrandingSpec, DistroBranding
+        spec = BrandingSpec.from_project(project)
+        for k, v in step.items():
+            if k in ("logo", "wallpaper", "login_background", "grub_background") and v:
+                v = str(_path(base, v))
+            if hasattr(spec, k):
+                setattr(spec, k, v)
+        DistroBranding(project).apply(spec, with_keyring=step.get("keyring", False),
+                                      email=step.get("email", ""))
+    elif action == "themes":
+        from eduka_customizer.core.themes import Themes
+        th = Themes(project)
+        if step.get("packs"):
+            th.install_packs(step["packs"])
+        th.apply(step.get("gtk", ""), step.get("icons", ""), step.get("cursor", ""),
+                 step.get("font", ""), step.get("dark", False), step.get("lxqt_theme", ""))
+        if "desktop_icons" in step:
+            th.desktop_icons(**step["desktop_icons"])
+    elif action == "session-type":
+        DesktopManager(project).set_session_type(step["desktop"], step["type"])
+    elif action == "compositor":
+        DesktopManager(project).set_compositor(step["id"], step.get("preset", "shadows"))
+    elif action == "sddm-theme":
+        DesktopManager(project).set_sddm_theme(step["theme"])
     elif action == "session":
         DesktopManager(project).set_default_session(step["id"])
     elif action == "display-manager":
@@ -115,7 +140,14 @@ def run_step(project, step, base, build=True):
     elif action == "command":
         hooks.run_command(project, step["run"])
     elif action == "boot":
-        project.state["boot"].update({k: v for k, v in step.items() if k != "action"})
+        values = {k: v for k, v in step.items() if k != "action"}
+        if values.get("splash"):
+            values["splash"] = str(_path(base, values["splash"]))
+        project.state["boot"].update(values)
+        build = project.state.setdefault("build", {})
+        for src, dst in (("extra_params", "boot_params"), ("timeout", "timeout"), ("title", "title")):
+            if src in values:
+                build[dst] = values[src]
         project.save()
     elif action == "build":
         if not build:

@@ -1,6 +1,6 @@
 """Packages page: search, install and remove Debian packages."""
 
-from PyQt6.QtWidgets import (QAbstractItemView, QCheckBox, QFileDialog, QHeaderView, QLineEdit,
+from eduka_customizer.qt.widgets import (QAbstractItemView, QCheckBox, QFileDialog, QHeaderView, QLineEdit,
                              QListWidget, QMessageBox, QTableWidget, QTableWidgetItem)
 
 from eduka_customizer.core.apt import Packages, read_package_list

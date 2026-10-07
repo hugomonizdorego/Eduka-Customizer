@@ -6,9 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (QFileDialog, QLineEdit, QListWidget, QMessageBox, QPlainTextEdit,
+from eduka_customizer.qt.core import Qt, QTimer
+from eduka_customizer.qt.gui import QFont
+from eduka_customizer.qt.widgets import (QFileDialog, QLineEdit, QListWidget, QMessageBox, QPlainTextEdit,
                              QSplitter)
 
 from eduka_customizer.core import bootloader, hooks
@@ -34,6 +34,28 @@ def terminal_command(cmd):
                 return [exe] + args + [" ".join(shlex.quote(c) for c in cmd)]
             return [exe] + args + cmd
     return None
+
+
+SETTINGS_APPS = [
+    ("eduka-menu-settings", "Eduka-Menu and Eduka-Panel settings"),
+    ("lxqt-config-appearance", "LXQt appearance (themes, icons, fonts)"),
+    ("lxqt-config", "LXQt configuration center"),
+    ("pcmanfm-qt --desktop-pref", "Desktop: wallpaper and desktop icons"),
+    ("obconf", "Openbox window manager"),
+    ("xfce4-appearance-settings", "Xfce appearance"),
+    ("xfce4-settings-manager", "Xfce settings manager"),
+    ("systemsettings", "KDE System Settings"),
+    ("gnome-control-center", "GNOME Settings"),
+    ("gnome-tweaks", "GNOME Tweaks"),
+    ("mate-control-center", "MATE Control Center"),
+    ("cinnamon-settings", "Cinnamon System Settings"),
+    ("lxappearance", "LXAppearance (GTK themes)"),
+    ("qt5ct", "Qt5 settings"),
+    ("qt6ct", "Qt6 settings"),
+    ("lightdm-gtk-greeter-settings", "LightDM GTK greeter settings"),
+    ("xfce4-terminal", "Terminal (Xfce)"),
+    ("qterminal", "Terminal (QTerminal)"),
+]
 
 
 class TerminalPage(Page):
@@ -62,7 +84,9 @@ class TerminalPage(Page):
         c.add(hbox(button("Start live session", self.start_live, "primary"),
                    button("Stop", self.stop_live, "danger"), None, self.app_cmd,
                    button("Run in session", self.run_app)))
-        c.add(hbox(None, button("Stop and build ISO", self.stop_and_build)))
+        self.apps = combo([])
+        c.add(hbox(label("Settings app"), self.apps, button("Open in session", self.run_settings_app), None,
+                   button("Stop and build ISO", self.stop_and_build)))
         self.poll = QTimer(self)
         self.poll.timeout.connect(self._poll_live)
 
@@ -113,6 +137,11 @@ class TerminalPage(Page):
         want = cur or self.project.state.get("desktop", {}).get("session")
         if want and self.session.findData(want) >= 0:
             self.session.setCurrentIndex(self.session.findData(want))
+        self.apps.clear()
+        for cmd, text in SETTINGS_APPS:
+            exe = cmd.split()[0]
+            if any((self.project.rootfs / d / exe).exists() for d in ("usr/bin", "usr/sbin", "usr/games")):
+                self.apps.addItem(text, cmd)
         self.hooks.clear()
         for h in hooks.hook_dirs(self.project):
             self.hooks.addItem(h.name)
@@ -178,6 +207,15 @@ class TerminalPage(Page):
                 self.main.live.run_app(cmd)
             except RuntimeError as e:
                 QMessageBox.warning(self, "Live session", str(e))
+
+    def run_settings_app(self):
+        cmd = self.apps.currentData()
+        if not cmd:
+            return
+        if not (self.main.live and self.main.live.running):
+            QMessageBox.information(self, "Live session", "Start the live session first.")
+            return
+        self.main.live.run_app(cmd)
 
     # Terminal -------------------------------------------------------------------------
     def run_command(self):

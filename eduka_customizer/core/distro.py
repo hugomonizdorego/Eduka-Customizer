@@ -225,8 +225,7 @@ def detect(rootfs):
     if info.suite == "sid":
         info.debian_codename = "sid"
     info.is_edukasaun = (info.id == "edukasaun" or "edukasaun" in info.name.lower()
-                         or "edukasaun" in info.pretty_name.lower()
-                         or (rootfs / "usr/lib/edukasaun-desktop").is_dir())
+                         or "edukasaun" in info.pretty_name.lower())
     info.arch = elf_arch(rootfs)
     return info
 

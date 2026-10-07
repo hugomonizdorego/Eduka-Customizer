@@ -3,7 +3,7 @@
 import logging
 import traceback
 
-from PyQt6.QtCore import QObject, QThread, pyqtSignal
+from eduka_customizer.qt.core import QObject, QThread, pyqtSignal
 
 from eduka_customizer.core import runner
 from eduka_customizer.core.log import get_logger
@@ -11,6 +11,7 @@ from eduka_customizer.core.log import get_logger
 
 class LogBridge(QObject):
     message = pyqtSignal(int, str)
+    crashed = pyqtSignal(str)
 
 
 class QtLogHandler(logging.Handler):
@@ -43,7 +44,7 @@ class Task(QThread):
             self.done.emit(False, None, str(e))
             return
         except Exception as e:  # report everything to the user
-            get_logger().debug(traceback.format_exc())
+            get_logger().error("Task '%s' failed: %s\n%s", self.name, e, traceback.format_exc())
             self.done.emit(False, None, str(e) or e.__class__.__name__)
             return
         self.done.emit(True, result, "")

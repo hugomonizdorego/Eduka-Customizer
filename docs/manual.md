@@ -1,6 +1,6 @@
 # Eduka-Customizer manual
 
-Version 0.10 Alpha.
+Version 0.11 Alpha.
 
 ## Concepts
 
@@ -20,7 +20,8 @@ logs/          eduka-customizer.log, live-session.log, qemu.log
 
 Only one Eduka-Customizer instance can use a project at a time.
 
-**Supported systems.** Debian stable, testing and sid, and Edukasaun OS.
+**Supported systems.** Images: Debian stable, testing and sid, and Edukasaun OS.
+Build computer: Debian, Edukasaun OS, Ubuntu or an Ubuntu-based system.
 The check reads `/etc/os-release`, `/etc/debian_version` and the APT sources
 of the image. Ubuntu and every Ubuntu derivative are refused, and so are
 other Debian derivatives. Debian oldstable is refused unless
@@ -37,6 +38,62 @@ user leaves. *Terminal & Live → Unmount everything* or
 `eduka-customizer clean --unmount-only` recovers after a crash.
 
 ## Pages of the GUI
+
+### Quick Wizard
+Eight steps — Source, Identity, Base system, Desktop, Look, Applications,
+Branding, Finish. Every answer becomes a recipe step; the last page shows the
+recipe. Finish creates or opens the project, extracts the ISO or bootstraps
+Debian, runs every step and (optionally) builds the ISO. The recipe is saved as
+`PROJECT/recipe-wizard.json` so the build can be repeated with
+`eduka-customizer recipe apply`.
+
+### Distro Branding
+Turns Debian into your own distribution without patching Debian's packages.
+It generates a Debian source package `PROJECT/branding/<id>-branding/`
+(`debian/control`, `changelog`, `copyright`, `rules`, `<id>-branding.install`,
+`postinst`, `prerm` and a `files/` tree), builds it with `dpkg-deb` and
+installs it into the image. Its `postinst` uses `dpkg-divert` so Debian's
+files move to `*.distrib` and yours take their place:
+
+| Debian package | What is replaced |
+|---|---|
+| base-files | `/usr/lib/os-release` (`ID=<id>`, `ID_LIKE=debian`, `LOGO=<id>-logo`), `/etc/issue`, `/etc/issue.net` |
+| lsb-release | `/etc/lsb-release`; `lsb_release -a` reads os-release |
+| distro-info-data | `/usr/share/distro-info/<id>.csv` is added |
+| desktop-base | wallpaper, login and GRUB images registered as `desktop-background`, `desktop-grub`, ... alternatives |
+| Debian logos | every Debian logo found in the image (desktop-base, icon themes, Plymouth) is re-rendered from your logo in the same size and format |
+| grub | `/etc/default/grub.d/90-<id>.cfg`: name, background, timeout, `quiet splash` |
+| calamares-settings-debian | `/etc/calamares/branding/<id>/` (logo, colors, slideshow) and `settings.conf` |
+| debian-archive-keyring | optional `<id>-archive-keyring` with your own ed25519 key (back it up!) |
+
+`/etc/debian_version` stays: many tools need it to know they run on Debian.
+`VERSION_CODENAME` stays the Debian codename for the same reason.
+
+*Secure Boot*: Debian's signed GRUB reads `EFI/debian/grub.cfg`. With
+"Keep Secure Boot working" a small hook copies GRUB's configuration there when
+the EFI folder carries your name, and Calamares installs with the EFI id
+`debian`.
+
+Edit any file in "Edit the packages directly", then *Build and install edited
+source*. Debian updates keep your branding; removing the package gives Debian
+its files back.
+
+### Package Workshop
+Opens an installed package (dpkg-repack style) into `PROJECT/workshop/<pkg>/`:
+all its files plus `DEBIAN/control`, `conffiles` and maintainer scripts.
+Edit, then *Build and install*: the version becomes `<version>+<id>N`, the
+package is installed and (optionally) held with `apt-mark hold`. A copy that
+lost files of the original is refused, because dpkg would delete them from
+the image. *Restore Debian version* unholds and reinstalls the original.
+Prefer Distro Branding for identity changes: it needs no hold, so security
+updates keep flowing.
+
+### Themes & Icons
+Default GTK theme, icons, cursor, LXQt/Eduka theme, font and dark style,
+written for GTK 2/3/4, GNOME, Cinnamon, MATE (gsettings overrides), LXQt and
+Eduka-Desktop, Xfce and KDE. One-click theme packs (only those available for
+the image's Debian suite are installed), import of theme archives or folders,
+and desktop icons for LXQt/Eduka-Desktop and Xfce.
 
 ### Start / Project
 Create or open a project, then pick the source:
@@ -104,9 +161,16 @@ skips the live session). The second option keeps the ISO small.
 * **Eduka-Desktop defaults** are read from the installed
   `eduka_common.py` (so new settings of future versions appear
   automatically) and written to `/etc/skel/.config/eduka-desktop/`.
-* Login manager: LightDM (GTK or Slick greeter), SDDM, GDM, LXDM. Default
-  session for the login manager, live autologin and `x-session-manager`.
-  Window manager used by LXQt/Eduka-Desktop.
+* **Login screen**: LightDM with the GTK, Slick, Arctica or KDE greeter,
+  SDDM (with theme choice), GDM, LXDM, Ly or greetd + tuigreet. *Check
+  availability* disables the ones the image's Debian suite does not have.
+* **Session type and compositor**: X11 or Wayland for desktops that offer
+  both (GDM and SDDM are configured to match). Compositors for X11: picom
+  with presets (light, shadows, glass blur for Eduka-Desktop Liquid Glass,
+  off), xcompmgr, the desktop's built-in compositor, or none. For Wayland
+  (LXQt): labwc, KWin, Wayfire or Sway.
+* Default session for the login manager, live autologin and
+  `x-session-manager`; window manager used by LXQt/Eduka-Desktop.
 
 ### Appearance
 * Plymouth: choose an installed theme, import a theme folder or archive, or
@@ -123,7 +187,9 @@ skips the live session). The second option keeps the ISO small.
 * **Live edit session** – starts the image's desktop in a Xephyr window.
   Modes: */etc/skel* (changes become defaults for all users, including the
   live user), *root*, or *sandbox* (temporary, discarded). *Run in session*
-  starts any program inside it. When you stop, caches are removed and files
+  starts any program inside it; *Settings app* opens the desktop's own tools
+  (Eduka-Menu settings, LXQt appearance, Xfce/KDE/GNOME settings, ...) to change
+  icons, themes, panels and desktop icons visually. When you stop, caches are removed and files
   that mention `/etc/skel` are listed for review.
 * **Terminal** – opens your terminal emulator with a root shell inside the
   image (`eduka-customizer shell`); or run one command.
@@ -156,7 +222,19 @@ Test in QEMU with BIOS, UEFI, or UEFI + Secure Boot (OVMF), with KVM when
 available and an optional virtual disk to test installation.
 
 ### Settings
-Global settings, host tool check with *Install missing packages*, About.
+Global settings, host tool check with *Install missing packages*, the last
+errors, *Create bug report*, About.
+
+## Logs for developers
+
+Every run (GUI and CLI) writes to `/tmp/eduka-customizer/`:
+
+* `eduka-customizer.log` — everything, including every command (rotated at 5 MiB)
+* `errors.log` — errors and unhandled exceptions with full tracebacks
+* `bug-report-*.tar.gz` — created by Settings → Create bug report (logs,
+  `project.json`, project logs, versions)
+
+The project's own log is `PROJECT/logs/eduka-customizer.log`.
 
 ## Command line
 
@@ -169,7 +247,8 @@ A recipe is a JSON file with a list of steps. Paths are relative to the
 recipe file. Actions: `sources`, `repo`, `apt-install`, `apt-remove`,
 `apt-upgrade`, `deb`, `flatpak`, `desktop`, `session`, `display-manager`,
 `eduka-desktop`, `identity`, `locale`, `plymouth`, `wallpaper`, `login`,
-`hook`, `command`, `boot`, `build`. Example: `examples/edukasaun-school.json`.
+`hook`, `command`, `boot`, `branding`, `themes`, `session-type`, `compositor`,
+`sddm-theme`, `build`. Example: `examples/edukasaun-school.json`.
 `recipe export` writes a recipe from the current project.
 
 ## Troubleshooting

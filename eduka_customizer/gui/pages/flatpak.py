@@ -1,8 +1,8 @@
 """Flatpak page: Flathub setup, search, install now or on first boot."""
 
-from PyQt6.QtWidgets import QAbstractItemView, QLineEdit, QListWidget, QListWidgetItem, QMessageBox
+from eduka_customizer.qt.widgets import QAbstractItemView, QLineEdit, QListWidget, QListWidgetItem, QMessageBox
 
-from PyQt6.QtCore import Qt
+from eduka_customizer.qt.core import Qt
 
 from eduka_customizer.core.flatpak import EDUCATION_PICKS, Flatpak, search_flathub
 from eduka_customizer.gui.pages.packages import fill, table
