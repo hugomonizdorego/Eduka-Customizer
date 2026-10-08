@@ -425,7 +425,7 @@ class WizardPage(Page):
         i = self.stack.currentIndex()
         parts = []
         for n, s in enumerate(STEPS):
-            parts.append("<b style='color:#00a879'>{}. {}</b>".format(n + 1, s) if n == i else
+            parts.append("<b style='color:#2f6fde'>{}. {}</b>".format(n + 1, s) if n == i else
                          "{}. {}".format(n + 1, s))
         self.steps_bar.setText("  ›  ".join(parts))
         self.back.setEnabled(i > 0)

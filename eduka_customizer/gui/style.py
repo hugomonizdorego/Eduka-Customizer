@@ -1,34 +1,41 @@
-"""Look and feel of the DistroForge window (Eduka green accent)."""
+"""Look and feel of the DistroForge window.
 
-ACCENT = "#00a879"
+Calm slate and blue: a dark slate sidebar, white cards on a cool light grey, and
+one blue accent for what you press. Green, amber and red only say how something
+went (done, look at it, problem), so the colors keep their meaning. Text keeps
+a contrast of at least 4.5:1 (WCAG AA) in both themes.
+"""
 
 LIGHT = {
-    "bg": "#f2f5f4", "panel": "#ffffff", "side": "#0c2a23", "side2": "#08463a", "side_text": "#cfe8df",
-    "side_sel": "#00a879", "text": "#16231f", "muted": "#5f716c", "border": "#dfe8e4",
-    "input": "#ffffff", "hover": "#e8f6f1", "log_bg": "#0d1916", "log_text": "#cfe9e0",
-    "warn": "#b26a00", "error": "#c62828", "ok": "#1b8a5a", "soft": "#edf7f3", "shadow": "#d3dedb",
+    "bg": "#f3f5f9", "panel": "#ffffff", "side": "#161b26", "side2": "#232c40", "side_text": "#c8d0e0",
+    "accent": "#2f6fde", "accent2": "#4c8bf0", "accent_hover": "#2459bf", "accent_rgb": "47,111,222",
+    "text": "#1b2232", "muted": "#5a667d", "border": "#dce2ec",
+    "input": "#ffffff", "hover": "#edf2fc", "log_bg": "#151a24", "log_text": "#d3dbea",
+    "warn": "#b45309", "error": "#c62828", "ok": "#1f8a4c", "soft": "#eef3fd", "shadow": "#d5dbe6",
 }
 DARK = {
-    "bg": "#101614", "panel": "#18211e", "side": "#07120f", "side2": "#0b2d26", "side_text": "#c9e6dc",
-    "side_sel": "#00a879", "text": "#e3efeb", "muted": "#90a49e", "border": "#26332f",
-    "input": "#1f2a27", "hover": "#203029", "log_bg": "#080d0c", "log_text": "#cfe9e0",
-    "warn": "#f0a841", "error": "#ff6b6b", "ok": "#4cd394", "soft": "#17302a", "shadow": "#0a0f0e",
+    "bg": "#11151d", "panel": "#1a202b", "side": "#0c1018", "side2": "#1b2336", "side_text": "#c3cbdc",
+    "accent": "#4c8bf0", "accent2": "#6aa1f5", "accent_hover": "#3a78e0", "accent_rgb": "76,139,240",
+    "text": "#e4e9f2", "muted": "#97a2b8", "border": "#2a3242",
+    "input": "#202838", "hover": "#232d40", "log_bg": "#0a0d13", "log_text": "#d3dbea",
+    "warn": "#f0a841", "error": "#ff6b6b", "ok": "#4cc68a", "soft": "#1c263b", "shadow": "#0a0d13",
 }
+ACCENT = LIGHT["accent"]
 
 QSS = """
 QWidget {{ color: {text}; font-size: 10pt; font-family: "Inter", "Noto Sans", "Cantarell", "Ubuntu", "DejaVu Sans", sans-serif; }}
 QMainWindow, QWidget#pageArea, QScrollArea, QScrollArea > QWidget > QWidget {{ background: {bg}; }}
 QFrame#sidebar {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {side2}, stop:0.45 {side}, stop:1 {side}); }}
 QFrame#dropZone {{ border: 2px dashed {accent}; border-radius: 14px; background: {soft}; }}
-QFrame#dropZone[hover="true"] {{ background: rgba(0,168,121,0.18); }}
+QFrame#dropZone[hover="true"] {{ background: rgba({accent_rgb},0.16); }}
 QLabel#brand {{ color: white; font-size: 14.5pt; font-weight: 800; padding: 22px 12px 0 20px; letter-spacing: 0.3px; }}
 QLabel#brandSub {{ color: {side_text}; padding: 2px 16px 16px 20px; font-size: 8.8pt; }}
 QListWidget#nav {{ background: transparent; border: none; outline: 0; padding: 4px 10px; }}
 QListWidget#nav::item {{ color: {side_text}; padding: 7px 10px; border-radius: 10px; margin: 1px 0; }}
 QListWidget#nav::item:hover {{ background: rgba(255,255,255,0.07); }}
-QListWidget#nav::item:selected {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {accent}, stop:1 #12c196);
+QListWidget#nav::item:selected {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {accent}, stop:1 {accent2});
     color: white; font-weight: 700; }}
-QListWidget#nav::item:disabled {{ color: rgba(207,232,223,0.30); }}
+QListWidget#nav::item:disabled {{ color: rgba(200,208,224,0.32); }}
 QLabel#pageTitle {{ font-size: 21pt; font-weight: 800; letter-spacing: -0.2px; }}
 QLabel#pageSubtitle {{ color: {muted}; font-size: 10.2pt; }}
 QLabel#muted {{ color: {muted}; }}
@@ -41,12 +48,13 @@ QPushButton {{ background: {panel}; border: 1px solid {border}; border-radius: 1
 QPushButton:hover {{ background: {hover}; border-color: {accent}; }}
 QPushButton:pressed {{ background: {soft}; }}
 QPushButton:disabled {{ color: {muted}; background: {bg}; }}
-QPushButton#primary {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {accent}, stop:1 #12c196);
+QPushButton#primary {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {accent}, stop:1 {accent2});
     color: white; border: none; font-weight: 700; padding: 9px 18px; }}
-QPushButton#primary:hover {{ background: #00926a; }}
+QPushButton#primary:hover {{ background: {accent_hover}; }}
 QPushButton#primary:disabled {{ background: {border}; color: {muted}; }}
 QPushButton#danger {{ color: {error}; }}
 QPushButton#danger:hover {{ border-color: {error}; background: rgba(198,40,40,0.08); }}
+QPushButton#danger:disabled {{ color: {muted}; }}
 QPushButton#tile {{ text-align: left; padding: 14px; border-radius: 14px; }}
 QPushButton#tile:checked {{ border: 2px solid {accent}; background: {soft}; }}
 QLineEdit, QPlainTextEdit, QTextEdit, QListWidget, QTreeWidget, QTableWidget {{
@@ -68,13 +76,13 @@ QTabWidget#sectionTabs > QTabBar {{ background: {panel}; border-bottom: 1px soli
 QTabWidget#sectionTabs > QTabBar::tab {{ padding: 9px 18px; margin: 7px 4px; border: none; border-radius: 15px; }}
 QTabWidget#sectionTabs > QTabBar::tab:selected {{ background: {soft}; color: {accent}; border: none; }}
 QProgressBar {{ border: none; border-radius: 6px; background: {border}; text-align: center; height: 12px; }}
-QProgressBar::chunk {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {accent}, stop:1 #12c196); border-radius: 6px; }}
+QProgressBar::chunk {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {accent}, stop:1 {accent2}); border-radius: 6px; }}
 QProgressBar#stepProgress {{ max-height: 6px; min-height: 6px; border-radius: 3px; }}
 QProgressBar#stepProgress::chunk {{ border-radius: 3px; }}
 QPlainTextEdit#log {{ background: {log_bg}; color: {log_text}; font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace;
     font-size: 9pt; border-radius: 12px; }}
-QPlainTextEdit#console {{ background: #0b1110; color: #b9f2dc; font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace;
-    font-size: 9.5pt; border-radius: 12px; border: 1px solid #1d2c28; }}
+QPlainTextEdit#console {{ background: #0e121a; color: #cfe0ff; font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    font-size: 9.5pt; border-radius: 12px; border: 1px solid #252d3c; }}
 QLineEdit#consoleInput {{ font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; }}
 QFrame#statusBar {{ background: {panel}; border-top: 1px solid {border}; }}
 QFrame#headerBar {{ background: {panel}; border-bottom: 1px solid {border}; }}
@@ -96,9 +104,7 @@ QSplitter::handle {{ background: {bg}; }}
 
 
 def stylesheet(dark=False):
-    colors = dict(DARK if dark else LIGHT)
-    colors["accent"] = ACCENT
-    return QSS.format(**colors)
+    return QSS.format(**(DARK if dark else LIGHT))
 
 
 def colors(dark=False):
@@ -111,7 +117,7 @@ def palette(dark=False):
     from eduka_customizer.qt.widgets import QStyleFactory
     pal = QStyleFactory.create("Fusion").standardPalette()
     if not dark:
-        pal.setColor(QPalette.ColorRole.Highlight, QColor(ACCENT))
+        pal.setColor(QPalette.ColorRole.Highlight, QColor(LIGHT["accent"]))
         return pal
     c = DARK
     roles = {
@@ -119,7 +125,7 @@ def palette(dark=False):
         QPalette.ColorRole.Base: c["input"], QPalette.ColorRole.AlternateBase: c["panel"],
         QPalette.ColorRole.Text: c["text"], QPalette.ColorRole.Button: c["panel"],
         QPalette.ColorRole.ButtonText: c["text"], QPalette.ColorRole.ToolTipBase: c["panel"],
-        QPalette.ColorRole.ToolTipText: c["text"], QPalette.ColorRole.Highlight: ACCENT,
+        QPalette.ColorRole.ToolTipText: c["text"], QPalette.ColorRole.Highlight: c["accent"],
         QPalette.ColorRole.HighlightedText: "#ffffff", QPalette.ColorRole.PlaceholderText: c["muted"],
     }
     for role, color in roles.items():

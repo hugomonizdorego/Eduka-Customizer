@@ -156,3 +156,31 @@ def test_opener_finds_runuser_outside_path(monkeypatch, tmp_path):
     assert cmd[0] == str(sbin / "runuser") and cmd[1:4] == ["-u", "alice", "--"]
     monkeypatch.setattr(opener, "SEARCH_PATH", "/nonexistent")
     assert opener.user_command("alice", ["x"]) is None or opener.user_command("alice", ["x"])[0].endswith("sudo")
+
+
+def test_keep_only_iso(tmp_path, monkeypatch):
+    from eduka_customizer.core import chroot, projectfiles
+    from eduka_customizer.core.project import Project
+    p = Project.create(tmp_path / "proj")
+    assert (p.path / "README.txt").read_text().startswith("This is a DistroForge project folder")
+    (p.rootfs / "etc").mkdir(parents=True)
+    (p.rootfs / "etc/hostname").write_text("x\n")
+    (p.path / "hooks").mkdir()
+    (p.path / "notes.txt").write_text("mine")
+    with pytest.raises(RuntimeError):
+        projectfiles.keep_only_iso(p)  # no ISO yet: nothing is deleted
+    assert (p.rootfs / "etc/hostname").exists()
+    (p.output / "my-1.0.iso").write_bytes(b"iso")
+    (p.output / "my-1.0.iso.sha256").write_text("abc  my-1.0.iso\n")
+    monkeypatch.setattr(chroot.Chroot, "force_release", lambda self: None)
+    monkeypatch.setattr(chroot, "mounts_under", lambda path: ["/x/rootfs/proc"])
+    monkeypatch.setattr(chroot, "unmount_all", lambda path: None)
+    with pytest.raises(RuntimeError):
+        projectfiles.keep_only_iso(p)  # still mounted: nothing is deleted
+    assert (p.rootfs / "etc/hostname").exists() and (p.output / "my-1.0.iso").exists()
+    monkeypatch.setattr(chroot, "mounts_under", lambda path: [])
+    isos, own = projectfiles.keep_only_iso(p)
+    assert sorted(x.name for x in p.path.iterdir()) == ["my-1.0.iso", "my-1.0.iso.sha256", "notes.txt"]
+    assert own == ["notes.txt"] and [x.name for x in isos] == ["my-1.0.iso", "my-1.0.iso.sha256"]
+    with pytest.raises(RuntimeError):
+        projectfiles.keep_only_iso(p)  # not a project folder any more

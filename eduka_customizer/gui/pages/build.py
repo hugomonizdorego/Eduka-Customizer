@@ -104,7 +104,15 @@ class BuildPage(Page):
         c = self.card("Result")
         self.result = label("No image built yet.")
         c.add(self.result)
-        c.add(hbox(button("Open output folder", self.open_output), None))
+        c.add(hbox(button("Open output folder", self.open_output), None,
+                   button("Keep only the ISO...", lambda: self.main.keep_only_iso(), "danger",
+                          tooltip="Delete the build folders of this project; the ISO stays")))
+
+        c = self.card("Project folder", "Everything of this project is in one folder, each part in its own "
+                                        "sub-folder. You may open them and change files by hand.")
+        self.folders = label("", "muted")
+        c.add(self.folders)
+        c.add(hbox(button("Open project folder", lambda: self._open(self.project.path)), None))
 
         c = self.card("Test in a virtual machine (QEMU)")
         f = c.form()
@@ -141,6 +149,7 @@ class BuildPage(Page):
     def refresh(self):
         if not self.project:
             return
+        self._folders()
         o = BuildOptions.from_project(self.project)
         self.iso_name.setText(o.iso_name)
         self.label_.setText(o.volume_label)
@@ -206,8 +215,11 @@ class BuildPage(Page):
 
         def done(out):
             self.test_iso.setText(str(out))
+            self.main.built_iso = str(out)
             self.refresh()
-            QMessageBox.information(self, "ISO ready", "Your ISO image is ready:\n{}".format(out))
+            QMessageBox.information(self, "ISO ready", "Your ISO image is ready:\n{}\n\nTry it with 'Boot ISO' below. "
+                                    "When you are happy with it, 'Keep only the ISO' frees the disk space of the "
+                                    "build folders.".format(out))
         self.task("Build ISO", lambda t: build(proj, opts, t.set_progress, t.set_stage), done)
 
     # Checks -----------------------------------------------------------------------
@@ -341,6 +353,18 @@ class BuildPage(Page):
             self.result.setText("ISO image (boot files renewed): <b>{}</b>".format(out))
             self.test_iso.setText(str(out))
         self.task("Rebuild boot files", lambda t: quick_build(proj, opts, t.set_progress, t.set_stage), done)
+
+    def _open(self, path):
+        from eduka_customizer.gui.opener import open_url
+        open_url(path)
+
+    def _folders(self):
+        from eduka_customizer.core.projectfiles import FOLDERS
+        rows = []
+        for name, text, by_hand in FOLDERS:
+            if (self.project.path / name).exists():
+                rows.append("<b>{}/</b> — {}{}".format(name, text, "" if by_hand else " <i>(made by DistroForge)</i>"))
+        self.folders.setText("{}<br>{}".format(self.project.path, "<br>".join(rows)))
 
     def open_output(self):
         if self.project:

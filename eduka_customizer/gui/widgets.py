@@ -473,7 +473,7 @@ def table(headers):
     return t
 
 
-def fill(t, rows):
+def fill(t, rows, sort=True):
     from eduka_customizer.qt.widgets import QTableWidgetItem
     t.setRowCount(0)
     t.setSortingEnabled(False)
@@ -481,5 +481,5 @@ def fill(t, rows):
         t.insertRow(r)
         for c, value in enumerate(row):
             t.setItem(r, c, QTableWidgetItem(str(value)))
-    t.setSortingEnabled(True)
+    t.setSortingEnabled(sort)
     t.resizeColumnToContents(0)

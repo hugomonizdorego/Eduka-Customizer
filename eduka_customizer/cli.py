@@ -880,6 +880,20 @@ def cmd_clean(args):
     unmount_all(p.path)
     if args.unmount_only:
         return 0
+    if args.keep_iso:
+        from eduka_customizer.core import projectfiles
+        isos = [f.name for f in projectfiles.iso_files(p) if f.suffix == ".iso"]
+        if not isos:
+            raise SystemExit("There is no finished ISO in {}".format(p.output))
+        if not args.yes:
+            answer = input("Delete everything of {} but {}? [y/N] ".format(p.path, ", ".join(isos)))
+            if answer.strip().lower() not in ("y", "yes"):
+                return 1
+        isos, own = projectfiles.keep_only_iso(p, lambda text: print(text))
+        print("Only the ISO is left:", " ".join(str(f) for f in isos if f.suffix == ".iso"))
+        if own:
+            print("Your own files stayed:", ", ".join(own))
+        return 0
     if args.all:
         for d in (p.rootfs, p.isodir, p.cache, p.bootdir):
             if d.exists():
@@ -1221,6 +1235,9 @@ Help for one command: distroforge COMMAND --help""")
     s = sub.add_parser("clean", help="unmount everything and remove caches")
     s.add_argument("--unmount-only", action="store_true")
     s.add_argument("--all", action="store_true", help="also remove rootfs and ISO tree")
+    s.add_argument("--keep-iso", action="store_true",
+                   help="when the ISO is finished: delete everything of the project but the ISO")
+    s.add_argument("-y", "--yes", action="store_true", help="do not ask before --keep-iso deletes")
     s.set_defaults(func=cmd_clean)
 
     s = sub.add_parser("doctor", help="check host tools")

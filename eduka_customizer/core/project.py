@@ -100,16 +100,21 @@ class Project:
         for d in (p.rootfs, p.isodir, p.output, p.cache, p.logs, p.bootdir):
             d.mkdir(exist_ok=True)
         p.save()
+        from eduka_customizer.core.projectfiles import write_readme
+        write_readme(p)
         return p
 
     @classmethod
     def open(cls, path):
         p = cls(path)
         if not p.state_file.is_file():
-            raise FileNotFoundError("Not an DistroForge project: {}".format(p.path))
+            raise FileNotFoundError("Not a DistroForge project: {}".format(p.path))
         p.load()
         for d in (p.output, p.cache, p.logs, p.bootdir):
             d.mkdir(exist_ok=True)
+        if not (p.path / "README.txt").exists():
+            from eduka_customizer.core.projectfiles import write_readme
+            write_readme(p)
         if p.has_rootfs():
             try:
                 from eduka_customizer.core import legacy

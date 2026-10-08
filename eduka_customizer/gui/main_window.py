@@ -148,6 +148,7 @@ class MainWindow(QMainWindow):
         self.project = None
         self.task = None
         self.pending = []  # changes waiting in Review & Apply
+        self.built_iso = None  # set after a build: closing offers to keep only the ISO
         self.live = None
         self._file_handler = None
         self._task_started = 0
@@ -643,8 +644,8 @@ class MainWindow(QMainWindow):
     def _append_log(self, level, text):
         c = style.colors(self.dark)
         color = {logging.WARNING: c["warn"], logging.ERROR: c["error"],
-                 logging.CRITICAL: c["error"], OUTPUT: "#8fb3a8",
-                 logging.DEBUG: "#6f8a83"}.get(level, "#e6f5ef")
+                 logging.CRITICAL: c["error"], OUTPUT: "#9fb0cc",
+                 logging.DEBUG: "#7a879e"}.get(level, "#e3e9f4")
         fmt = QTextCharFormat()
         fmt.setForeground(QColor(color))
         cursor = self.log.textCursor()
@@ -666,7 +667,67 @@ class MainWindow(QMainWindow):
             total = self.splitter.height() or 800
             self.splitter.setSizes([total - 130, 130])
 
+    # Clean up after the build ---------------------------------------------------------------
+    def keep_only_iso(self, closing=False):
+        """Ask, then delete everything of the project but the ISO. Returns True when it started."""
+        from eduka_customizer.core import projectfiles
+        if not self.project:
+            return False
+        if self.task:
+            QMessageBox.information(self, APP_NAME, "Wait until '{}' is finished.".format(self.task.name))
+            return False
+        isos = [f for f in projectfiles.iso_files(self.project) if f.suffix == ".iso"]
+        if not isos:
+            QMessageBox.information(self, APP_NAME, "There is no finished ISO in this project yet.")
+            return False
+        from eduka_customizer.core.preflight import _human
+        sizes = projectfiles.folder_sizes(self.project)
+        gone = "\n".join("  {}/  ({})".format(n, _human(b)) for n, _p, b in sizes if n != "output")
+        box = QMessageBox(QMessageBox.Icon.Question, "Keep only the ISO",
+                          "Delete the build folders of this project and keep only the ISO?\n\n"
+                          "Stays (moved to {}):\n{}\n\nDeleted:\n{}\n  project.json and the other files "
+                          "DistroForge made\n\nThe project cannot be opened again; your own files in the folder "
+                          "stay.".format(self.project.path, "\n".join("  " + f.name for f in isos), gone), parent=self)
+        delete = box.addButton("Delete all but the ISO", QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton("Keep the project" if closing else "Cancel", QMessageBox.ButtonRole.RejectRole)
+        cancel = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole) if closing else None
+        box.exec()
+        if box.clickedButton() is cancel and closing:
+            return None
+        if box.clickedButton() is not delete:
+            return False
+        proj = self.project
+        if self.live and self.live.running:
+            self.live.stop()
+        if self._file_handler:
+            remove_handler(self._file_handler)
+            self._file_handler = None
+
+        def done(result):
+            isos_left, own = result
+            self.project = None
+            self.pending = []
+            self.built_iso = None
+            self._update_pending()
+            self.update_state()
+            QMessageBox.information(self, APP_NAME, "Only the ISO is left:\n{}{}".format(
+                "\n".join(str(f) for f in isos_left if f.suffix == ".iso"),
+                "\n\nYour own files stayed: " + ", ".join(own) if own else ""))
+            if closing:
+                self.close()
+        self.run_task("Keep only the ISO", lambda t: projectfiles.keep_only_iso(proj, t.set_stage), done)
+        return True
+
     def closeEvent(self, event):
+        if self.project and getattr(self, "built_iso", None) and not self.task:
+            started = self.keep_only_iso(closing=True)
+            if started is None:
+                event.ignore()
+                return
+            if started:
+                event.ignore()  # the window closes when the clean-up is finished
+                return
+            self.built_iso = None
         if self.pending:
             r = QMessageBox.question(self, APP_NAME, "{} change(s) are still waiting in Review & Apply and will be "
                                      "lost. Quit anyway?".format(len(self.pending)))

@@ -63,8 +63,11 @@ class BootLoaderPage(Page):
         cur = b.current()
         self._rows = b.options()
         keep = self._lid or cur
+        self.list.blockSignals(True)
         fill(self.list, [(name, fw or "—", "installed" if inimg else ("not available" if not ok else "—"),
-                          "✔ chosen" if lid == cur else "") for lid, name, fw, _d, ok, _w, inimg in self._rows])
+                          "✔ used by the installer" if lid == cur else "")
+                         for lid, name, fw, _d, ok, _w, inimg in self._rows], sort=False)
+        self.list.blockSignals(False)
         for i in range(3):
             self.list.resizeColumnToContents(i)
         row = next((i for i, r in enumerate(self._rows) if r[0] == keep), 0)
