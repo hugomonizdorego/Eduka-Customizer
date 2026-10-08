@@ -24,6 +24,31 @@ MODES = {
 }
 
 
+def xauthority():
+    """The X authority file of the person at the screen (pkexec does not always pass it on)."""
+    if os.environ.get("XAUTHORITY") and os.path.exists(os.environ["XAUTHORITY"]):
+        return os.environ["XAUTHORITY"]
+    import glob
+    import pwd
+    uid = os.environ.get("PKEXEC_UID") or os.environ.get("SUDO_UID")
+    homes, runs = [], []
+    if uid and uid.isdigit():
+        try:
+            homes.append(pwd.getpwuid(int(uid)).pw_dir)
+        except KeyError:
+            pass
+        runs.append("/run/user/{}".format(uid))
+    for run in runs:
+        for pattern in ("gdm/Xauthority", ".mutter-Xwaylandauth.*", "xauth_*", ".Xauthority"):
+            found = sorted(glob.glob(os.path.join(run, pattern)))
+            if found:
+                return found[-1]
+    for home in homes:
+        if os.path.exists(os.path.join(home, ".Xauthority")):
+            return os.path.join(home, ".Xauthority")
+    return ""
+
+
 def free_display():
     for n in range(10, 60):
         if not os.path.exists("/tmp/.X11-unix/X{}".format(n)) and not os.path.exists("/tmp/.X{}-lock".format(n)):
@@ -41,6 +66,7 @@ class LiveSession:
         self.display = None
         self.mode = "skel"
         self._entered = False
+        self._machine_id = None
 
     @property
     def running(self):
@@ -77,25 +103,18 @@ class LiveSession:
         else:
             desktop_names = ""
         if "gnome-session" in command or "gnome-shell" in command:
-            log.warning("GNOME needs systemd user services and usually does not start in a chroot")
+            raise RuntimeError("GNOME needs systemd's user session and cannot run in a window from the image. "
+                               "Test GNOME by building the ISO and booting it in QEMU (Check & Build).")
+        if not os.environ.get("DISPLAY"):
+            raise RuntimeError("No X display: start DistroForge in a graphical session (on Wayland, Xwayland "
+                               "must be installed).")
 
         self.display = free_display()
-        self.xephyr = subprocess.Popen(
-            [runner.which("Xephyr"), ":{}".format(self.display), "-ac", "-br", "-noreset",
-             "-resizeable", "-screen", resolution, "-title",
-             "DistroForge live session (changes are saved to the image)"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-        sock = Path("/tmp/.X11-unix/X{}".format(self.display))
-        for _ in range(100):
-            if sock.exists() or self.xephyr.poll() is not None:
-                break
-            time.sleep(0.1)
-        if not sock.exists():
-            self.stop()
-            raise RuntimeError("Xephyr did not start")
+        self._start_xephyr(resolution)
 
         self.chroot.__enter__()
         self._entered = True
+        self._ensure_machine_id()
         home = self._home()
         runtime = self.rootfs / "run/eduka-live-runtime"
         runtime.mkdir(parents=True, exist_ok=True)
@@ -111,7 +130,7 @@ class LiveSession:
             "XDG_CURRENT_DESKTOP": desktop_names.replace(";", ":").strip(":"),
             "QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "1",
             "NO_AT_BRIDGE": "1",
-            "LANG": self.project.state.get("locale", {}).get("default", "C.UTF-8"),
+            "LANG": self._lang(),
         }
         env.pop("LC_ALL", None)
         wrapper = "exec dbus-run-session -- {}".format(command) if (
@@ -119,10 +138,90 @@ class LiveSession:
         cmd = self.chroot.command(["/bin/sh", "-c", wrapper], env=env, interactive=True)
         # LC_ALL from the default environment would override LANG in the desktop.
         cmd = [c for c in cmd if not c.startswith("LC_ALL=")]
-        self.session = subprocess.Popen(cmd, stdout=open(self.project.logs / "live-session.log", "w"),
-                                        stderr=subprocess.STDOUT, start_new_session=True)
+        logfile = self.project.logs / "live-session.log"
+        self.session = subprocess.Popen(cmd, stdout=open(logfile, "w"), stderr=subprocess.STDOUT,
+                                        start_new_session=True)
+        # A desktop that cannot start ends at once: say why instead of leaving an empty window.
+        for _ in range(30):
+            if self.session.poll() is not None:
+                break
+            time.sleep(0.1)
+        if self.session.poll() is not None:
+            tail = "".join(logfile.read_text(errors="replace").splitlines(True)[-12:]) if logfile.exists() else ""
+            self.stop()
+            raise RuntimeError("The desktop ended at once ({}). Last lines of {}:\n{}".format(
+                command, logfile, tail or "(empty)"))
         self.project.record("live-session", "{} ({})".format(command, self.mode))
         return self.display
+
+    def _start_xephyr(self, resolution):
+        log_path = self.project.logs / "xephyr.log"
+        env = dict(os.environ)
+        auth = xauthority()
+        if auth:
+            env["XAUTHORITY"] = auth
+        base = [runner.which("Xephyr"), ":{}".format(self.display), "-ac", "-br", "-noreset", "-screen",
+                resolution, "-title", "DistroForge live session (changes are saved to the image)"]
+        for extra in (["-resizeable"], []):  # older Xephyr does not know -resizeable
+            with open(log_path, "w") as fh:
+                self.xephyr = subprocess.Popen(base + extra, stdout=fh, stderr=subprocess.STDOUT, env=env,
+                                               start_new_session=True)
+            sock = Path("/tmp/.X11-unix/X{}".format(self.display))
+            for _ in range(100):
+                if sock.exists() or self.xephyr.poll() is not None:
+                    break
+                time.sleep(0.1)
+            if sock.exists():
+                return
+            text = log_path.read_text(errors="replace") if log_path.exists() else ""
+            if "resizeable" not in text:
+                break
+        self.stop()
+        raise RuntimeError("Xephyr (the window for the live session) did not start:\n{}".format(
+            "".join(text.splitlines(True)[-8:]) or "no message (is DISPLAY {} reachable?)".format(
+                os.environ.get("DISPLAY"))))
+
+    def _ensure_machine_id(self):
+        """D-Bus refuses to start without a machine id, and builds leave /etc/machine-id empty on purpose.
+        A temporary one is used for the session and taken away again by stop()."""
+        mid = self.rootfs / "etc/machine-id"
+        try:
+            current = mid.read_text().strip() if mid.is_file() else None
+        except OSError:
+            current = None
+        if current and len(current) == 32:
+            self._machine_id = None
+            return
+        import uuid
+        self._machine_id = current if current is not None else False
+        mid.write_text(uuid.uuid4().hex + "\n")
+
+    def _restore_machine_id(self):
+        if self._machine_id is None:
+            return
+        mid = self.rootfs / "etc/machine-id"
+        if self._machine_id is False:
+            mid.unlink(missing_ok=True)
+        else:
+            mid.write_text(self._machine_id + ("\n" if self._machine_id else ""))
+        self._machine_id = None
+
+    def _lang(self):
+        """The project's language when the image has it, otherwise C.UTF-8 (a missing locale breaks Qt)."""
+        lang = self.project.state.get("locale", {}).get("default") or "C.UTF-8"
+        if lang.startswith(("C.", "POSIX")):
+            return lang
+        name = lang.split(".")[0]
+        archive = self.rootfs / "usr/lib/locale/locale-archive"
+        if (self.rootfs / "usr/lib/locale" / lang).exists() or (self.rootfs / "usr/lib/locale" / name).exists():
+            return lang
+        try:
+            if archive.exists() and name.encode() in archive.read_bytes():
+                return lang
+        except OSError:
+            pass
+        log.info("%s is not generated in the image: the live session uses C.UTF-8", lang)
+        return "C.UTF-8"
 
     def run_app(self, command, home=None):
         """Start one more program inside the running nested session."""
@@ -153,6 +252,7 @@ class LiveSession:
                         pass
         # Programs started inside the chroot that outlived the session.
         self._kill_chroot_processes()
+        self._restore_machine_id()
         self.session = None
         self.xephyr = None
         if self._entered:

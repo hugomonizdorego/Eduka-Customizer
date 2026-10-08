@@ -199,6 +199,10 @@ class BuildPage(Page):
         return o
 
     def start_build(self):
+        if self.main.preview_active():
+            QMessageBox.information(self, "Build", "A preview is on. Keep the changes or throw the preview away in "
+                                    "Review & Apply first: an ISO is built from the real project only.")
+            return
         if self.main.live and self.main.live.running:
             if QMessageBox.question(self, "Build", "Stop the live session and build?") != \
                     QMessageBox.StandardButton.Yes:

@@ -198,3 +198,76 @@ def test_gui_desktop_follows_choice(project):
     res = subprocess.run([sys.executable, "-c", GUI_DESKTOP, str(project.path)], capture_output=True, text=True,
                          env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
+
+
+def test_preview_changes_nothing(project):
+    import os
+    import subprocess
+    from eduka_customizer.core.preview import Preview, leftover
+    if os.geteuid() != 0:
+        pytest.skip("needs root for overlayfs")
+    p = Preview(project)
+    project.save()
+    try:
+        p.start()
+    except RuntimeError as e:
+        pytest.skip(str(e))
+    try:
+        assert p.active
+        (project.rootfs / "etc/preview-test").write_text("temporary\n")
+        project.state["identity"]["name"] = "Changed in preview"
+        project.save()
+        assert p.size() > 0
+    finally:
+        p.stop()
+    assert not p.active and not p.work.exists()
+    assert not (project.rootfs / "etc/preview-test").exists()
+    assert project.state["identity"]["name"] == "Edukasaun OS"
+    # A preview left behind by a crash is found and ended.
+    p.start()
+    (project.rootfs / "x").write_text("x")
+    assert leftover(type(project)(project.path)) and not (project.rootfs / "x").exists()
+    assert "overlay" not in subprocess.run(["findmnt", "-no", "FSTYPE", str(project.path)], capture_output=True,
+                                           text=True).stdout
+
+
+GUI_PREVIEW = """
+import os, sys, time
+from eduka_customizer.qt.widgets import QApplication, QMessageBox
+QMessageBox.information = staticmethod(lambda *a, **k: QMessageBox.StandardButton.Ok)
+QMessageBox.question = staticmethod(lambda *a, **k: QMessageBox.StandardButton.Yes)
+app = QApplication([])
+from eduka_customizer.gui.main_window import MainWindow
+w = MainWindow()
+assert w.open_project(sys.argv[1])
+w.project.mark_all_steps(); w.update_state(); w._told_review = True
+r = w.project.rootfs
+page = next(p for p in w.pages if p.__class__.__name__ == "SoundsPage")
+page.task("Apply system sounds", lambda t: (r / "etc/try-me").write_text("x"))
+def wait():
+    t0 = time.time()
+    while w.task and time.time() - t0 < 30:
+        app.processEvents(); time.sleep(0.02)
+w.preview_start(); wait()
+assert w.preview_active() and (r / "etc/try-me").exists() and len(w.pending) == 1
+w.preview_discard(); wait()
+assert not w.preview_active() and not (r / "etc/try-me").exists() and len(w.pending) == 1
+w.preview_start(); wait()
+w.preview_keep(); wait()
+assert not w.preview_active() and (r / "etc/try-me").exists() and w.pending == []
+print("ok")
+"""
+
+
+def test_gui_preview_keep_and_discard(project):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    if os.geteuid() != 0:
+        pytest.skip("needs root for overlayfs")
+    project.save()
+    env = dict(os.environ, QT_QPA_PLATFORM="offscreen", PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    res = subprocess.run([sys.executable, "-c", GUI_PREVIEW, str(project.path)], capture_output=True, text=True,
+                         env=env, timeout=180)
+    assert res.returncode == 0, res.stderr[-3000:]

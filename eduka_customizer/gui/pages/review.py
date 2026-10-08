@@ -54,8 +54,21 @@ class ReviewPage(Page):
                    button("Up", lambda: self.move(-1)), button("Down", lambda: self.move(1))))
         self.apply_btn = button("Apply all changes", self.apply, "primary")
         self.apply_btn.setMinimumHeight(40)
+        self.preview_btn = button("Try them first (preview)", lambda: self.main.preview_start(),
+                                  tooltip="Apply them to a temporary copy and look at them in the live session")
+        self.preview_btn.setMinimumHeight(40)
         c.add(hbox(label("Changes run in this order. A failed change stops the rest; nothing is lost.", "muted"),
-                   None, self.apply_btn))
+                   None, self.preview_btn, self.apply_btn))
+
+        self.preview_card = c = self.card("Preview is on",
+                                          "The waiting changes are applied to a temporary copy of the project. "
+                                          "Try them in the live session. Keep them to apply them for real, or "
+                                          "throw the preview away: the project is then exactly as before.")
+        self.preview_state = label("", "muted")
+        c.add(self.preview_state)
+        c.add(hbox(button("Start the live session...", lambda: self.main.go("TerminalPage")),
+                   button("Throw the preview away", lambda: self.main.preview_discard(), "danger"), None,
+                   button("Keep them: apply for real", lambda: self.main.preview_keep(), "primary")))
 
         c = self.card("Your distribution so far")
         self.summary = label("", "muted")
@@ -81,12 +94,19 @@ class ReviewPage(Page):
             if it is not None:
                 ch["checked"] = it.checkState() == Qt.CheckState.Checked
         n, ticked = len(self.main.pending), sum(1 for c in self.main.pending if c["checked"])
+        previewing = self.main.preview_active()
+        self.preview_card.setVisible(previewing)
+        self.preview_btn.setEnabled(n > 0 and not previewing)
+        if previewing:
+            from eduka_customizer.core.preview import Preview
+            from eduka_customizer.core.preflight import _human
+            self.preview_state.setText("Temporary changes so far: {}.".format(_human(Preview(self.project).size())))
         if not n:
             self.state.setText("Nothing is waiting. The changes you choose in steps 2 to 11 are collected here.")
         else:
             self.state.setText("{} of {} change(s) checked{}".format(
                 ticked, n, "" if ticked == n else " — tick every change you are sure about to apply them"))
-        self.apply_btn.setEnabled(n > 0 and ticked == n)
+        self.apply_btn.setEnabled(n > 0 and ticked == n and not previewing)
         self.main._update_pending()
 
     def tick_all(self):
@@ -117,10 +137,10 @@ class ReviewPage(Page):
         self.refresh()
         self.items.setCurrentRow(row + step)
 
-    def apply(self):
+    def apply(self, confirm=True):
         changes = list(self.main.pending)
-        if QMessageBox.question(self, "Review & Apply", "Apply {} change(s) to the image now?".format(len(changes))) \
-                != QMessageBox.StandardButton.Yes:
+        if confirm and QMessageBox.question(self, "Review & Apply", "Apply {} change(s) to the image now?".format(
+                len(changes))) != QMessageBox.StandardButton.Yes:
             return
         state = {"done": 0}
 

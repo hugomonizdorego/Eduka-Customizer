@@ -64,6 +64,17 @@ class TerminalPage(Page):
     icon_names = ("utilities-terminal", "terminal")
 
     def build(self):
+        c = self.card("Review & Apply: try your choices first",
+                      "The changes waiting in Review & Apply can be tried here before they are applied: they go "
+                      "onto a temporary copy, the live session shows them, and you keep them or throw them away.")
+        self.try_state = label("", "muted")
+        c.add(self.try_state)
+        self.try_btn = button("Try the waiting changes", lambda: self.main.preview_start())
+        self.keep_btn = button("Keep them: apply for real", lambda: self.main.preview_keep(), "primary")
+        self.drop_btn = button("Throw the preview away", lambda: self.main.preview_discard(), "danger")
+        c.add(hbox(self.try_btn, self.drop_btn, None, button("Review & Apply...", lambda: self.main.go("ReviewPage")),
+                   self.keep_btn))
+
         c = self.card("Live edit session",
                       "Runs the image's desktop in a nested window (Xephyr). In the default mode "
                       "your changes become the defaults of every new user (/etc/skel).")
@@ -124,6 +135,14 @@ class TerminalPage(Page):
     def refresh(self):
         if not self.project:
             return
+        previewing, n = self.main.preview_active(), len(self.main.pending)
+        self.try_state.setText(("<b>Preview is on</b>: {} change(s) applied to a temporary copy. Start the live "
+                                "session below to try them.".format(n)) if previewing else
+                               "{} change(s) wait in Review & Apply.".format(n) if n else
+                               "Nothing waits in Review & Apply.")
+        self.try_btn.setEnabled(n > 0 and not previewing)
+        self.keep_btn.setEnabled(previewing)
+        self.drop_btn.setEnabled(previewing)
         cur = self.session.currentData()
         self.session.clear()
         for s in sessions(self.project.rootfs):

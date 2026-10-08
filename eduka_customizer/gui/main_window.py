@@ -504,6 +504,10 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, APP_NAME, "Wait for the running task to finish.")
             return False
         try:
+            if not create:
+                from eduka_customizer.core import preview
+                if preview.leftover(Project(path)):
+                    get_logger().warning("A preview left behind by a crash was thrown away")
             proj = Project.create(path, name) if create else Project.open(path)
             proj.lock()
         except ProjectLocked as e:
@@ -530,6 +534,12 @@ class MainWindow(QMainWindow):
     def close_project(self):
         if self.live and self.live.running:
             self.live.stop()
+        if self.project and self.preview_active():
+            try:
+                from eduka_customizer.core.preview import Preview
+                Preview(self.project).stop()
+            except RuntimeError as e:
+                get_logger().error("%s", e)
         self.live = None
         if self.project:
             self.project.unlock()
@@ -691,6 +701,62 @@ class MainWindow(QMainWindow):
             total = self.splitter.height() or 800
             self.splitter.setSizes([total - 130, 130])
 
+    # Preview of the waiting changes ----------------------------------------------------------
+    def preview_active(self):
+        from eduka_customizer.core.preview import Preview
+        return bool(self.project) and Preview(self.project).active
+
+    def preview_start(self):
+        """Apply the waiting changes to a temporary layer of the project, then offer the live session."""
+        from eduka_customizer.core.preview import Preview
+        if not self.project or not self.pending:
+            return
+        if self.live and self.live.running:
+            self.live.stop()
+        changes, proj = list(self.pending), self.project
+
+        def work(t):
+            Preview(proj).start()
+            for n, ch in enumerate(changes, 1):
+                t.set_stage("Preview {}/{}: {}".format(n, len(changes), ch["name"]))
+                ch["func"](t)
+            return len(changes)
+
+        def done(n):
+            self._update_pending()
+            QMessageBox.information(self, "Preview", "{} change(s) are applied to a temporary copy of the project. "
+                                    "Start the live session to try them (Advanced → Terminal & Live), then keep "
+                                    "them or throw the preview away in Review & Apply.".format(n))
+        self.run_task("Preview the waiting changes", work, done)
+
+    def preview_discard(self, quiet=False):
+        from eduka_customizer.core.preview import Preview
+        if self.live and self.live.running:
+            self.live.stop()
+        try:
+            Preview(self.project).stop()
+        except RuntimeError as e:
+            QMessageBox.warning(self, "Preview", str(e))
+            return False
+        self._update_pending()
+        self.update_state()
+        page = self.stack.currentWidget()
+        if page:
+            page.refresh()
+        if not quiet:
+            self.stage_label.setText("Preview thrown away: the project is as before")
+        return True
+
+    def preview_keep(self):
+        """End the preview and apply the same changes for real."""
+        if self.preview_discard(quiet=True):
+            self.go("ReviewPage")
+            review = self.stack.currentWidget().current()
+            for ch in self.pending:
+                ch["checked"] = True
+            review.refresh()
+            review.apply(confirm=False)
+
     # Clean up after the build ---------------------------------------------------------------
     def keep_only_iso(self, closing=False):
         """Ask, then delete everything of the project but the ISO. Returns True when it started."""
@@ -743,6 +809,12 @@ class MainWindow(QMainWindow):
         return True
 
     def closeEvent(self, event):
+        if self.preview_active():
+            if QMessageBox.question(self, APP_NAME, "A preview is on. Throw it away and quit? (The waiting changes "
+                                    "are not applied.)") != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
+            self.preview_discard(quiet=True)
         if self.project and getattr(self, "built_iso", None) and not self.task:
             started = self.keep_only_iso(closing=True)
             if started is None:

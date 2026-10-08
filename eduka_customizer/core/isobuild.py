@@ -381,6 +381,9 @@ class Builder:
     # Driver ---------------------------------------------------------------------
     def run(self):
         p = self.project
+        from eduka_customizer.core.preview import Preview
+        if Preview(p).active:
+            raise RuntimeError("A preview is on: keep it or throw it away before building")
         self.check()
         # Repositories tried in the kernel console stay only when a kernel came from them.
         from eduka_customizer.core.kernel import Kernels

@@ -209,14 +209,42 @@ class Kernels:
         self.project.state.setdefault("kernel", {})["temp_repos"] = sorted(set(files))
         self.project.save()
 
+    @staticmethod
+    def clean_script(text):
+        """Instructions copied from a kernel's web site, ready to run as root in the image:
+        prompts ('$ ', '# ') and 'sudo' are taken out, comments and empty lines stay."""
+        out = []
+        for line in text.replace("\r", "").splitlines():
+            line = re.sub(r"^\s*(?:[\w.-]+@[\w.-]+:\S*\s*)?[$#>]\s+(?=\S)", "", line) \
+                if re.match(r"^\s*(?:[\w.-]+@[\w.-]+:\S*\s*)?[$>]\s", line) else line
+            line = re.sub(r"(^|[|;&(]\s*)sudo(?:\s+-[A-Za-z]+)*\s+", r"\1", line)
+            out.append(line)
+        return "\n".join(out).strip() + "\n"
+
+    TOOLS = {"wget": "wget", "curl": "curl", "gpg": "gpg", "lsb_release": "lsb-release"}
+
     def console(self, command):
-        """Run a shell command inside the image (as root) and return its output. Repository
-        files and keys it creates are remembered as temporary."""
+        """Run shell commands inside the image (as root, all lines as one script, stopping at the first
+        error) and return the output. Repository files and keys they create are remembered as temporary."""
+        command = self.clean_script(command)
         if not command.strip():
             return ""
         before, lines = self._apt_files(), self._sources_list_lines()
         with self.chroot:
-            out = self.chroot.output(["/bin/bash", "-c", command + " 2>&1"], check=False) or ""
+            need = [pkg for tool, pkg in self.TOOLS.items() if re.search(r"\b{}\b".format(tool), command)
+                    and not any((self.rootfs / d / tool).exists() for d in ("usr/bin", "bin"))]
+            pre = ""
+            if need:
+                pre = "# DistroForge installs what the instructions use: {}\n".format(" ".join(need))
+                self.chroot.run(["apt-get", "-y", "install", "--no-install-recommends", "ca-certificates"] + need,
+                                check=False)
+            out = self.chroot.output(["/bin/bash", "-c", "exec 2>&1\nset -e\nexport DEBIAN_FRONTEND=noninteractive\n"
+                                      "mkdir -p /etc/apt/keyrings\n"
+                                      "apt() { command apt -y \"$@\"; }\napt-get() { command apt-get -y \"$@\"; }\n"
+                                      + command], check=False) or ""
+            out = pre + out
+            if self._apt_files() - before and not re.search(r"\bapt(-get)?\s+update\b", command):
+                out += self.chroot.output(["/bin/bash", "-c", "apt-get update 2>&1"], check=False) or ""
         new = sorted(self._apt_files() - before)
         added = [l for l in self._sources_list_lines() if l not in lines and l.strip().startswith("deb")]
         if added:

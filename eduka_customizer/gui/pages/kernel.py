@@ -51,14 +51,16 @@ class KernelPage(Page):
         c.add(hbox(None, button("Add repository and install", self.install_preset, "primary")))
 
         c = self.card("Third-party repository terminal",
-                      "Type the commands of the kernel's website here (they run as root inside the image): add "
-                      "its repository and key, then 'apt update'. Its kernels appear below. If you install one, "
-                      "the repository and the kernel stay in the system; otherwise the repository is only "
-                      "temporary and is removed again (at the latest when the ISO is built).")
+                      "Copy the whole instructions from the kernel's website and paste them below, all lines at "
+                      "once: they run as root inside the image, one after the other ('sudo' and prompts are taken "
+                      "out, wget, curl and gpg are installed when needed, 'apt update' runs by itself). The "
+                      "kernels of the new repository appear below. If you install one, the repository and the "
+                      "kernel stay in the system; otherwise the repository is only temporary and is removed again "
+                      "(at the latest when the ISO is built).")
         self.console_out = QPlainTextEdit()
         self.console_out.setReadOnly(True)
         self.console_out.setObjectName("console")
-        self.console_out.setMinimumHeight(170)
+        self.console_out.setMinimumHeight(140)
         self.console_out.setPlainText("# Example (XanMod):\n"
                                       "# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o "
                                       "/etc/apt/keyrings/xanmod.gpg\n"
@@ -66,12 +68,17 @@ class KernelPage(Page):
                                       "http://deb.xanmod.org releases main' > /etc/apt/sources.list.d/xanmod.list\n"
                                       "# apt update\n")
         c.add(self.console_out)
-        self.console_in = QLineEdit()
+        self.console_in = QPlainTextEdit()
         self.console_in.setObjectName("consoleInput")
-        self.console_in.setPlaceholderText("root@image:~# type a command and press Enter")
-        self.console_in.returnPressed.connect(self.run_console)
+        self.console_in.setMinimumHeight(110)
+        self.console_in.setPlaceholderText("Paste the commands here (one or many lines), then press Run all "
+                                           "(Ctrl+Enter).")
+        from eduka_customizer.qt.gui import QKeySequence, QShortcut
+        QShortcut(QKeySequence("Ctrl+Return"), self.console_in, activated=self.run_console)
         self._history, self._hpos = [], 0
-        c.add(hbox(self.console_in, button("Run", self.run_console), button("apt update", self.console_update)))
+        c.add(self.console_in)
+        c.add(hbox(button("Clear", self.console_in.clear), button("apt update", self.console_update), None,
+                   button("Run all", self.run_console, "primary")))
         self.temp_tree = QTreeWidget()
         self.temp_tree.setHeaderLabels(["Kernel package", "Version", "Repository"])
         self.temp_tree.setRootIsDecorated(False)
@@ -225,18 +232,20 @@ class KernelPage(Page):
 
     # Third-party repository terminal --------------------------------------------------
     def run_console(self, command=None):
-        cmd = command if isinstance(command, str) else self.console_in.text().strip()
+        cmd = command if isinstance(command, str) else self.console_in.toPlainText().strip()
         if not cmd:
             return
         self._history.append(cmd)
-        self.console_in.clear()
-        self.console_out.appendPlainText("root@image:~# " + cmd)
+        if not isinstance(command, str):
+            self.console_in.clear()
+        for line in Kernels.clean_script(cmd).splitlines():
+            self.console_out.appendPlainText("root@image:~# " + line)
         proj = self.project
 
         def done(out):
             self.console_out.appendPlainText((out or "").rstrip())
             self.show_temp_repos()
-        self.task("Terminal: " + cmd[:60], lambda t: Kernels(proj).console(cmd), done)
+        self.task("Terminal: " + cmd.splitlines()[0][:60], lambda t: Kernels(proj).console(cmd), done)
 
     def console_update(self):
         self.run_console("apt-get update")

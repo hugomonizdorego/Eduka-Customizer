@@ -313,7 +313,7 @@ def test_kernel_console_temporary_repositories(project, monkeypatch):
     monkeypatch.setattr(chroot.Chroot, "__enter__", lambda self: self)
     monkeypatch.setattr(chroot.Chroot, "__exit__", lambda self, *a: False)
     k = Kernels(project)
-    assert k.console("add xanmod") == "ok\n"
+    assert k.console("add xanmod") == "ok\nok\n"  # the script, then apt-get update by itself
     k.console("add liquorix")
     temp = k.temp_files()
     assert "etc/apt/sources.list.d/xanmod.list" in temp and "etc/apt/keyrings/xanmod.gpg" in temp
