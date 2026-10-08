@@ -274,7 +274,7 @@ def test_gui_steps_and_merged_menus(tmp_path):
     res = subprocess.run([sys.executable, "-c", GUI_STEPS, str(p.path)], capture_output=True, text=True,
                          env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
-    assert res.stdout.startswith("ok 23 16")
+    assert res.stdout.startswith("ok 24 16")
 
 
 def test_cli_check_and_apps(project):

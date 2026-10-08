@@ -577,6 +577,57 @@ def cmd_welcome(args):
     return 0
 
 
+def cmd_grub_theme(args):
+    from eduka_customizer.core import grubtheme
+    p = _project(args) if args.action in ("list", "check") else _locked(args)
+    g = grubtheme.GrubThemes(p)
+    if args.action == "list":
+        for name in g.installed():
+            print(("* " if name == g.current() else "  ") + name)
+    elif args.action == "check":
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            try:
+                d = grubtheme.unpack(args.item, Path(tmp) / "t")
+            except grubtheme.ThemeRejected as e:
+                raise SystemExit(str(e))
+            problems, warnings, info = grubtheme.check(d)
+        for x in problems:
+            print("FAIL ", x)
+        for x in warnings:
+            print("WARN ", x)
+        print("Compatible" if not problems else "Not compatible", info)
+        return 1 if problems else 0
+    elif args.action == "add":
+        try:
+            name, warnings, _info = g.add(args.item, installed_system=args.installed)
+        except grubtheme.ThemeRejected as e:
+            raise SystemExit(str(e))
+        g.use(name, args.installed)
+        print("GRUB theme in use:", name, *warnings)
+    elif args.action == "use":
+        g.use(args.item, args.installed)
+    elif args.action == "remove":
+        g.remove()
+    return 0
+
+
+def cmd_boot_loader(args):
+    from eduka_customizer.core import bootchoice
+    p = _project(args) if args.action == "list" else _locked(args)
+    b = bootchoice.BootChoice(p)
+    if args.action == "list":
+        cur = b.current()
+        for lid, name, desc, usable, reason in b.options():
+            print("{} {:16} {}".format("*" if lid == cur else (" " if usable else "-"), lid,
+                                       desc if usable else "not available: " + reason))
+    else:
+        if not args.item:
+            raise SystemExit("Use: boot-loader use grub|grub-secureboot|systemd-boot|refind")
+        b.apply(args.item)
+    return 0
+
+
 def cmd_apps(args):
     from eduka_customizer.core import replace
     if args.action == "roles":
@@ -986,6 +1037,17 @@ def build_parser():
     s.add_argument("action", choices=["show", "export", "import", "apply", "remove"])
     s.add_argument("file", nargs="?", help="export/import: a JSON design")
     s.set_defaults(func=cmd_welcome)
+
+    s = sub.add_parser("grub-theme", help="third-party GRUB themes for the boot menu (checked first)")
+    s.add_argument("action", choices=["list", "check", "add", "use", "remove"])
+    s.add_argument("item", nargs="?", help="theme folder or archive (check, add) or theme name (use)")
+    s.add_argument("--installed", action="store_true", help="also for installed systems")
+    s.set_defaults(func=cmd_grub_theme)
+
+    s = sub.add_parser("boot-loader", help="boot loader Calamares installs: grub, systemd-boot, refind")
+    s.add_argument("action", choices=["list", "use"])
+    s.add_argument("item", nargs="?")
+    s.set_defaults(func=cmd_boot_loader)
 
     s = sub.add_parser("apps", help="replace the default applications (browser, mail, editor, terminal, ...)")
     s.add_argument("action", choices=["roles", "status", "replace"])

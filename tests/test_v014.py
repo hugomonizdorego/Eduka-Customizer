@@ -260,7 +260,7 @@ def test_menu_icons_exist_for_every_page():
     src = (root / "eduka_customizer/gui/main_window.py").read_text()
     import re
     keys = re.findall(r'"(\w+Page)": "(\w+)"', src)
-    assert len(keys) == 23
+    assert len(keys) == 24
     for _page, key in keys:
         assert data_file("icons", "menu", key + ".svg").exists(), key
     assert "GPL-3.0" in (root / "data/icons/menu/README.md").read_text()

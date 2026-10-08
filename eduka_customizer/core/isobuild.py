@@ -265,6 +265,8 @@ class Builder:
         from eduka_customizer.core.language import Language
         Language(p).apply_boot_menu(self.opts.title)
         bootedit.apply_overrides(p)
+        from eduka_customizer.core.grubtheme import GrubThemes
+        GrubThemes(p).reapply()
         info = p.distro
         disk_info = p.isodir / ".disk/info"
         disk_info.parent.mkdir(parents=True, exist_ok=True)

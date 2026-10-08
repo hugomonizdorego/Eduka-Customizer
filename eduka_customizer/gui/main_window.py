@@ -27,7 +27,7 @@ MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "
               "AppearancePage": "wallpaper", "PlymouthPage": "plymouth", "BrandingPage": "branding",
               "CalamaresPage": "calamares", "BootMenuPage": "bootmenu", "WorkshopPage": "workshop",
               "TerminalPage": "terminal", "BuildPage": "build", "SettingsPage": "settings", "SoundsPage": "sounds",
-              "WelcomePage": "welcome"}
+              "WelcomePage": "welcome", "GrubDesignPage": "bootmenu"}
 
 # The sidebar, in the order of the work. Pages that are used together share one
 # menu (as tabs). (key, menu title, icon, page classes, is a numbered step)
@@ -41,7 +41,8 @@ SECTIONS = [
     ("desktop", "Desktop", "desktop", ["desktop.DesktopPage"], True),
     ("software", "Software", "packages", ["packages.PackagesPage", "flatpak.FlatpakPage",
                                           "replace_apps.ReplaceAppsPage"], True),
-    ("boot", "Kernel & Boot", "kernel", ["kernel.KernelPage", "bootmenu.BootMenuPage"], True),
+    ("boot", "Kernel & Boot", "kernel", ["kernel.KernelPage", "bootmenu.BootMenuPage", "grubdesign.GrubDesignPage"],
+     True),
     ("look", "Look & Feel", "themes", ["themes.ThemesPage", "appearance.AppearancePage",
                                        "plymouth.PlymouthPage"], True),
     ("sounds", "System Sounds", "sounds", ["sounds.SoundsPage"], True),

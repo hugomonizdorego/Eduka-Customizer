@@ -96,6 +96,14 @@ def run_step(project, step, base, build=True):
             if pg.get("image"):
                 pg["image"] = str(_path(base, pg["image"]))
         wl.Welcome(project).apply(d)
+    elif action == "grub-theme":
+        from eduka_customizer.core.grubtheme import GrubThemes
+        g = GrubThemes(project)
+        name, _w, _i = g.add(_path(base, step["source"]), installed_system=step.get("installed", False))
+        g.use(name, step.get("installed", False))
+    elif action == "boot-loader":
+        from eduka_customizer.core.bootchoice import BootChoice
+        BootChoice(project).apply(step["id"], timeout=step.get("timeout"))
     elif action == "replace-app":
         from eduka_customizer.core.replace import Replacer
         Replacer(project).replace(step["role"], step["package"], step.get("remove", []))

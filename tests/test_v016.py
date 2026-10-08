@@ -507,3 +507,139 @@ def test_calamares_text_slides(cal, tmp_path):
     # Applying the same slides again (their images are the current files) keeps them.
     c.set_branding(slides=data, slide_seconds=5)
     assert (cal.rootfs / "etc/calamares/branding/debian/slide-02.png").exists()
+
+
+# GRUB themes, menu designer, boot loaders --------------------------------------------------------
+
+DEBIAN_GRUB = """source /boot/grub/config.cfg
+
+# Live boot
+menuentry "Live system (amd64)" --hotkey=l {
+\tlinux\t/live/vmlinuz boot=live components quiet splash findiso=${iso_path}
+\tinitrd\t/live/initrd.img
+}
+menuentry "Live system (amd64) (fail-safe mode)" {
+\tlinux\t/live/vmlinuz boot=live components memtest noapic noapm nodma nomce nosmp nosplash vga=788
+\tinitrd\t/live/initrd.img
+}
+
+submenu 'Utilities...' --hotkey=u {
+\tsource /boot/grub/theme.cfg
+\tif [ $grub_platform = "efi" ]; then
+\t\tmenuentry "UEFI Firmware Settings" {
+\t\t\tfwsetup
+\t\t}
+\tfi
+}
+"""
+
+
+def _grub(project):
+    cfg = project.isodir / "boot/grub/grub.cfg"
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    cfg.write_text(DEBIAN_GRUB)
+    (project.isodir / "boot/grub/config.cfg").write_text("set default=0\n")
+    return cfg
+
+
+def _theme(base, name="Vimix", **extra):
+    d = base / name
+    d.mkdir(parents=True)
+    from tests.test_v012 import png
+    png(d / "background.png")
+    png(d / "select_c.png")
+    (d / "theme.txt").write_text('desktop-image: "background.png"\ntitle-text: ""\n+ boot_menu {\n'
+                                 '  item_font = "Terminus Regular 16"\n  selected_item_pixmap_style = "select_*.png"\n}\n')
+    (d / "terminus-16.pf2").write_bytes(b"PFF2")
+    for k, v in extra.items():
+        (d / k).write_bytes(v)
+    return d
+
+
+def test_grub_theme_check_and_use(project, tmp_path):
+    from eduka_customizer.core import grubtheme
+    cfg = _grub(project)
+    good = _theme(tmp_path / "good")
+    problems, warnings, info = grubtheme.check(good)
+    assert problems == [] and info["fonts"] == ["terminus-16.pf2"]
+    g = grubtheme.GrubThemes(project)
+    name, _w, _i = g.add(good, installed_system=True)
+    assert name == "Vimix" and g.installed() == ["Vimix"]
+    g.use(name, installed_system=True)
+    text = cfg.read_text()
+    assert text.startswith("source /boot/grub/config.cfg") and text.count(grubtheme.BEGIN) == 1
+    assert "set theme=/boot/grub/themes/Vimix/theme.txt" in text and "loadfont /boot/grub/themes/Vimix/terminus-16.pf2" in text
+    assert 'GRUB_THEME="/boot/grub/themes/Vimix/theme.txt"' in (project.rootfs / grubtheme.GRUB_D).read_text()
+    assert (project.rootfs / "boot/grub/themes/Vimix/theme.txt").exists()
+    g.reapply()
+    assert cfg.read_text().count(grubtheme.BEGIN) == 1
+    g.remove()
+    assert grubtheme.BEGIN not in cfg.read_text() and "menuentry" in cfg.read_text()
+
+
+def test_grub_theme_rejected(project, tmp_path):
+    from eduka_customizer.core import grubtheme
+    _grub(project)
+    bad = _theme(tmp_path / "bad", "Svg")
+    (bad / "theme.txt").write_text('desktop-image: "background.svg"\n+ boot_menu { item_font = "Noto 12" '
+                                   'selected_item_pixmap_style = "sel_*.png" }\n')
+    (bad / "terminus-16.pf2").unlink()
+    (bad / "Noto.ttf").write_bytes(b"x")
+    with pytest.raises(grubtheme.ThemeRejected) as e:
+        grubtheme.GrubThemes(project).add(bad)
+    msg = str(e.value)
+    assert "PNG, JPEG and TGA" in msg and "sel_*.png" in msg and "grub-mkfont" in msg
+    (tmp_path / "notheme").mkdir()
+    with pytest.raises(grubtheme.ThemeRejected):
+        grubtheme.GrubThemes(project).add(tmp_path / "notheme")
+    assert grubtheme.GrubThemes(project).installed() == []
+
+
+def test_grub_menu_designer(project):
+    from eduka_customizer.core import grubmenu
+    cfg = _grub(project)
+    gm = grubmenu.GrubMenu(project)
+    d = gm.design()
+    assert [e["title"] for e in d["entries"]] == ["Live system (amd64)", "Live system (amd64) (fail-safe mode)",
+                                                  "Utilities..."]
+    live, failsafe, utils = d["entries"]
+    live["title"] = 'My Linux "Live"'
+    safe = grubmenu.preset_entry(cfg.read_text(), "safe")
+    assert "nomodeset" in safe["body"] and safe["title"] == "Live system (safe graphics)"
+    verbose = grubmenu.preset_entry(cfg.read_text(), "verbose")
+    assert "quiet" not in verbose["body"] and "splash" not in verbose["body"].split("findiso")[0].split()
+    off = grubmenu.preset_entry(cfg.read_text(), "poweroff")
+    text = gm.save([live, safe, utils, off], default="Live system (safe graphics)", timeout=7,
+                   normal="white/black", highlight="black/light-gray")
+    titles = [e["title"] for e in grubmenu.entries(text)]
+    assert titles == ["My Linux 'Live'", "Live system (safe graphics)", "Utilities...", "Power off"]
+    assert 'set default="Live system (safe graphics)"' in text and "set timeout=7" in text
+    assert text.index("set timeout=7") > text.index("source /boot/grub/config.cfg")
+    assert "fail-safe" not in text and "UEFI Firmware Settings" in text
+    assert "boot/grub/grub.cfg" in project.state["boot"]["overrides"]
+    with pytest.raises(ValueError):
+        gm.save([live], default="nope")
+    with pytest.raises(ValueError):
+        gm.save([live], normal="pink/black")
+
+
+def test_boot_loader_choice(cal, nochroot):
+    from eduka_customizer.core import bootchoice
+    r = cal.rootfs
+    b = bootchoice.BootChoice(cal)
+    opts = {o[0]: o for o in b.options()}
+    assert opts["refind"][3] and not opts["lilo"][3] and not opts["burg"][3]
+    for f in ("usr/bin/bootctl", "usr/bin/kernel-install"):
+        (r / f).write_text("")
+    b.apply("systemd-boot", timeout=4)
+    conf = (r / "etc/calamares/modules/bootloader.conf").read_text()
+    assert 'efiBootLoader: "systemd-boot"' in conf or "efiBootLoader: systemd-boot" in conf
+    assert b.current() == "systemd-boot"
+    assert any(c[:1] == ["install"] and "systemd-boot" in c for c in nochroot)
+    with pytest.raises(RuntimeError):
+        b.apply("refind")  # refind-install is not in the image (nothing was really installed)
+    st = r / "var/lib/dpkg/status"
+    st.write_text(st.read_text().replace("Version: 3.3.14-1", "Version: 3.2.61-1"))
+    assert not {o[0]: o for o in b.options()}["refind"][3]
+    with pytest.raises(ValueError):
+        b.apply("refind")
