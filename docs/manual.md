@@ -1,6 +1,6 @@
 # Eduka-Customizer manual
 
-Version 0.15 Alpha. Eduka-Customizer builds live ISO images of any Debian-based
+Version 0.16 Alpha. Eduka-Customizer builds live ISO images of any Debian-based
 distribution; nothing is preset for a particular distribution.
 
 ## Concepts
@@ -41,7 +41,7 @@ user leaves. *Terminal & Live → Unmount everything* or
 
 ## Pages of the GUI
 
-The sidebar lists 12 numbered steps in the order of the work, from the source
+The sidebar lists 14 numbered steps in the order of the work, from the source
 of the image to the finished ISO. Pages that are used together share one step
 as tabs:
 
@@ -54,11 +54,15 @@ as tabs:
 | 5. Language | |
 | 6. Desktop | |
 | 7. Software | Packages, Flatpak apps, Replace apps |
-| 8. Kernel & Boot | Kernel, Boot Menu |
+| 8. Kernel & Boot | Kernel, Boot Menu, GRUB Design |
 | 9. Look & Feel | Themes & Icons, Wallpaper & Login, Plymouth |
-| 10. Installer | Calamares |
-| 11. Advanced | Terminal & Live, Package Workshop |
-| 12. Check & Build | |
+| 10. System Sounds | |
+| 11. Welcome Screen | |
+| 12. Installer | Calamares |
+| 13. Advanced | Terminal & Live, Package Workshop |
+| 14. Check & Build | |
+
+The header shows *Step N of 14* and how many steps are done.
 
 **Step by step.** A step opens when the step before it is done: press
 **Done — next step** at the bottom (✔ marks the done steps; *Back* goes to the
@@ -132,6 +136,9 @@ Debian, runs every step and (optionally) builds the ISO. The recipe is saved as
 * Every `.list`/`.sources` file can be edited directly.
 
 ### 3. Identity & Branding → Identity
+The fields start with what the extracted ISO says about itself (os-release, host name, volume label);
+*Reload from the ISO* fills them again. Distro Branding likewise loads the ISO's logo, wallpaper,
+login and GRUB backgrounds and installer colors (copied to `PROJECT/from-iso/`).
 * os-release: `NAME`, `PRETTY_NAME`, `VERSION`, `ID=mylinux`,
   `ID_LIKE=debian`. `VERSION_CODENAME` stays the Debian codename because APT
   tooling uses it; your codename is stored as `DISTRO_CODENAME`.
@@ -275,6 +282,10 @@ Tetun has no glibc locale yet; for Timor-Leste use `pt_PT.UTF-8` and
   are resolved by APT). Package lists: `name` installs, `-name` removes.
 
 ### 7. Software → Flatpak apps
+The whole Flathub catalog by category (Productivity & Office, Audio & Video, Graphics & Photography,
+Networking & Internet, Education, Science, Games, Developer Tools, System, Utilities). *Update from
+Flathub* fetches it from the Flathub API, or else Flathub's AppStream data through flatpak in the
+image; it is kept in `PROJECT/cache/flathub-catalog.json`. Filter, tick, *Add ticked apps*.
 *Enable Flatpak + Flathub* installs `flatpak` (and the Discover/GNOME
 Software plugin when present) and adds Flathub system-wide. Apps can be
 installed into the image now, or listed for installation on the **first boot
@@ -286,7 +297,9 @@ Every desktop brings its own programs. For each kind — web browser, e-mail,
 word processor, spreadsheet, text editor, file manager, terminal, image
 viewer, video player, music player, PDF viewer, archive manager, calculator —
 choose another Debian package (or type any name). It is installed, becomes the
-default for its file types in `/etc/xdg/mimeapps.list` (and in the desktop's
+default **for everyone** (every user of the live and installed system; also the Xfce
+helpers, KDE kdeglobals, LXQt session and GNOME/Cinnamon/MATE terminal settings and
+the lists in /etc/skel) for its file types in `/etc/xdg/mimeapps.list` (and in the desktop's
 own `/etc/xdg/*-mimeapps.list`), and for its Debian alternatives
 (`x-www-browser`, `gnome-www-browser`, `x-terminal-emulator`, `editor`). Tick
 *Remove the programs of this kind that are installed now* to remove the old
@@ -297,6 +310,10 @@ roles live in `/usr/share/eduka-customizer/apps.json`. CLI:
 `eduka-customizer apps roles|status|replace ROLE PACKAGE [--remove-old]`.
 
 ### 8. Kernel & Boot → Kernel
+**Third-party repository terminal**: commands run as root inside the image (for example the key and
+`deb` line from a kernel's website, then `apt update`). Repository files and keys created there are
+temporary; the kernels of those repositories are listed. Installing one keeps its repository and key;
+the others are removed with their package lists (*Keep or remove now*, at the latest by the build).
 * Table of installed kernels: package, origin, size, initrd, headers, the
   kernel the ISO boots (●) and holds. The metapackage line tells which package
   keeps kernels up to date.
@@ -331,7 +348,27 @@ roles live in `/usr/share/eduka-customizer/apps.json`. CLI:
   compressed system of the last build (also *Rebuild boot files only* on
   Build & Test, `eduka-customizer bootmenu apply`).
 
+### 8. Kernel & Boot → GRUB Design
+* **GRUB theme**: drop a theme folder or archive (with `theme.txt`). It is checked first and refused
+  with the reasons when GRUB could not show it: no theme.txt, pictures GRUB cannot read (only PNG,
+  JPEG and TGA), files theme.txt names that are missing (also `*_pixmap_style` patterns), TTF/OTF
+  instead of .pf2 fonts, files outside the theme, more than 25 MiB. Accepted themes go to the ISO
+  (`/boot/grub/themes/<name>`, used by the UEFI menu; the BIOS menu is ISOLINUX) and optionally to
+  installed systems (`GRUB_THEME` in `/etc/default/grub.d/96-eduka-grub-theme.cfg`). Builds keep it.
+* **Menu designer**: the entries of `/boot/grub/grub.cfg` — rename (double-click), reorder, remove,
+  add ready-made entries (live, safe graphics, copy to RAM, boot messages, fail-safe, UEFI firmware
+  settings, restart, power off), the default entry, the timeout and colors. Saved as a kept edit.
+* **Boot loader of installed systems**: GRUB, GRUB with Secure Boot (shim), systemd-boot or rEFInd
+  (Calamares 3.3 or newer). The packages come from the Debian archive of the image and Calamares'
+  `bootloader.conf` gets `efiBootLoader`. BIOS computers always get GRUB. LILO and BURG are no longer
+  developed and not in Debian, EFISTUB has no Calamares module, Syslinux/EXTLINUX already boots the
+  live ISO but cannot be installed by Calamares: they are listed with these reasons.
+
 ### 9. Look & Feel → Themes & Icons
+Only what fits the desktop chosen in step 6 is listed (all of it while none is chosen): theme packs
+from `/usr/share/eduka-customizer/themes.json` (for all desktops, GTK desktops and window managers,
+Qt desktops, or one desktop), the GTK theme (for GTK applications on KDE/LXQt), the LXQt theme, and
+the window theme of Xfwm4, Openbox, Cinnamon, Marco/Metacity, the Plasma global theme and Kvantum.
 * **Add your own**: drop folders, archives or files. Recognized and placed:
   GTK themes (`index.theme` with gtk-3.0/gtk-4.0/xfwm4/cinnamon/...) in
   `/usr/share/themes`; icon themes (`[Icon Theme]` with `Directories`) and
@@ -375,7 +412,45 @@ and desktop icons for LXQt/Eduka-Desktop and Xfce.
   are protected), **Create from a logo**.
 * Settings: delay before the splash, HiDPI scale, splash on ISO boot.
 
-### 10. Installer (Calamares)
+### 10. System Sounds
+Sounds for **boot**, **startup (login)**, **log out**, **shutdown**, **error**, **warning**,
+**information**, **question**, new message / e-mail, task complete, bell, device connected /
+removed, power cable, battery low, trash, screenshot, volume and camera. Each event takes an OGG or
+WAV file (FLAC, MP3, M4A and Opus are converted with ffmpeg when it is installed on this computer).
+Drop a folder: files called `boot`, `login`/`startup`, `logout`, `shutdown`, `error`, `warning`,
+`notification`, `usb-in`... are matched to their event. *Play* previews a sound here.
+
+*Apply to the image* writes a freedesktop.org sound theme (`/usr/share/sounds/<id>/`, inheriting
+`freedesktop`) and makes it the default: gsettings (GNOME, Budgie, MATE, Cinnamon — only keys that
+exist in the image), GTK `settings.ini`, Xfce xsettings and KDE `plasmarc`. Desktops play the event
+sounds themselves. Boot and shutdown sounds are played by `eduka-system-sounds.service` (alsa-utils
+and vorbis-tools are installed for it), the login sound by an autostart entry (Cinnamon plays its own).
+CLI: `eduka-customizer sounds events|themes|show|set|add|clear|apply|remove`.
+
+### 11. Welcome Screen
+Four pages shown after login. Each page has a title, text (**bold**, *italic*, `[links](https://...)`;
+an empty line starts a paragraph), an optional picture (left, right, above or below the text), the
+logo, alignment, its own background color and up to three buttons: open a website, start a program,
+start the installer or close. The window has a title, size, colors and the texts of its buttons.
+*Show*: at every login until the user unticks *Show this at startup*, only in the live session, only
+on installed systems, or only from the menu. The preview follows the page you edit; *Open the real
+welcome screen* runs it on this computer.
+
+In the image it is `/usr/bin/eduka-welcome` (Python + GTK 3; python3-gi and gir1.2-gtk-3.0 are
+installed), its design and pictures in `/usr/share/eduka-welcome/`, a menu entry and an autostart
+entry. CLI: `eduka-customizer welcome show|export|import|apply|remove`.
+
+### 12. Installer (Calamares)
+**Slides** have a title, text (**bold**, *italic*, links), a picture and colors, or are a picture only.
+**Check the installer** (also in Check & Build and `eduka-customizer calamares check`): settings.conf
+and every module configuration are valid YAML; the branding folder exists and its `componentName` is
+the folder name; its images and slideshow exist and the QML is complete; every module of the sequence
+is installed and every instance has its configuration; unpackfs copies live-boot's
+`/run/live/medium/live/filesystem.squashfs`; the boot loader and its tools fit the Calamares version;
+the display manager list matches the image; packages to `remove` are installed (otherwise apt fails
+at the end); every file system has its mkfs tool; groups, sudoers group, shell and time zone exist;
+commands of shellprocess modules exist. Distro Branding changes the ISO's own branding component and
+never renames it, and `bootloaderEntryName` is only changed when `efiBootloaderId` is set.
 Edits Debian's installer configuration in `/etc/calamares` while keeping the
 comments of the files (only the changed keys are rewritten, and a file is
 never written if the result is not valid YAML). Module files that only exist
@@ -401,7 +476,7 @@ in `/usr/share/calamares/modules` are copied to `/etc` first.
 
 Test the installer by booting the ISO in QEMU (Build & Test).
 
-### 11. Advanced → Terminal & Live
+### 13. Advanced → Terminal & Live
 * **Live edit session** – starts the image's desktop in a Xephyr window.
   Modes: */etc/skel* (changes become defaults for all users, including the
   live user), *root*, or *sandbox* (temporary, discarded). *Run in session*
@@ -416,7 +491,7 @@ Test the installer by booting the ISO in QEMU (Build & Test).
   window** (installed on request, runs as root in the image), or use the
   terminal. The Build page offers the same right before building.
 
-### 11. Advanced → Package Workshop
+### 13. Advanced → Package Workshop
 Opens an installed package (dpkg-repack style) into `PROJECT/workshop/<pkg>/`:
 all its files plus `DEBIAN/control`, `conffiles` and maintainer scripts.
 Edit, then *Build and install*: the version becomes `<version>+<id>N`, the
@@ -426,7 +501,7 @@ the image. *Restore Debian version* unholds and reinstalls the original.
 Prefer Distro Branding for identity changes: it needs no hold, so security
 updates keep flowing.
 
-### 12. Check & Build
+### 14. Check & Build
 **Check before building** (also `eduka-customizer check [--deep]`):
 
 | Check | Problem when |
@@ -500,7 +575,7 @@ recipe file. Actions: `sources`, `repo`, `apt-install`, `apt-remove`,
 `apt-upgrade`, `deb`, `flatpak`, `desktop`, `session`, `display-manager`,
 `eduka-desktop`, `identity`, `locale`, `plymouth`, `wallpaper`, `login`,
 `hook`, `command`, `boot`, `branding`, `themes`, `session-type`, `compositor`,
-`sddm-theme`, `language`, `users`, `assets`, `calamares`, `kernel`, `boot-file`, `replace-app`, `build`.
+`sddm-theme`, `language`, `users`, `assets`, `calamares`, `kernel`, `boot-file`, `replace-app`, `sounds`, `welcome`, `grub-theme`, `boot-loader`, `build`.
 `desktop` takes `"edition": "mini" | "compact" | "full" | "full_apps"`;
 `replace-app` takes `role`, `package` and `remove`. Examples:
 `examples/my-distro.json` (Xfce, a general distribution) and

@@ -1,6 +1,6 @@
 # Roadmap & rekomendasi
 
-Status: **0.15 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
+Status: **0.16 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
 berikutnya untuk pengembang Eduka-Customizer, diurutkan menurut manfaatnya.
 
 ## Selesai di 0.11 Alpha
@@ -30,7 +30,13 @@ edisi desktop/WM (Mini, Compact, Full, Full with apps), edisi ISO (Minimal,
 Full, Full with recommended apps), daftar DE/WM/compositor khusus Debian,
 Replace apps, pemeriksaan sebelum build (Check & Build).
 
-## Menuju 0.16 Alpha
+## Selesai di 0.16 Alpha
+System Sounds, Welcome Screen (4 halaman), Identity & Branding dari ISO, nama edisi menurut setiap
+desktop, katalog Flathub per kategori, Replace apps untuk semua pengguna, terminal repositori kernel
+(sementara), Look & Feel per desktop, slide teks dan pemeriksaan Calamares, tema GRUB pihak ke-3,
+desain menu GRUB, pilihan bootloader, tampilan modern.
+
+## Menuju 0.17 Alpha
 
 1. **Uji penuh dengan ISO Debian 13 live asli** (LXQt dan standard) di
    perangkat keras nyata, BIOS dan UEFI, termasuk Secure Boot. Unit test dan
@@ -47,7 +53,7 @@ Replace apps, pemeriksaan sebelum build (Check & Build).
 5. **Terjemahan GUI** (Tetun, Português, Bahasa Indonesia, English) memakai
    Qt Linguist (`pylupdate6`/`lrelease`).
 
-## Menuju 0.15 – 0.20
+## Menuju 0.18 – 0.20
 
 * **Overlay / snapshot rootfs** (overlayfs atau btrfs) sehingga setiap
   perubahan bisa di-*undo*, dan beberapa varian (sekolah, guru, lab) dibuat

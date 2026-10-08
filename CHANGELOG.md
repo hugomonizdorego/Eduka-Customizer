@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.16.0 Alpha — 2026-10-08
+
+### New
+* **System Sounds** (step 10): boot, login, logout, shutdown, error, warning, information, question,
+  messages, e-mail, complete, bell, devices, power, battery, trash, screenshot, volume and camera
+  sounds as a freedesktop sound theme, the default of every desktop (gsettings only for schemas in the
+  image, GTK, Xfce, KDE); boot/shutdown sounds via a systemd service, login sound via autostart; files
+  matched to events by name; MP3/FLAC converted with ffmpeg. CLI `sounds`, recipe `sounds`.
+* **Welcome Screen** (step 11): four designed pages (title, rich text, logo, picture, colors, buttons
+  for websites, programs or the installer), a live preview, shown after login until unticked, only
+  live, only installed or only from the menu. A small GTK program in the image. CLI `welcome`.
+* **Identity & Branding from the ISO**: fields and artwork start from the extracted ISO.
+* **Editions in each desktop's words** with the Debian description of the package.
+* **Flathub by category** for every kind of distribution (API, otherwise AppStream via flatpak).
+* **Kernel terminal** for third-party repositories; repositories stay only with their kernel.
+* **Look & Feel per desktop**: themes.json with compatibility; window themes for Xfwm4, Openbox,
+  Cinnamon, Marco/Metacity, Plasma global theme and Kvantum.
+* **Calamares**: text slides; `calamares_check` (also in Check & Build and `calamares check`).
+* **GRUB Design**: third-party GRUB themes checked and refused when incompatible, menu designer,
+  boot loader of installed systems (GRUB, GRUB + Secure Boot, systemd-boot, rEFInd). CLI
+  `grub-theme`, `boot-loader`.
+* **Modern look**: gradient sidebar, pill tabs, cards, *Step N of 14* with a progress bar.
+
+### Changed
+* Replace apps applies to everyone (desktop settings and /etc/skel too).
+* Distro Branding keeps the ISO's Calamares branding component and EFI id.
+
+### Fixed
+* Changing the product name no longer changes `bootloaderEntryName` when the EFI folder depends on it
+  (Debian's signed GRUB would not boot).
+* Quotes in names no longer break Calamares branding or slides.
+
 ## 0.15.0 Alpha — 2026-10-08
 
 ### Changed

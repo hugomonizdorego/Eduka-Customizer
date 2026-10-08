@@ -1,4 +1,4 @@
-# Panduan singkat Eduka-Customizer 0.15 Alpha
+# Panduan singkat Eduka-Customizer 0.16 Alpha
 
 Eduka-Customizer adalah pembangun ISO untuk **semua distribusi berbasis
 Debian**: Debian stable, testing, sid dan turunan Debian seperti **LMDE**
@@ -21,7 +21,7 @@ langsung dibangun, dan semua langkah di sidebar terbuka untuk penyesuaian.
 Paket siap pakai untuk dicoba (Debian 13, Ubuntu 24.04 dan turunannya):
 
 ```sh
-sudo apt install ./release/eduka-customizer_0.15.0~alpha_all.deb
+sudo apt install ./release/eduka-customizer_0.16.0~alpha_all.deb
 ```
 
 Atau build sendiri:
@@ -29,11 +29,42 @@ Atau build sendiri:
 ```sh
 sudo apt install debhelper python3-pytest dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.15.0~alpha_all.deb
+sudo apt install ../eduka-customizer_0.16.0~alpha_all.deb
 eduka-customizer doctor        # cek alat yang dibutuhkan
 ```
 
-## Baru di 0.15
+## Baru di 0.16
+
+* **System Sounds** (langkah 10) — suara untuk boot, startup (login), logout, shutdown,
+  error, peringatan, informasi, notifikasi, e-mail, perangkat USB, kabel daya, baterai
+  lemah, dll. Jatuhkan folder: file bernama `boot.ogg`, `login.wav`, `shutdown.ogg`,
+  `error.oga`, `notification.ogg` otomatis dicocokkan. Menjadi tema suara default semua
+  desktop; suara boot/shutdown lewat layanan systemd, suara login lewat autostart.
+* **Welcome Screen** (langkah 11) — 4 halaman yang Anda desain: judul, teks (**tebal**,
+  *miring*, [tautan](https://...)), logo, gambar, warna, dan tombol (buka situs, jalankan
+  program, mulai installer, tutup). Muncul setelah login sampai pengguna menghapus centang
+  *Show this at startup* (atau hanya live / hanya terpasang / hanya dari menu).
+* **Identity & Branding** dimuat langsung dari ISO yang diekstrak (nama, ID, versi,
+  codename, URL, hostname, label, logo, wallpaper, latar login & GRUB, warna installer).
+* **Edisi** dengan istilah resmi tiap desktop: GNOME Core, KDE Plasma dengan KDE Gear,
+  Xfce dengan Goodies, MATE extras, ... plus deskripsi paket Debian dari image.
+* **Flatpak** untuk semua jenis distro: seluruh katalog Flathub per kategori (Office,
+  Audio & Video, Grafis, Internet, Pendidikan, Sains, Game, Developer, Sistem, Utilitas).
+* **Replace apps** — *berlaku untuk semuanya* (semua pengguna, semua desktop).
+* **Kernel** — terminal untuk memasukkan repositori pihak ke-3 lalu `apt update`; kernelnya
+  muncul di daftar. Jika kernel dipasang, repositori ikut tetap di sistem; jika tidak,
+  repositori hanya sementara dan dihapus (paling lambat saat build).
+* **Look & Feel** — hanya ikon, tema GTK/Qt, tema jendela dan kursor yang cocok dengan
+  desktop/WM yang dipilih.
+* **Calamares** — slide berisi teks agar orang bisa membaca saat instalasi; ID Calamares
+  mengikuti ISO; pemeriksaan installer yang teliti (branding, modul, unpackfs, bootloader,
+  display manager, paket, file system, grup, perintah).
+* **GRUB Design** (tab di Kernel & Boot) — tema GRUB pihak ke-3 (dicek; ditolak bila tidak
+  kompatibel), desain menu GRUB (judul, urutan, default, timeout, warna), dan bootloader
+  sistem terpasang: GRUB, GRUB + Secure Boot, systemd-boot, rEFInd. LILO, BURG, EFISTUB dan
+  Syslinux dijelaskan alasannya tidak dipakai.
+* Tampilan lebih modern: sidebar gradien, tab pil, *Step N of 14* dengan bar kemajuan.
+
 
 * **Untuk semua distro berbasis Debian** — default Edukasaun OS dihapus.
   Project lama tetap jalan; file `*-edukasaun*` di image diganti nama otomatis.
@@ -67,7 +98,7 @@ eduka-customizer doctor        # cek alat yang dibutuhkan
   ukuran ISO. Masalah serius menghentikan build; klik dua kali baris untuk
   membuka halaman perbaikannya.
 
-## Alur kerja di GUI (12 langkah)
+## Alur kerja di GUI (14 langkah)
 
 1. **Start** – buat project (folder kerja), lalu pilih sumber: ISO Debian live
    (disarankan *standard*) atau ISO turunan Debian, *Download Debian* (dicek
@@ -86,12 +117,15 @@ eduka-customizer doctor        # cek alat yang dibutuhkan
    Full with apps), layar login, X11/Wayland, compositor, Eduka-Desktop.
 7. **Software** – tab *Packages* (semua paket Debian, centang/hapus centang,
    hapus aplikasi bawaan ISO), *Flatpak apps*, *Replace apps*.
-8. **Kernel & Boot** – tab *Kernel* dan *Boot Menu* (edit grub.cfg/isolinux).
+8. **Kernel & Boot** – tab *Kernel* (dengan terminal repositori), *Boot Menu* (edit
+   grub.cfg/isolinux) dan *GRUB Design* (tema, menu, bootloader).
 9. **Look & Feel** – tab *Themes & Icons*, *Wallpaper & Login*, *Plymouth*.
-10. **Installer** – Calamares.
-11. **Advanced** – tab *Terminal & Live* (desktop image di jendela, terminal
+10. **System Sounds** – suara sistem.
+11. **Welcome Screen** – layar sambutan 4 halaman.
+12. **Installer** – Calamares (slide, pemeriksaan).
+13. **Advanced** – tab *Terminal & Live* (desktop image di jendela, terminal
     root, Synaptic) dan *Package Workshop*.
-12. **Check & Build** – periksa, build ISO, uji di QEMU (BIOS/UEFI/Secure Boot).
+14. **Check & Build** – periksa, build ISO, uji di QEMU (BIOS/UEFI/Secure Boot).
 
 ## Baris perintah
 
@@ -104,6 +138,11 @@ sudo eduka-customizer -p ~/mylinux desktop install eduka            # Eduka-Desk
 sudo eduka-customizer -p ~/mylinux apps replace browser chromium --remove-old
 sudo eduka-customizer -p ~/mylinux flatpak install org.kde.gcompris --firstboot
 sudo eduka-customizer -p ~/mylinux shell          # terminal di dalam image
+sudo eduka-customizer -p ~/mylinux sounds add ~/suara/ && sudo eduka-customizer -p ~/mylinux sounds apply
+sudo eduka-customizer -p ~/mylinux welcome apply
+sudo eduka-customizer -p ~/mylinux grub-theme add ~/Unduhan/tema-grub.tar.xz --installed
+sudo eduka-customizer -p ~/mylinux boot-loader use systemd-boot
+sudo eduka-customizer -p ~/mylinux calamares check
 sudo eduka-customizer -p ~/mylinux check --deep   # periksa sebelum build
 sudo eduka-customizer -p ~/mylinux build
 eduka-customizer -p ~/mylinux test --firmware uefi

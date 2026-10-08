@@ -10,12 +10,14 @@
     stable, testing, sid or a derivative such as LMDE, step by step: extract an ISO or bootstrap a
     new base, choose the desktop or window manager in a Mini, Compact, Full or Full-with-apps
     edition (GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, Eduka-Desktop, i3, Sway and more),
-    install packages and Flatpak apps, replace the default applications, brand the boot splash,
-    login screen and boot menu, check the image and build a hybrid BIOS/UEFI ISO.</p>
+    install packages and Flatpak apps by category, replace the default applications, add system
+    sounds and a welcome screen, brand the boot splash, login screen, GRUB theme and installer, check
+    the image and build a hybrid BIOS/UEFI ISO.</p>
   </description>
   <launchable type="desktop-id">org.edukasaun.customizer.desktop</launchable>
   <url type="homepage">https://github.com/hugomonizdorego/Eduka-Customizer</url>
   <releases>
+    <release version="0.16.0~alpha" date="2026-10-08"/>
     <release version="0.15.0~alpha" date="2026-10-08"/>
     <release version="0.14.0~alpha" date="2026-10-07"/>
     <release version="0.13.0~alpha" date="2026-10-07"/>

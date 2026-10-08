@@ -1,4 +1,4 @@
-.TH EDUKA-CUSTOMIZER 1 "October 2026" "Eduka-Customizer 0.15 Alpha" "Eduka-Customizer"
+.TH EDUKA-CUSTOMIZER 1 "October 2026" "Eduka-Customizer 0.16 Alpha" "Eduka-Customizer"
 .SH NAME
 eduka-customizer \- ISO builder and customizer for Debian-based distributions
 .SH SYNOPSIS
@@ -113,6 +113,21 @@ rebuilds the ISO in seconds without recompressing the system.
 .TP
 .B live [\-\-session S] [\-\-resolution WxH] [\-\-mode skel|root|sandbox]
 Run the image's desktop in a nested Xephyr window; changes are saved into the image.
+.TP
+.B sounds events|themes|show|set|add|clear|apply|remove [ITEMS] [\-\-theme T] [\-\-no\-boot] [\-\-no\-login] [\-\-no\-shutdown]
+System sounds (boot, login, logout, shutdown, errors, notifications, devices) as the default sound theme.
+.TP
+.B welcome show|export|import|apply|remove [FILE]
+Welcome screen with four pages shown after login (design as JSON).
+.TP
+.B grub-theme list|check|add|use|remove [THEME] [\-\-installed]
+Third-party GRUB themes; incompatible themes are refused with the reasons.
+.TP
+.B boot-loader list|use grub|grub-secureboot|systemd-boot|refind
+The boot loader Calamares installs on computers.
+.TP
+.B calamares check
+A careful check of the Calamares installer against the image.
 .TP
 .B check [\-\-deep]
 Check the image before building: what would make the build fail, the ISO not

@@ -1,5 +1,5 @@
 # Eduka-Customizer - ISO builder for Debian-based distributions
-VERSION   = 0.15.0~alpha
+VERSION   = 0.16.0~alpha
 PYTHON   ?= python3
 DESTDIR  ?=
 PREFIX   ?= /usr

@@ -1,3 +1,21 @@
+eduka-customizer (0.16.0~alpha) unstable; urgency=medium
+
+  * System Sounds: a sound theme for boot, login, logout, shutdown, errors,
+    notifications and devices, the default of every desktop.
+  * Welcome Screen: four pages designed in the GUI, shown after login.
+  * Identity and Distro Branding start from the extracted ISO.
+  * Editions named in each desktop's own words, with Debian descriptions.
+  * Flatpak: the whole Flathub catalog by category.
+  * Replace apps: the new program is the default for everyone.
+  * Kernel: terminal for third-party repositories; temporary repositories.
+  * Look & Feel: only themes that fit the chosen desktop.
+  * Calamares: text slides, a careful installer check, the ISO's ids kept.
+  * GRUB themes (checked), GRUB menu designer, boot loader choice
+    (GRUB, systemd-boot, rEFInd).
+  * Modern look with a step progress indicator.
+
+ -- Edukasaun OS Developers <dev@edukasaun.org>  Thu, 08 Oct 2026 18:00:00 +0000
+
 eduka-customizer (0.15.0~alpha) unstable; urgency=medium
 
   * A general ISO builder for Debian-based distributions: no Edukasaun OS
