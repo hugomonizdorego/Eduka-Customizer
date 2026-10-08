@@ -45,6 +45,8 @@ install:
 			$(DESTDIR)$(PREFIX)/share/icons/hicolor/$${s}x$${s}/apps/eduka-customizer.png; done
 	$(INSTALL) -d $(DESTDIR)$(DATADIR)/icons/menu
 	$(INSTALL) -m644 data/icons/menu/*.svg data/icons/menu/README.md $(DESTDIR)$(DATADIR)/icons/menu/
+	$(INSTALL) -d $(DESTDIR)$(DATADIR)/welcome
+	$(INSTALL) -m755 data/welcome/eduka-welcome $(DESTDIR)$(DATADIR)/welcome/
 	$(INSTALL) -m644 icons/eduka-customizer.svg $(DESTDIR)$(DATADIR)/icons/
 	$(INSTALL) -m644 docs/eduka-customizer.1 $(DESTDIR)$(PREFIX)/share/man/man1/
 	$(INSTALL) -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/eduka-customizer/examples/

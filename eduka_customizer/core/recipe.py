@@ -72,6 +72,30 @@ def run_step(project, step, base, build=True):
             fp.set_firstboot(step.get("apps", []))
         else:
             fp.install(step.get("apps", []))
+    elif action == "sounds":
+        from eduka_customizer.core.sounds import Sounds
+        snd = Sounds(project)
+        if step.get("theme"):
+            project.state.setdefault("sounds", {})["theme"] = step["theme"]
+        for ev, f in (step.get("files") or {}).items():
+            snd.set_sound(ev, _path(base, f))
+        if step.get("folder"):
+            snd.add_folder(_path(base, step["folder"]))
+        snd.apply(step.get("theme"), boot=step.get("boot", True), login=step.get("login", True),
+                  shutdown=step.get("shutdown", True), event_sounds=step.get("event_sounds", True))
+    elif action == "welcome":
+        from eduka_customizer.core import welcome as wl
+        d = wl.design(project)
+        if step.get("file"):
+            import json as _json
+            d.update(_json.loads(_path(base, step["file"]).read_text()))
+        d.update({k: v for k, v in step.items() if k not in ("action", "file")})
+        if d.get("logo"):
+            d["logo"] = str(_path(base, d["logo"]))
+        for pg in d.get("pages", []):
+            if pg.get("image"):
+                pg["image"] = str(_path(base, pg["image"]))
+        wl.Welcome(project).apply(d)
     elif action == "replace-app":
         from eduka_customizer.core.replace import Replacer
         Replacer(project).replace(step["role"], step["package"], step.get("remove", []))

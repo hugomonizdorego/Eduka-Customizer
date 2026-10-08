@@ -495,6 +495,80 @@ def cmd_wallpapers(args):
     return 0
 
 
+def cmd_sounds(args):
+    from eduka_customizer.core import sounds
+    if args.action == "events":
+        for ev, text, group, _std in sounds.EVENTS:
+            print("{:22} {:10} {}".format(ev, group, text))
+        return 0
+    p = _project(args) if args.action in ("show", "themes") else _locked(args)
+    s = sounds.Sounds(p)
+    if args.theme:
+        p.state.setdefault("sounds", {})["theme"] = args.theme
+    if args.action == "themes":
+        for tid, name in sounds.installed_themes(p.rootfs):
+            print("{:20} {}".format(tid, name))
+    elif args.action == "show":
+        st = s.state()
+        print("Theme:", st["theme"])
+        for ev, _t, _g, _s in sounds.EVENTS:
+            print("  {:22} {}".format(ev, st["files"].get(ev, "-")))
+    elif args.action == "set":
+        if len(args.items) != 2:
+            raise SystemExit("Use: sounds set EVENT FILE")
+        print(s.set_sound(args.items[0], args.items[1]))
+    elif args.action == "add":
+        for item in args.items:
+            if Path(item).is_dir():
+                for ev, name in s.add_folder(item).items():
+                    print("{} -> {}".format(name, ev))
+            else:
+                ev = sounds.match_event(item)
+                if not ev:
+                    raise SystemExit("Cannot tell the event of {}: use 'sounds set EVENT FILE'".format(item))
+                s.set_sound(ev, item)
+                print("{} -> {}".format(item, ev))
+    elif args.action == "clear":
+        for ev in args.items:
+            s.remove_sound(ev)
+    elif args.action == "apply":
+        s.apply(args.theme or None, boot=not args.no_boot, login=not args.no_login,
+                shutdown=not args.no_shutdown, event_sounds=not args.no_event_sounds)
+    elif args.action == "remove":
+        s.remove()
+    return 0
+
+
+def cmd_welcome(args):
+    import json
+    from eduka_customizer.core import welcome
+    p = _project(args) if args.action in ("show", "export") else _locked(args)
+    w = welcome.Welcome(p)
+    if args.action == "show":
+        d = welcome.design(p)
+        print("Title: {}  ({}, shown: {})".format(d["title"], "in the image" if w.installed() else "not installed",
+                                                 d["show"]))
+        for n, page in enumerate(d["pages"], 1):
+            print("  {}. {}{}".format(n, page.get("title", ""), "" if page.get("enabled", True) else " (off)"))
+    elif args.action == "export":
+        text = json.dumps(welcome.design(p), indent=2, ensure_ascii=False)
+        if args.file:
+            Path(args.file).write_text(text + "\n")
+        else:
+            print(text)
+    elif args.action == "import":
+        if not args.file:
+            raise SystemExit("Use: welcome import FILE.json")
+        d = welcome.design(p)
+        d.update(json.loads(Path(args.file).read_text()))
+        w.save(d)
+    elif args.action == "apply":
+        w.apply()
+    elif args.action == "remove":
+        w.remove()
+    return 0
+
+
 def cmd_apps(args):
     from eduka_customizer.core import replace
     if args.action == "roles":
@@ -889,6 +963,21 @@ def build_parser():
     s.add_argument("action", choices=["list", "add", "default", "remove"])
     s.add_argument("items", nargs="*")
     s.set_defaults(func=cmd_wallpapers)
+
+    s = sub.add_parser("sounds", help="system sounds: boot, login, logout, shutdown, errors, notifications")
+    s.add_argument("action", choices=["events", "themes", "show", "set", "add", "clear", "apply", "remove"])
+    s.add_argument("items", nargs="*", help="set: EVENT FILE; add: files or folders; clear: EVENTS")
+    s.add_argument("--theme", help="sound theme name (default: the distribution ID)")
+    s.add_argument("--no-boot", action="store_true")
+    s.add_argument("--no-login", action="store_true")
+    s.add_argument("--no-shutdown", action="store_true")
+    s.add_argument("--no-event-sounds", action="store_true")
+    s.set_defaults(func=cmd_sounds)
+
+    s = sub.add_parser("welcome", help="welcome screen with four pages shown after login")
+    s.add_argument("action", choices=["show", "export", "import", "apply", "remove"])
+    s.add_argument("file", nargs="?", help="export/import: a JSON design")
+    s.set_defaults(func=cmd_welcome)
 
     s = sub.add_parser("apps", help="replace the default applications (browser, mail, editor, terminal, ...)")
     s.add_argument("action", choices=["roles", "status", "replace"])

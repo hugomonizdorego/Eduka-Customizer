@@ -1,0 +1,246 @@
+#!/usr/bin/python3
+"""Welcome screen of this distribution (made with Eduka-Customizer).
+
+Shows the pages described in /usr/share/eduka-welcome/welcome.json: a title,
+text, a logo, a picture and buttons that open a website, start a program or
+the installer. 'Show at startup' is remembered per user in
+~/.config/eduka-welcome/hidden.
+"""
+
+import json
+import os
+import shlex
+import subprocess
+import sys
+
+DATA = "/usr/share/eduka-welcome"
+
+
+def config_dir():
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    return os.path.join(base, "eduka-welcome")
+
+
+def is_live():
+    return os.path.isdir("/run/live/medium") or os.path.exists("/run/live")
+
+
+def should_autostart(design):
+    when = design.get("show", "startup")
+    if when == "menu":
+        return False
+    if when == "live" and not is_live():
+        return False
+    if when == "installed" and is_live():
+        return False
+    return not os.path.exists(os.path.join(config_dir(), "hidden"))
+
+
+def run_action(button, parent=None):
+    action, target = button.get("action", "url"), button.get("target", "")
+    try:
+        if action == "url" and target:
+            subprocess.Popen(["xdg-open", target])
+        elif action == "command" and target:
+            subprocess.Popen(shlex.split(target))
+        elif action == "installer":
+            for cmd in (["install-debian"], ["calamares-launch"], ["pkexec", "calamares"]):
+                if any(os.access(os.path.join(d, cmd[0]), os.X_OK) for d in os.environ.get(
+                        "PATH", "/usr/bin:/bin").split(":") + ["/usr/sbin"]):
+                    subprocess.Popen(cmd)
+                    break
+        elif action == "close" and parent is not None:
+            parent.destroy()
+    except OSError as e:
+        sys.stderr.write("eduka-welcome: {}\n".format(e))
+
+
+def main():
+    data = DATA
+    args = sys.argv[1:]
+    if "--data" in args:
+        data = args[args.index("--data") + 1]
+    try:
+        with open(os.path.join(data, "welcome.json"), encoding="utf-8") as fh:
+            design = json.load(fh)
+    except (OSError, ValueError) as e:
+        sys.stderr.write("eduka-welcome: no welcome screen: {}\n".format(e))
+        return 0
+    if "--autostart" in args and not should_autostart(design):
+        return 0
+    try:
+        import gi
+        gi.require_version("Gtk", "3.0")
+        gi.require_version("Gdk", "3.0")
+        gi.require_version("GdkPixbuf", "2.0")
+        from gi.repository import Gdk, GdkPixbuf, Gtk
+    except (ImportError, ValueError) as e:
+        sys.stderr.write("eduka-welcome needs python3-gi and gir1.2-gtk-3.0: {}\n".format(e))
+        return 0
+
+    colors = design.get("colors", {})
+    css = """
+    window, .page {{ background-color: {bg}; }}
+    label {{ color: {fg}; }}
+    .title {{ font-size: 24pt; font-weight: bold; color: {title}; }}
+    .text {{ font-size: 12pt; }}
+    button.action {{ background-image: none; background-color: {accent}; color: {button_text};
+                     border-radius: 8px; padding: 8px 18px; border: none; font-weight: bold; }}
+    button.action label {{ color: {button_text}; }}
+    .dot {{ color: alpha({fg}, 0.3); font-size: 16pt; }}
+    .dot.current {{ color: {accent}; }}
+    .footer {{ background-color: alpha({fg}, 0.05); padding: 8px; }}
+    """.format(bg=colors.get("background", "#ffffff"), fg=colors.get("text", "#1d2b28"),
+               title=colors.get("title", colors.get("accent", "#00a879")), accent=colors.get("accent", "#00a879"),
+               button_text=colors.get("button_text", "#ffffff"))
+    provider = Gtk.CssProvider()
+    provider.load_from_data(css.encode())
+    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), provider,
+                                             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    win = Gtk.Window(title=design.get("title", "Welcome"))
+    win.set_default_size(int(design.get("width", 860)), int(design.get("height", 560)))
+    win.set_position(Gtk.WindowPosition.CENTER)
+    icon = os.path.join(data, design.get("logo") or "")
+    if design.get("logo") and os.path.exists(icon):
+        try:
+            win.set_icon_from_file(icon)
+        except Exception:
+            pass
+    win.connect("destroy", Gtk.main_quit)
+    outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+    win.add(outer)
+    stack = Gtk.Stack()
+    stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+    outer.pack_start(stack, True, True, 0)
+
+    def picture(name, width, height):
+        path = os.path.join(data, name or "")
+        if not name or not os.path.exists(path):
+            return None
+        try:
+            pix = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, width, height, True)
+        except Exception:
+            return None
+        return Gtk.Image.new_from_pixbuf(pix)
+
+    pages = [p for p in design.get("pages", []) if p.get("enabled", True)]
+    for n, page in enumerate(pages):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.get_style_context().add_class("page")
+        box.set_border_width(36)
+        if page.get("background"):
+            prov = Gtk.CssProvider()
+            prov.load_from_data(".p{} {{ background-color: {}; }}".format(n, page["background"]).encode())
+            box.get_style_context().add_provider(prov, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1)
+            box.get_style_context().add_class("p{}".format(n))
+        align = Gtk.Align.CENTER if page.get("align", "center") == "center" else Gtk.Align.START
+        if page.get("show_logo", True):
+            logo = picture(design.get("logo"), 96, 96)
+            if logo:
+                logo.set_halign(align)
+                box.pack_start(logo, False, False, 0)
+        title = Gtk.Label()
+        title.set_markup(page.get("title_markup", ""))
+        title.get_style_context().add_class("title")
+        title.set_line_wrap(True)
+        title.set_halign(align)
+        box.pack_start(title, False, False, 0)
+        body = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=24)
+        text = Gtk.Label()
+        text.set_markup(page.get("text_markup", ""))
+        text.get_style_context().add_class("text")
+        text.set_line_wrap(True)
+        text.set_justify(Gtk.Justification.CENTER if align == Gtk.Align.CENTER else Gtk.Justification.LEFT)
+        text.set_halign(align)
+        text.set_valign(Gtk.Align.START)
+        img = picture(page.get("image"), int(page.get("image_width", 360)), int(page.get("image_height", 240)))
+        position = page.get("image_position", "right")
+        if img and position == "top":
+            box.pack_start(img, False, False, 0)
+        if img and position == "left":
+            body.pack_start(img, False, False, 0)
+        body.pack_start(text, True, True, 0)
+        if img and position == "right":
+            body.pack_start(img, False, False, 0)
+        box.pack_start(body, True, True, 0)
+        if img and position == "bottom":
+            box.pack_start(img, False, False, 0)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        row.set_halign(align)
+        for b in page.get("buttons", []):
+            if not b.get("label"):
+                continue
+            btn = Gtk.Button(label=b["label"])
+            btn.get_style_context().add_class("action")
+            btn.connect("clicked", lambda _w, b=b: run_action(b, win))
+            row.pack_start(btn, False, False, 0)
+        box.pack_start(row, False, False, 0)
+        stack.add_named(box, "p{}".format(n))
+
+    footer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+    footer.get_style_context().add_class("footer")
+    outer.pack_end(footer, False, False, 0)
+    startup = Gtk.CheckButton(label=design.get("startup_label", "Show this at startup"))
+    startup.set_active(not os.path.exists(os.path.join(config_dir(), "hidden")))
+
+    def toggle(w):
+        path = os.path.join(config_dir(), "hidden")
+        try:
+            if w.get_active():
+                if os.path.exists(path):
+                    os.unlink(path)
+            else:
+                os.makedirs(config_dir(), exist_ok=True)
+                open(path, "w").close()
+        except OSError:
+            pass
+    startup.connect("toggled", toggle)
+    if design.get("show", "startup") != "menu":
+        footer.pack_start(startup, False, False, 6)
+    dots = Gtk.Box(spacing=4)
+    footer.set_center_widget(dots)
+    labels = []
+    for _ in pages:
+        d = Gtk.Label(label="●")
+        d.get_style_context().add_class("dot")
+        dots.pack_start(d, False, False, 0)
+        labels.append(d)
+    back = Gtk.Button(label=design.get("back_label", "Back"))
+    nxt = Gtk.Button(label=design.get("next_label", "Next"))
+    close = Gtk.Button(label=design.get("close_label", "Close"))
+    close.connect("clicked", lambda _w: win.destroy())
+    footer.pack_end(close, False, False, 6)
+    footer.pack_end(nxt, False, False, 0)
+    footer.pack_end(back, False, False, 0)
+    state = {"i": 0}
+
+    def show(i):
+        if not pages:
+            return
+        state["i"] = max(0, min(len(pages) - 1, i))
+        stack.set_visible_child_name("p{}".format(state["i"]))
+        back.set_sensitive(state["i"] > 0)
+        nxt.set_sensitive(state["i"] < len(pages) - 1)
+        for k, d in enumerate(labels):
+            ctx = d.get_style_context()
+            (ctx.add_class if k == state["i"] else ctx.remove_class)("current")
+    back.connect("clicked", lambda _w: show(state["i"] - 1))
+    nxt.connect("clicked", lambda _w: show(state["i"] + 1))
+    win.show_all()
+    show(0)
+    if "--screenshot" in args:
+        from gi.repository import GLib
+
+        def shot():
+            w = win.get_window()
+            pb = Gdk.pixbuf_get_from_window(w, 0, 0, w.get_width(), w.get_height())
+            pb.savev(args[args.index("--screenshot") + 1], "png", [], [])
+            Gtk.main_quit()
+        GLib.timeout_add(800, shot)
+    Gtk.main()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

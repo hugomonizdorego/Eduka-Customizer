@@ -26,7 +26,8 @@ MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "
               "KernelPage": "kernel", "DesktopPage": "desktop", "ThemesPage": "themes",
               "AppearancePage": "wallpaper", "PlymouthPage": "plymouth", "BrandingPage": "branding",
               "CalamaresPage": "calamares", "BootMenuPage": "bootmenu", "WorkshopPage": "workshop",
-              "TerminalPage": "terminal", "BuildPage": "build", "SettingsPage": "settings"}
+              "TerminalPage": "terminal", "BuildPage": "build", "SettingsPage": "settings", "SoundsPage": "sounds",
+              "WelcomePage": "welcome"}
 
 # The sidebar, in the order of the work. Pages that are used together share one
 # menu (as tabs). (key, menu title, icon, page classes, is a numbered step)
@@ -43,6 +44,8 @@ SECTIONS = [
     ("boot", "Kernel & Boot", "kernel", ["kernel.KernelPage", "bootmenu.BootMenuPage"], True),
     ("look", "Look & Feel", "themes", ["themes.ThemesPage", "appearance.AppearancePage",
                                        "plymouth.PlymouthPage"], True),
+    ("sounds", "System Sounds", "sounds", ["sounds.SoundsPage"], True),
+    ("welcome", "Welcome Screen", "welcome", ["welcome.WelcomePage"], True),
     ("installer", "Installer", "calamares", ["calamares.CalamaresPage"], True),
     ("advanced", "Advanced", "terminal", ["terminal.TerminalPage", "workshop.WorkshopPage"], True),
     ("build", "Check & Build", "build", ["build.BuildPage"], True),

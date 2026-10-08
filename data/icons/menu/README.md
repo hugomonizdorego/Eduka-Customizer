@@ -29,6 +29,8 @@ elementary+ (GPL-3) icon themes.
 | Boot Menu | bootmenu.svg | grub-customizer |
 | Package Workshop | workshop.svg | application-x-deb (gdebi) |
 | Terminal & Live | terminal.svg | utilities-terminal |
+| System Sounds | sounds.svg | yast-sound (preferences-desktop-sound) |
+| Welcome Screen | welcome.svg | org.gnome.Tour |
 | Replace apps | replace.svg | preferences-desktop-default-applications |
 | Check & Build | build.svg | brasero (disk-burner) |
 | Settings | settings.svg | preferences-system (utilities-tweak-tool) |
