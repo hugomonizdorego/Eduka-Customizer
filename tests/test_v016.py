@@ -205,3 +205,59 @@ def test_edition_names_per_desktop(project):
         "Package: other\nVersion: 1\nDescription: x\n")
     assert dsk.package_descriptions(project.rootfs, ["kde-standard", "nope"]) == {
         "kde-standard": "KDE Plasma Desktop and standard set of applications"}
+
+
+# Flathub by category ---------------------------------------------------------------------------
+
+def test_flathub_api_by_category(monkeypatch):
+    import io
+    from eduka_customizer.core import flathub
+    pages = {"Office": [{"app_id": "org.libreoffice.LibreOffice", "name": "LibreOffice", "summary": "Office",
+                         "main_categories": "Office"}],
+             "AudioVideo": [{"app_id": "org.videolan.VLC", "name": "VLC", "summary": "Media player",
+                             "main_categories": ["AudioVideo"]},
+                            {"id": "org_libreoffice_LibreOffice", "name": "dup", "summary": ""}]}
+    seen = []
+
+    def fake(req, timeout=0):
+        url = req.full_url
+        seen.append(url)
+        cat = url.split("/category/")[1].split("?")[0]
+        return io.BytesIO(json.dumps({"hits": pages.get(cat, []), "totalPages": 1}).encode())
+    monkeypatch.setattr(flathub.urllib.request, "urlopen", fake)
+    apps = flathub.from_api()
+    assert apps["org.videolan.VLC"]["category"] == "AudioVideo"
+    assert apps["org.libreoffice.LibreOffice"]["category"] == "Office"
+    assert len(seen) == len(flathub.CATEGORIES) and "/collection/category/Office?page=1" in seen[0]
+    rows = flathub.Catalog.by_category(apps, "AudioVideo")
+    assert rows == [("org.videolan.VLC", "VLC", "Media player", "AudioVideo")]
+    assert flathub.Catalog.by_category(apps, None, "media")[0][0] == "org.videolan.VLC"
+    assert flathub.Catalog.counts(apps)["Office"] == 1
+
+
+def test_flathub_appstream(tmp_path):
+    import gzip
+    from eduka_customizer.core import flathub
+    xml = """<?xml version="1.0"?>
+<components origin="flathub">
+  <component type="desktop-application"><id>org.gimp.GIMP</id><name>GNU Image Manipulation Program</name>
+    <name xml:lang="id">GIMP id</name><summary>Create images and edit photographs</summary>
+    <categories><category>Graphics</category><category>2DGraphics</category></categories></component>
+  <component type="desktop"><id>org.kde.gcompris.desktop</id><name>GCompris</name><summary>Kids</summary>
+    <categories><category>Education</category><category>Game</category></categories></component>
+  <component type="runtime"><id>org.freedesktop.Platform</id><name>Runtime</name></component>
+</components>"""
+    f = tmp_path / "flathub/x86_64/active/appstream.xml.gz"
+    f.parent.mkdir(parents=True)
+    with gzip.open(f, "wb") as fh:
+        fh.write(xml.encode())
+    apps = flathub.from_appstream(f)
+    assert set(apps) == {"org.gimp.GIMP", "org.kde.gcompris"}
+    assert apps["org.gimp.GIMP"]["name"] == "GNU Image Manipulation Program"
+    assert apps["org.gimp.GIMP"]["category"] == "Graphics"
+    assert apps["org.kde.gcompris"]["category"] == "Education"
+    root = tmp_path / "root"
+    (root / "var/lib/flatpak/appstream").mkdir(parents=True)
+    import shutil
+    shutil.copytree(tmp_path / "flathub", root / "var/lib/flatpak/appstream/flathub")
+    assert flathub.appstream_file(root).name == "appstream.xml.gz"

@@ -16,7 +16,7 @@ from eduka_customizer.qt.widgets import (QCheckBox, QGridLayout, QLineEdit, QLis
 
 from eduka_customizer.core import desktop as dsk
 from eduka_customizer.core.config import settings
-from eduka_customizer.core.flatpak import EDUCATION_PICKS
+from eduka_customizer.core.flathub import CATEGORIES, FEATURED
 from eduka_customizer.gui.pages.appearance import IMAGES, ColorButton
 from eduka_customizer.gui.widgets import Card, DropZone, FilePicker, ImagePreview, Page, button, combo, hbox, label
 
@@ -250,12 +250,12 @@ class WizardPage(Page):
         c = self._card(lay, "Flatpak apps from Flathub")
         self.w_flat = QListWidget()
         self.w_flat.setMinimumHeight(160)
-        for app_id, name, summary in EDUCATION_PICKS:
-            it = QListWidgetItem("{} — {}".format(name, summary))
+        titles = dict(CATEGORIES)
+        for app_id, name, summary, cat in FEATURED:
+            it = QListWidgetItem("{} — {}  ({})".format(name, summary, titles.get(cat, cat)))
             it.setData(Qt.ItemDataRole.UserRole, app_id)
             it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            it.setCheckState(Qt.CheckState.Checked if app_id in ("org.kde.gcompris", "org.geogebra.GeoGebra")
-                             else Qt.CheckState.Unchecked)
+            it.setCheckState(Qt.CheckState.Unchecked)
             self.w_flat.addItem(it)
         c.add(self.w_flat)
         self.w_flat_mode = combo([("firstboot", "Install on first boot (smaller ISO)"),

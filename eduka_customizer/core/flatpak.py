@@ -15,31 +15,6 @@ FIRSTBOOT_LIST = "etc/eduka-customizer/flatpak-firstboot.list"
 FIRSTBOOT_SCRIPT = "usr/libexec/eduka-flatpak-firstboot"
 FIRSTBOOT_UNIT = "etc/systemd/system/eduka-flatpak-firstboot.service"
 
-# Curated educational picks (Flathub application IDs).
-EDUCATION_PICKS = [
-    ("org.kde.gcompris", "GCompris", "Educational activities for children"),
-    ("org.tuxpaint.Tuxpaint", "Tux Paint", "Drawing program for children"),
-    ("org.geogebra.GeoGebra", "GeoGebra", "Dynamic mathematics"),
-    ("org.stellarium.Stellarium", "Stellarium", "Planetarium"),
-    ("org.kde.kalzium", "Kalzium", "Periodic table of elements"),
-    ("org.kde.marble", "Marble", "Virtual globe and atlas"),
-    ("org.kde.kturtle", "KTurtle", "Learn programming with Logo"),
-    ("org.kde.ktouch", "KTouch", "Touch typing tutor"),
-    ("org.kde.kgeography", "KGeography", "Geography learning tool"),
-    ("org.kde.parley", "Parley", "Vocabulary trainer"),
-    ("org.kde.kbruch", "KBruch", "Practice fractions"),
-    ("org.kde.minuet", "Minuet", "Music education"),
-    ("net.ankiweb.Anki", "Anki", "Flashcards"),
-    ("org.libreoffice.LibreOffice", "LibreOffice", "Office suite"),
-    ("org.inkscape.Inkscape", "Inkscape", "Vector graphics"),
-    ("org.gimp.GIMP", "GIMP", "Image editor"),
-    ("org.kde.krita", "Krita", "Digital painting"),
-    ("org.audacityteam.Audacity", "Audacity", "Audio editor"),
-    ("org.videolan.VLC", "VLC", "Media player"),
-    ("org.mozilla.firefox", "Firefox", "Web browser"),
-    ("org.zotero.Zotero", "Zotero", "Research assistant"),
-]
-
 FIRSTBOOT_SH = """#!/bin/sh
 # Installs Flatpak applications chosen in Eduka-Customizer on first boot.
 set -u

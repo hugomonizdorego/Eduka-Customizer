@@ -1,18 +1,23 @@
-"""Flatpak page: Flathub setup, search, install now or on first boot."""
+"""Flatpak page: the Flathub catalog by category, install now or on first boot."""
 
-from eduka_customizer.qt.widgets import QAbstractItemView, QLineEdit, QListWidget, QListWidgetItem, QMessageBox
+import time
+
+from eduka_customizer.qt.widgets import (QAbstractItemView, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
+                                          QMessageBox, QTableWidgetItem, QWidget)
 
 from eduka_customizer.qt.core import Qt
 
-from eduka_customizer.core.flatpak import EDUCATION_PICKS, Flatpak, search_flathub
+from eduka_customizer.core import flathub
+from eduka_customizer.core.flatpak import Flatpak, flathub_url, search_flathub
 from eduka_customizer.gui.widgets import fill, table
 from eduka_customizer.gui.widgets import Page, button, combo, hbox, label
 
 
 class FlatpakPage(Page):
     title = "Flatpak apps"
-    subtitle = ("Add applications from Flathub (flathub.org). Install them into the ISO now, or "
-                "only on the first boot of the installed system to keep the ISO small.")
+    subtitle = ("Add applications from Flathub (flathub.org), by category: Office, Audio & Video, Graphics, "
+                "Internet, Education, Science, Games, Developer Tools, System and Utilities. Install them into the "
+                "ISO now, or only on the first boot of the installed system to keep the ISO small.")
     icon_names = ("flatpak-discover", "applications-other", "system-software-update")
 
     def build(self):
@@ -20,27 +25,34 @@ class FlatpakPage(Page):
         self.state = label("", "muted")
         c.add(hbox(self.state, None, button("Enable Flatpak + Flathub", self.setup, "primary")))
 
-        c = self.card("Recommended for schools", "Tick the apps you want, then press Add.")
-        self.picks = QListWidget()
-        self.picks.setMinimumHeight(180)
-        for app_id, name, summary in EDUCATION_PICKS:
-            it = QListWidgetItem("{}  —  {}  ({})".format(name, summary, app_id))
-            it.setData(Qt.ItemDataRole.UserRole, app_id)
-            it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            it.setCheckState(Qt.CheckState.Unchecked)
-            self.picks.addItem(it)
-        c.add(self.picks)
-        c.add(hbox(None, button("Add ticked apps", self.add_picks)))
-
-        c = self.card("Search Flathub")
+        c = self.card("Flathub applications",
+                      "Every application of Flathub, by category, straight from flathub.org. Tick the ones you "
+                      "want and press 'Add ticked apps'. 'Update from Flathub' fetches the newest catalog.")
+        self.catalog_state = label("", "muted")
+        c.add(hbox(self.catalog_state, None, button("Update from Flathub", self.update_catalog, "primary")))
         self.query = QLineEdit()
-        self.query.setPlaceholderText("Search applications (e.g. scratch, chemistry, music)")
+        self.query.setPlaceholderText("Filter by name or description (e.g. scratch, chemistry, music); Enter "
+                                      "also searches flathub.org")
+        self.query.textChanged.connect(lambda _t: self.show_category())
         self.query.returnPressed.connect(self.search)
-        c.add(hbox(self.query, button("Search", self.search, "primary")))
-        self.results = table(["Application ID", "Name", "Summary"])
-        self.results.doubleClicked.connect(lambda _i: self.add_results())
-        c.add(self.results)
-        c.add(hbox(None, button("Add selected", self.add_results)))
+        c.add(self.query)
+        row = QWidget()
+        h = QHBoxLayout(row)
+        h.setContentsMargins(0, 0, 0, 0)
+        self.categories = QListWidget()
+        self.categories.setFixedWidth(230)
+        self.categories.setMinimumHeight(330)
+        self.categories.currentRowChanged.connect(lambda _r: self.show_category())
+        h.addWidget(self.categories)
+        self.results = table(["Application", "Application ID", "Summary"])
+        self.results.setMinimumHeight(330)
+        self.results.doubleClicked.connect(lambda i: self._toggle(i.row()))
+        h.addWidget(self.results, 1)
+        c.add(row)
+        c.add(hbox(button("Open on flathub.org", self.open_selected), None,
+                   button("Add ticked apps", self.add_results, "primary")))
+        self._apps = {}
+        self._extra = {}
 
         c = self.card("Selected apps")
         self.selected = QListWidget()
@@ -70,11 +82,14 @@ class FlatpakPage(Page):
                            else "Flatpak is not installed in the image yet.")
         fb = fp.firstboot_list()
         self.firstboot.setText("Installed on first boot: " + (", ".join(fb) if fb else "none"))
+        if not self._apps:
+            self.load_catalog()
         if not self._loaded and not self.main.task:
             self.load()
 
     def project_changed(self):
         self._loaded = False
+        self._apps = {}
         self.installed.setRowCount(0)
 
     def load(self):
@@ -90,18 +105,90 @@ class FlatpakPage(Page):
             if i not in have:
                 self.selected.addItem(i)
 
-    def add_picks(self):
-        ids = []
-        for i in range(self.picks.count()):
-            it = self.picks.item(i)
+    # Catalog ------------------------------------------------------------------------
+    def load_catalog(self):
+        apps, info = flathub.Catalog(self.project).load()
+        if apps:
+            when = time.strftime("%Y-%m-%d %H:%M", time.localtime(info["time"])) if info["time"] else "?"
+            self.catalog_state.setText("{} applications from {} ({}).".format(len(apps), info["source"], when))
+        else:
+            apps = {a: {"name": n, "summary": s, "category": c} for a, n, s, c in flathub.FEATURED}
+            self.catalog_state.setText("Showing a few well-known applications. Press 'Update from Flathub' for "
+                                       "the whole catalog.")
+        self._apps = apps
+        counts = flathub.Catalog.counts(apps)
+        current = self.categories.currentRow()
+        self.categories.blockSignals(True)
+        self.categories.clear()
+        it = QListWidgetItem("All applications ({})".format(len(apps)))
+        it.setData(Qt.ItemDataRole.UserRole, "")
+        self.categories.addItem(it)
+        for cid, title in flathub.CATEGORIES:
+            it = QListWidgetItem("{} ({})".format(title, counts.get(cid, 0)))
+            it.setData(Qt.ItemDataRole.UserRole, cid)
+            self.categories.addItem(it)
+        self.categories.setCurrentRow(current if current > 0 else 0)
+        self.categories.blockSignals(False)
+        self.show_category()
+
+    def show_category(self):
+        it = self.categories.currentItem()
+        cat = it.data(Qt.ItemDataRole.UserRole) if it else ""
+        apps = dict(self._apps, **self._extra)
+        rows = flathub.Catalog.by_category(apps, cat or None, self.query.text())
+        ticked = self._ticked()
+        self.results.setSortingEnabled(False)
+        self.results.setRowCount(0)
+        for r, (app_id, name, summary, _c) in enumerate(rows[:2000]):
+            self.results.insertRow(r)
+            first = QTableWidgetItem(name)
+            first.setFlags(first.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            first.setCheckState(Qt.CheckState.Checked if app_id in ticked else Qt.CheckState.Unchecked)
+            first.setData(Qt.ItemDataRole.UserRole, app_id)
+            self.results.setItem(r, 0, first)
+            self.results.setItem(r, 1, QTableWidgetItem(app_id))
+            self.results.setItem(r, 2, QTableWidgetItem(summary))
+        self.results.resizeColumnToContents(0)
+        self.results.resizeColumnToContents(1)
+
+    def _ticked(self):
+        out = set(getattr(self, "_ticks", set()))
+        for r in range(self.results.rowCount()):
+            it = self.results.item(r, 0)
+            app_id = it.data(Qt.ItemDataRole.UserRole)
             if it.checkState() == Qt.CheckState.Checked:
-                ids.append(it.data(Qt.ItemDataRole.UserRole))
-                it.setCheckState(Qt.CheckState.Unchecked)
-        self._add(ids)
+                out.add(app_id)
+            else:
+                out.discard(app_id)
+        self._ticks = out
+        return out
+
+    def _toggle(self, row):
+        it = self.results.item(row, 0)
+        if it:
+            it.setCheckState(Qt.CheckState.Unchecked if it.checkState() == Qt.CheckState.Checked
+                             else Qt.CheckState.Checked)
+
+    def update_catalog(self):
+        proj = self.project
+        self.task("Update the Flathub catalog", lambda t: flathub.Catalog(proj).update(t.set_stage),
+                  lambda _r: self.load_catalog())
+
+    def open_selected(self):
+        rows = sorted({i.row() for i in self.results.selectedIndexes()})
+        if rows:
+            import subprocess
+            subprocess.Popen(["xdg-open", flathub_url(self.results.item(rows[0], 1).text())],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 
     def add_results(self):
-        rows = sorted({i.row() for i in self.results.selectedIndexes()})
-        self._add([self.results.item(r, 0).text() for r in rows])
+        ids = sorted(self._ticked())
+        if not ids:
+            QMessageBox.information(self, "Flatpak apps", "Tick the applications you want first.")
+            return
+        self._add(ids)
+        self._ticks = set()
+        self.show_category()
 
     def drop(self):
         for it in self.selected.selectedItems():
@@ -119,7 +206,13 @@ class FlatpakPage(Page):
             except OSError as e:
                 t.set_stage("Flathub API unreachable ({}), searching inside the image".format(e))
                 return Flatpak(proj).search(term)
-        self.task("Search Flathub", work, lambda rows: fill(self.results, rows))
+        def done(rows):
+            for app_id, name, summary in rows:
+                if app_id not in self._apps:
+                    self._extra[app_id] = {"name": name, "summary": summary, "category": "Utility"}
+            self.categories.setCurrentRow(0)
+            self.show_category()
+        self.task("Search Flathub", work, done)
 
     def setup(self):
         proj = self.project
