@@ -25,7 +25,12 @@ OPTIONS = {
     "old_kernels": ("Remove old kernels, keep the newest", False),
     "skel_cache": ("Remove caches from /etc/skel", True),
     "flatpak_cache": ("Remove Flatpak download caches", True),
+    # Size savers: never needed to run the system (license files are always kept).
+    "docs": ("Smaller ISO: remove documentation in /usr/share/doc (keeps license files)", False),
+    "man_pages": ("Smaller ISO: remove manual pages and info pages", False),
+    "locales": ("Smaller ISO: remove translations of languages you did not choose", False),
 }
+SIZE_SAVERS = ("apt_lists", "old_kernels", "docs", "man_pages", "locales")
 
 
 def defaults():
@@ -60,6 +65,46 @@ def kernels(rootfs):
         return sorted(versions, key=key)
     except TypeError:
         return sorted(versions)
+
+
+def _remove_docs(rootfs):
+    """Remove /usr/share/doc except the copyright and license files (they must stay)."""
+    base = Path(rootfs, "usr/share/doc")
+    if not base.is_dir():
+        return
+    for f in base.rglob("*"):
+        if (f.is_file() or f.is_symlink()) and not (f.name == "copyright" or f.name.lower().startswith(
+                ("license", "licence", "copying", "notice"))):
+            try:
+                f.unlink()
+            except OSError:
+                pass
+
+
+def kept_languages(project):
+    """Language codes whose translations stay: English plus the project's languages."""
+    loc = project.state.get("locale") or {}
+    lang = project.state.get("language") or {}
+    names = [loc.get("default", ""), lang.get("default", "")] + list(loc.get("extra") or []) + \
+        list(lang.get("extra") or [])
+    keep = {"en", "C"}
+    for n in names:
+        n = (n or "").split(".")[0]
+        if n:
+            keep.add(n)
+            keep.add(n.split("_")[0])
+    return keep
+
+
+def _remove_locales(rootfs, keep):
+    base = Path(rootfs, "usr/share/locale")
+    if not base.is_dir():
+        return
+    for d in base.iterdir():
+        if d.is_dir() and (d / "LC_MESSAGES").is_dir():
+            name = d.name.split("@")[0]
+            if name not in keep and name.split("_")[0] not in keep:
+                shutil.rmtree(d, ignore_errors=True)
 
 
 def run(project, options=None):
@@ -125,6 +170,13 @@ def run(project, options=None):
     if opts.get("flatpak_cache"):
         _rm(rootfs / "var/tmp/flatpak-cache-*")
         _rm(rootfs / "var/lib/flatpak/repo/tmp/*")
+    if opts.get("docs"):
+        _remove_docs(rootfs)
+    if opts.get("man_pages"):
+        for d in ("usr/share/man", "usr/share/info"):
+            _empty_dir(rootfs / d)
+    if opts.get("locales"):
+        _remove_locales(rootfs, kept_languages(project))
     # Leftovers of the legacy Customizer (rootfs/conf, /temp.deb, /hook).
     for p in ("conf", "temp.deb", "hook"):
         _rm(rootfs / p)

@@ -775,6 +775,13 @@ def cmd_build(args):
         v = getattr(args, name, None)
         if v is not None:
             setattr(opts, name, v)
+    if args.target_size:
+        from eduka_customizer.core import isosize
+        est = isosize.estimate(p)
+        plan = isosize.plan(est, args.target_size)
+        print(isosize.describe(plan, isosize.savers(p)))
+        opts.compression, opts.level, opts.target_size = plan["compression"], plan["level"] or opts.level, \
+            args.target_size
     if args.reuse_squashfs:
         opts.reuse_squashfs = True
     if args.keep_installer:
@@ -1114,6 +1121,7 @@ def build_parser():
     s.add_argument("--keep-installer", action="store_true",
                    help="keep Debian-Installer boot entries")
     s.add_argument("--skip-checks", action="store_true", help="build even when the checks find problems")
+    s.add_argument("--target-size", help="ISO size: smallest, none, or megabytes such as 100, 300, 500, 700")
     s.set_defaults(func=cmd_build)
 
     s = sub.add_parser("check", help="check the image before building (what would break the ISO)")

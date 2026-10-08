@@ -99,3 +99,46 @@ def test_review_and_apply_collects_changes(tmp_path):
                          timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
     assert res.stdout.strip().startswith("ok")
+
+
+# ISO size targets ---------------------------------------------------------------------------------
+
+def test_iso_size_plan():
+    from eduka_customizer.core import isosize
+    MB = isosize.MB
+    est = {"system": 1000 * MB, "ratio": 0.3, "other": 60 * MB,
+           "sizes": {(c, l): int(1000 * MB * 0.3 * f) + 60 * MB for c, l, f, _s in isosize.METHODS}}
+    p = isosize.plan(est, "700")
+    assert p["compression"] == "lz4" and p["reachable"]
+    p = isosize.plan(est, "400")
+    assert (p["compression"], p["level"]) == ("zstd", 15) and p["reachable"]
+    p = isosize.plan(est, "300")
+    assert p["compression"] == "xz" and not p["reachable"]
+    assert "too small" in isosize.describe(p, [("docs", "Smaller ISO: remove documentation", 50 * MB)])
+    assert isosize.plan(est, "smallest")["compression"] == "xz"
+    assert isosize.plan(est, "none")["compression"] == "zstd"
+
+
+def test_iso_size_estimate_and_savers(project, tmp_path):
+    from eduka_customizer.core import cleanup, isosize
+    r = project.rootfs
+    doc = r / "usr/share/doc/foo"
+    doc.mkdir(parents=True)
+    (doc / "copyright").write_text("GPL")
+    (doc / "README").write_text("x" * 100000)
+    for lang in ("de", "pt", "en"):
+        d = r / "usr/share/locale" / lang / "LC_MESSAGES"
+        d.mkdir(parents=True)
+        (d / "foo.mo").write_bytes(b"y" * 50000)
+    (r / "usr/share/man/man1").mkdir(parents=True)
+    (r / "usr/share/man/man1/foo.1").write_text("z" * 30000)
+    project.state["locale"] = {"default": "pt_PT.UTF-8"}
+    est = isosize.estimate(project)
+    assert 0 < est["ratio"] < 1 and est["system"] > 0
+    keys = {k for k, _t, _b in isosize.savers(project)}
+    assert {"docs", "man_pages", "locales"} <= keys
+    cleanup._remove_docs(r)
+    assert (doc / "copyright").exists() and not (doc / "README").exists()
+    cleanup._remove_locales(r, cleanup.kept_languages(project))
+    assert (r / "usr/share/locale/pt").exists() and (r / "usr/share/locale/en").exists()
+    assert not (r / "usr/share/locale/de").exists()

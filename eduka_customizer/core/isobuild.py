@@ -51,6 +51,7 @@ class BuildOptions:
     checksums: list = field(default_factory=lambda: ["sha256"])
     cleanup: dict = field(default_factory=cleanup.defaults)
     processors: int = 0
+    target_size: str = "none"        # none | smallest | megabytes (see isosize.TARGETS)
 
     @classmethod
     def from_project(cls, project):
@@ -401,6 +402,13 @@ class Builder:
         p.record("build", out.name)
         minutes = (time.time() - self.started) / 60
         log.info("Done: %s (%.2f GiB, %.1f min)", out, out.stat().st_size / 1024 ** 3, minutes)
+        if str(self.opts.target_size).isdigit():
+            got = out.stat().st_size / 1000 ** 2
+            if got > int(self.opts.target_size):
+                log.warning("The ISO is %.0f MB, more than the target of %s MB: turn on the size savers or "
+                            "remove applications", got, self.opts.target_size)
+            else:
+                log.info("The ISO is %.0f MB: within the target of %s MB", got, self.opts.target_size)
         return out
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from eduka_customizer.qt.widgets import QCheckBox, QGridLayout, QLineEdit, QMessageBox, QSpinBox
 
-from eduka_customizer.core import cleanup, preflight, qemu
+from eduka_customizer.core import cleanup, isosize, preflight, qemu
 from eduka_customizer.core.isobuild import COMPRESSORS, BuildOptions, build, iso_filename
 from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, fill, hbox, label, table
 
@@ -33,6 +33,16 @@ class BuildPage(Page):
         c.add(hbox(self.check_state, None, button("Deep check (apt-get check)", lambda: self.run_checks(True)),
                    self.fix_btn, button("Check now", self.run_checks, "primary")))
         self._results = []
+
+        c = self.card("ISO size",
+                      "Choose how big the ISO may be. Compression is lossless: every file comes back exactly as "
+                      "it was, so a smaller ISO is never a damaged ISO — it only takes longer to build.")
+        self.target = combo(isosize.TARGETS, "none")
+        self.target.currentIndexChanged.connect(lambda _i: self._apply_target())
+        self.size_state = label("Press 'Estimate' to see how big the ISO will be.", "muted")
+        c.add(hbox(label("Target size:"), self.target, button("Estimate", self.estimate_size), None))
+        c.add(self.size_state)
+        self._estimate = None
 
         c = self.card("Image")
         f = c.form()
@@ -148,6 +158,9 @@ class BuildPage(Page):
         self.remove_di.setChecked(o.remove_installer)
         self.reuse.setChecked(False)
         self.sha512.setChecked("sha512" in o.checksums)
+        self.target.blockSignals(True)
+        self.target.setCurrentIndex(max(0, self.target.findData(str(o.target_size))))
+        self.target.blockSignals(False)
         for k, cb in self.clean.items():
             cb.setChecked(bool(o.cleanup.get(k, cleanup.OPTIONS[k][1])))
         last = self.project.state.get("last_iso")
@@ -175,6 +188,7 @@ class BuildPage(Page):
         o.reuse_squashfs = self.reuse.isChecked()
         o.checksums = ["sha256", "sha512", "md5"] if self.sha512.isChecked() else ["sha256"]
         o.cleanup = {k: cb.isChecked() for k, cb in self.clean.items()}
+        o.target_size = self.target.currentData()
         return o
 
     def start_build(self):
@@ -286,6 +300,32 @@ class BuildPage(Page):
     def _open_fix(self, row, _col):
         if 0 <= row < len(self._results) and self._results[row].page:
             self.main.go(self._results[row].page)
+
+    # ISO size ---------------------------------------------------------------------
+    def estimate_size(self):
+        proj = self.project
+
+        def done(result):
+            self._estimate, self._savers = result
+            self._apply_target()
+        self.task("Estimate the ISO size", lambda t: (isosize.estimate(proj), isosize.savers(proj)), done)
+
+    def _apply_target(self):
+        if not self._estimate:
+            self.size_state.setText("Press 'Estimate' to see how big the ISO will be for this target.")
+            return
+        p = isosize.plan(self._estimate, self.target.currentData())
+        self.comp.setCurrentIndex(max(0, self.comp.findData(p["compression"])))
+        self._levels()
+        if p["level"]:
+            self.level.setValue(p["level"])
+        text = isosize.describe(p, self._savers)
+        if not p["reachable"]:
+            for key, _t, _b in self._savers:
+                if key in self.clean:
+                    self.clean[key].setChecked(True)
+            text += " The size savers are ticked below (Clean-up); press Estimate again after a build."
+        self.size_state.setText(text)
 
     def apt_install(self):
         names = self.apt_line.text().split()
