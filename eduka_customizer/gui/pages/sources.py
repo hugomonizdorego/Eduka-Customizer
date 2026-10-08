@@ -35,8 +35,9 @@ class RepoDialog(QDialog):
 
 class SourcesPage(Page):
     title = "Repositories"
-    subtitle = ("Edit sources.list and sources.list.d. Choose the Debian suite the image follows: "
-                "stable, testing or sid.")
+    nav_title = "Repositories"
+    subtitle = ("Step 2 · Where packages come from: the Debian release (stable, testing or sid) and extra "
+                "repositories.")
     icon_names = ("software-properties", "preferences-system-network", "network-server")
 
     def build(self):

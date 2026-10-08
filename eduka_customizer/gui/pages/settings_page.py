@@ -36,7 +36,8 @@ FIELDS = [
 
 class SettingsPage(Page):
     title = "Settings"
-    subtitle = "Preferences, the tools of this computer and the error log."
+    nav_title = "Settings"
+    subtitle = "Preferences, the tools DistroForge needs on this computer, and the error log for bug reports."
     icon_names = ("preferences-system", "configure")
     needs_rootfs = False
 

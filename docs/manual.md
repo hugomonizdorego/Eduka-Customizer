@@ -579,7 +579,7 @@ recipe file. Actions: `sources`, `repo`, `apt-install`, `apt-remove`,
 `desktop` takes `"edition": "mini" | "compact" | "full" | "full_apps"`;
 `replace-app` takes `role`, `package` and `remove`. Examples:
 `examples/my-distro.json` (Xfce, a general distribution) and
-`examples/edukasaun-school.json` (Eduka-Desktop school edition).
+`examples/school-edition.json` (Eduka-Desktop school edition).
 `recipe export` writes a recipe from the current project.
 
 ## Troubleshooting

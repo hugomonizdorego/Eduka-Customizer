@@ -37,8 +37,8 @@ def summary(project):
 class ReviewPage(Page):
     title = "Review & Apply"
     nav_title = "Review & Apply"
-    subtitle = ("Everything you chose in the steps before waits here. Read each change and tick it when you are "
-                "sure, or go back and change it. When every change is ticked, apply them all at once.")
+    subtitle = ("Step 14 · Everything you chose waits here. Tick each change when you are sure, or go back and "
+                "change it. Then apply them all at once.")
     icon_names = ("checkbox", "dialog-ok")
 
     def build(self):

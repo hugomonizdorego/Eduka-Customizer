@@ -1,6 +1,6 @@
 {
-  "name": "Edukasaun OS 1.0 - school edition",
-  "comment": "An Edukasaun OS school edition with Eduka-Desktop. Apply with: sudo eduka-customizer -p PROJECT recipe apply edukasaun-school.json",
+  "name": "School Linux 1.0 - school edition with Eduka-Desktop",
+  "comment": "A school edition with Eduka-Desktop. Apply with: sudo distroforge -p PROJECT recipe apply school-edition.json",
   "steps": [
     {
       "action": "sources",
@@ -12,14 +12,14 @@
     },
     {
       "action": "identity",
-      "name": "Edukasaun OS",
+      "name": "School Linux",
       "version": "1.0",
-      "codename": "Kameli",
-      "id": "edukasaun",
-      "hostname": "edukasaun",
-      "live_user": "eduka",
-      "live_fullname": "Edukasaun Live User",
-      "volume_label": "EDUKASAUN_OS_1_0"
+      "codename": "Lafaek",
+      "id": "schoollinux",
+      "hostname": "schoollinux",
+      "live_user": "live",
+      "live_fullname": "Live",
+      "volume_label": "SCHOOL_LINUX_1_0"
     },
     {
       "action": "users",
@@ -41,7 +41,7 @@
       "panel": {
         "height": 44,
         "theme_style": "Eduka-Default-Theme",
-        "menu_label": "Edukasaun"
+        "menu_label": "Menu"
       },
       "desktop": {
         "layout": "Grid"

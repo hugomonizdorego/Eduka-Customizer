@@ -58,9 +58,9 @@ SETTINGS_APPS = [
 
 class TerminalPage(Page):
     title = "Terminal & Live"
-    subtitle = ("Work inside the image directly: start its desktop in a window and change "
-                "settings live, open a root terminal, run scripts or edit files. Every change is "
-                "saved into the image and ends up in the next ISO.")
+    nav_title = "Terminal & Live"
+    subtitle = ("Step 13 · For experts: start the system's desktop in a window and change things by hand, use a "
+                "root terminal, or run scripts. Everything ends up in the ISO.")
     icon_names = ("utilities-terminal", "terminal")
 
     def build(self):

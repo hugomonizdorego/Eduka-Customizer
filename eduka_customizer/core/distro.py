@@ -57,7 +57,7 @@ class DistroInfo:
                  "sid": "Debian sid (unstable)", "oldstable": "Debian oldstable"}.get(self.suite, self.suite)
         base = "{} ({})".format(label, self.debian_codename or "?")
         if self.id and self.id != "debian":
-            # Any derivative (Edukasaun OS, LMDE, your own distribution): show its Debian base too.
+            # Any derivative (LMDE, your own distribution, ...): show its Debian base too.
             return "{} - based on {} - {}".format(self.pretty_name or self.name or self.id, base, self.arch)
         return "{} - {}".format(self.pretty_name or base, self.arch)
 

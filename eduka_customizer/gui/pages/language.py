@@ -27,9 +27,9 @@ def combo_locale(c):
 class LanguagePage(Page):
     title = "Language"
     nav_title = "Language"
-    subtitle = ("The default language of the live system, the installer and the installed system: "
-                "locale, keyboard, time zone, translations and spell checking, and a language choice "
-                "in the boot menu of the ISO.")
+    subtitle = ("Step 5 · Language, keyboard and time zone of the live system, the installer and installed "
+                "computers, and more languages to choose from in the boot menu. Your changes wait in Review & "
+                "Apply (step 14).")
     icon_names = ("preferences-desktop-locale", "config-language", "preferences-desktop-keyboard")
     CHANGES = ('Apply language ',)
 

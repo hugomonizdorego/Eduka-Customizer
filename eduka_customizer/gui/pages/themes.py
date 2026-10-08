@@ -14,9 +14,9 @@ KINDS = {"icons": "Icons", "gtk": "GTK theme", "cursor": "Cursor", "font": "Font
 
 class ThemesPage(Page):
     title = "Themes & Icons"
-    subtitle = ("Choose the default theme, icons, mouse cursor and font. Only what fits the desktop or window "
-                "manager of the image is listed. Add your own themes by drag and drop, or install theme packs "
-                "with one click.")
+    nav_title = "Themes & Icons"
+    subtitle = ("Step 9 · The default theme, icons, mouse cursor and font. Only what fits your desktop is "
+                "listed. Drop your own themes and fonts here. Your changes wait in Review & Apply (step 14).")
     icon_names = ("preferences-desktop-icons", "preferences-desktop-theme")
     CHANGES = ('Apply look', 'Install theme packs')
 

@@ -46,9 +46,9 @@ APP_GROUPS = [
 
 class WizardPage(Page):
     title = "Quick Wizard"
-    nav_title = "Quick Wizard ✨"
-    subtitle = ("Answer a few questions and DistroForge builds your distribution: source, "
-                "identity, desktop, look, applications and branding — then Finish.")
+    nav_title = "Quick Wizard"
+    subtitle = ("The fast way: answer a few questions on one page after the other, then press Finish. Every step "
+                "can be fine-tuned afterwards.")
     icon_names = ("tools-wizard", "system-run", "applications-system")
     needs_rootfs = False
 

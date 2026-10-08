@@ -150,7 +150,7 @@ eduka-customizer -p ~/mylinux test --firmware uefi
 
 Build yang bisa diulang (reproducible) memakai *recipe* JSON:
 `sudo eduka-customizer -p ~/mylinux recipe apply examples/my-distro.json`
-(contoh edisi sekolah dengan Eduka-Desktop: `examples/edukasaun-school.json`).
+(contoh edisi sekolah dengan Eduka-Desktop: `examples/school-edition.json`).
 
 ## Tips
 

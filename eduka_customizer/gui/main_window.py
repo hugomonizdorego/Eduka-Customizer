@@ -546,6 +546,16 @@ class MainWindow(QMainWindow):
                              else "", "section": sec.title if sec else "", "step": getattr(sec, "step", 0),
                              "checked": False})
         self.stage_label.setText("Added to Review & Apply: {} ({} waiting)".format(name, len(self.pending)))
+        if not getattr(self, "_told_review", False):
+            self._told_review = True
+            # Not modal: it explains once and never blocks the work.
+            box = QMessageBox(QMessageBox.Icon.Information, "Review & Apply",
+                              "'{}' was added to Review & Apply (step 14).\n\nNothing in the image changes yet: "
+                              "choose everything you want in the steps, then check the list in Review & Apply "
+                              "and apply it all at once.".format(name), QMessageBox.StandardButton.Ok, self)
+            box.setModal(False)
+            box.show()
+            self._review_box = box
         get_logger().info("Waiting in Review & Apply: %s", name)
         self._update_pending()
 

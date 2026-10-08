@@ -14,11 +14,9 @@ from eduka_customizer.gui.widgets import (FilePicker, FileTreeEditor, ImagePrevi
 class BrandingPage(Page):
     title = "Distro Branding"
     nav_title = "Distro Branding"
-    subtitle = ("Make the system your own distribution, not just Debian renamed. DistroForge "
-                "builds a <id>-branding package that replaces the identity of base-files, "
-                "lsb-release, distro-info-data, desktop-base, the Debian logos, GRUB and the "
-                "Calamares installer with dpkg diversions, plus an optional archive keyring. "
-                "No repository is needed and Debian updates keep your branding.")
+    subtitle = ("Step 3 · Your name, logo, colors and artwork everywhere: system information, login, GRUB, boot "
+                "splash and installer. DistroForge packs them into a <id>-branding package, so Debian updates "
+                "keep them. Your changes wait in Review & Apply (step 14).")
     icon_names = ("preferences-desktop-theme-global", "applications-graphics", "emblem-favorite")
     CHANGES = ('Apply distro branding', 'Build edited branding packages')
 

@@ -27,9 +27,8 @@ def play_on_host(path):
 class SoundsPage(Page):
     title = "System Sounds"
     nav_title = "System Sounds"
-    subtitle = ("Sounds for boot, login (startup), log out, shutdown, errors, warnings, notifications, devices and "
-                "power. They become the sound theme of your distribution and the default of every desktop "
-                "(GNOME, KDE, Xfce, Cinnamon, MATE, Budgie, LXQt and GTK applications).")
+    subtitle = ("Step 10 · Sounds for start-up, login, log out, shutdown, errors, notifications and devices. "
+                "They become the default sounds of every desktop. Your changes wait in Review & Apply (step 14).")
     icon_names = ("preferences-desktop-sound", "audio-volume-high", "multimedia-volume-control")
     CHANGES = ('Apply system sounds', 'Remove system sounds', 'Sound theme ')
 

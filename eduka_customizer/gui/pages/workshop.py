@@ -9,10 +9,9 @@ from eduka_customizer.gui.widgets import FileTreeEditor, Page, button, combo, hb
 
 class WorkshopPage(Page):
     title = "Package Workshop"
-    subtitle = ("Open any installed package (base-files, lsb-release, distro-info-data, desktop-base, "
-                "plymouth-themes, calamares-settings-debian, ...), change its files or control data "
-                "directly, then rebuild and install it. The version gets a +<id>N suffix and the "
-                "package can be held so Debian updates do not replace it.")
+    nav_title = "Package Workshop"
+    subtitle = ("Step 13 · For experts: open an installed Debian package, change its files, then rebuild and "
+                "install it.")
     icon_names = ("package-x-generic", "applications-utilities", "document-edit")
 
     def build(self):

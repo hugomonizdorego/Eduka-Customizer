@@ -14,8 +14,8 @@ from eduka_customizer.gui.widgets import DropZone, Page, button, combo, hbox, la
 class GrubDesignPage(Page):
     title = "GRUB Design"
     nav_title = "GRUB Design"
-    subtitle = ("Give the boot menu a GRUB theme of your choice, design its entries, and choose the boot loader "
-                "Calamares installs on computers. Themes are checked first: GRUB cannot show every theme.")
+    subtitle = ("Step 8 · A GRUB theme for the boot menu (checked first), the menu entries, and the boot loader "
+                "the installer puts on computers. Your changes wait in Review & Apply (step 14).")
     icon_names = ("grub-customizer", "preferences-desktop-theme")
     CHANGES = ('Boot loader ',)
 

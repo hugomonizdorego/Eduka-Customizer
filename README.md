@@ -212,7 +212,7 @@ eduka-customizer test --firmware uefi
 
 Eduka-Desktop is still one command away: `sudo eduka-customizer desktop install eduka`.
 Or apply a recipe: `sudo eduka-customizer -p ~/mylinux recipe apply examples/my-distro.json`
-(`examples/edukasaun-school.json` is an Eduka-Desktop school edition).
+(`examples/school-edition.json` is an Eduka-Desktop school edition).
 
 ## Documentation
 

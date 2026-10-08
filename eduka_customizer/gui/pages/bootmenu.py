@@ -14,10 +14,8 @@ from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, 
 class BootMenuPage(Page):
     title = "Boot Menu of the ISO"
     nav_title = "Boot Menu"
-    subtitle = ("What you see when the ISO starts: GRUB for UEFI, ISOLINUX for BIOS. Change the title, "
-                "timeout, kernel options and background, or edit grub.cfg, isolinux.cfg and the GRUB file "
-                "inside the EFI image directly. Edits are kept for every build and can be applied to the "
-                "ISO right away.")
+    subtitle = ("Step 8 · The menu shown when the ISO starts (GRUB for UEFI, ISOLINUX for BIOS): title, timeout, "
+                "kernel options and background. Experts can edit the boot files directly.")
     icon_names = ("grub-customizer", "system-reboot", "media-optical")
 
     def build(self):

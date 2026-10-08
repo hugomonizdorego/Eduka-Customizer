@@ -15,9 +15,10 @@ def _size(n):
 
 class KernelPage(Page):
     title = "Kernel"
-    subtitle = ("The Linux kernel of the image: install Debian kernels, backports, third-party kernels "
-                "(Liquorix, XanMod, your own repository) or .deb files, remove old kernels, choose the "
-                "kernel of the ISO, update the initramfs and GRUB, add firmware.")
+    nav_title = "Kernel"
+    subtitle = ("Step 8 · The Linux kernel of your distribution: Debian kernels, backports or third-party "
+                "kernels, firmware and drivers, and the GRUB settings of installed systems. Your changes wait in "
+                "Review & Apply (step 14).")
     icon_names = ("preferences-system", "cpu", "applications-system")
     CHANGES = ('Install ', 'Remove kernel', 'Hold ', 'Unhold ', 'Update initramfs', 'Copy kernel', 'update-grub', 'Rebuild DKMS', 'Save GRUB', 'Use ')
 

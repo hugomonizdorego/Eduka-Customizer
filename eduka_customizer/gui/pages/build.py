@@ -14,8 +14,8 @@ from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, fill, 
 class BuildPage(Page):
     title = "Check & Build"
     nav_title = "Check & Build"
-    subtitle = ("Check the image, create the ISO (hybrid BIOS/UEFI, writable to USB) and boot it "
-                "in a virtual machine. The build only starts when the checks find no problem.")
+    subtitle = ("Last step · Check the image, choose the ISO size, build the ISO (BIOS and UEFI, ready for USB "
+                "sticks) and try it in a virtual machine.")
     icon_names = ("media-optical-burn", "media-optical", "drive-optical")
 
     def build(self):

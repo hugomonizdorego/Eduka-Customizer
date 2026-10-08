@@ -35,7 +35,8 @@ class ColorButton(QPushButton):
 class AppearancePage(Page):
     title = "Wallpaper & Login"
     nav_title = "Wallpaper & Login"
-    subtitle = "A gallery of wallpapers with one default, and the look of the login screen."
+    subtitle = ("Step 9 · Choose the wallpapers of your distribution (one is the default) and the look of the "
+                "login screen. Your changes wait in Review & Apply (step 14).")
     icon_names = ("preferences-desktop-theme", "preferences-desktop-wallpaper")
     CHANGES = ('Configure login screen', 'Default wallpaper ', 'Remove wallpaper ')
 

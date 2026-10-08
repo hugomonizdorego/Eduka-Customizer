@@ -19,8 +19,8 @@ def password_field(placeholder):
 class UsersPage(Page):
     title = "Users and Passwords"
     nav_title = "Users"
-    subtitle = ("The account that logs in when the ISO starts (live user) and accounts built into the "
-                "image. A user can have a password or no password at all.")
+    subtitle = ("Step 4 · The user of the live session (with a password, without one, or Debian's default) and "
+                "accounts that every installed computer gets. Your changes wait in Review & Apply (step 14).")
     icon_names = ("system-users", "user-identity", "preferences-system-users")
     CHANGES = ('Change password of ', 'Create account ', 'Delete account ', 'Remove password of ', 'Save live user')
 

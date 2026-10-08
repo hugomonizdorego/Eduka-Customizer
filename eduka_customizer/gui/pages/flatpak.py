@@ -15,9 +15,10 @@ from eduka_customizer.gui.widgets import Page, button, combo, hbox, label
 
 class FlatpakPage(Page):
     title = "Flatpak apps"
-    subtitle = ("Add applications from Flathub (flathub.org), by category: Office, Audio & Video, Graphics, "
-                "Internet, Education, Science, Games, Developer Tools, System and Utilities. Install them into the "
-                "ISO now, or only on the first boot of the installed system to keep the ISO small.")
+    nav_title = "Flatpak apps"
+    subtitle = ("Step 7 · Applications from Flathub by category. Install them into the ISO, or on the first "
+                "start of an installed computer to keep the ISO small. Your changes wait in Review & Apply (step "
+                "14).")
     icon_names = ("flatpak-discover", "applications-other", "system-software-update")
     CHANGES = ('Flatpak: ', 'Uninstall Flatpak apps')
 

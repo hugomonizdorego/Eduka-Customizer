@@ -16,11 +16,11 @@ COLORS = [("sidebarBackground", "Sidebar", "#0f2f27"), ("sidebarText", "Sidebar 
 
 
 class CalamaresPage(Page):
-    title = "Calamares Installer"
-    nav_title = "Calamares"
-    subtitle = ("Change the graphical installer directly: name, logo and images, colors, the slideshow "
-                "shown while installing, user and password rules, partitioning, requirements, and every "
-                "configuration file. Test the result by booting the ISO in QEMU (Build & Test).")
+    title = "Installer (Calamares)"
+    nav_title = "Installer"
+    subtitle = ("Step 12 · The graphical installer that puts your distribution on a computer: name, logo, "
+                "colors, slides, user and partition rules. 'Check the installer' finds what would make it fail. "
+                "Your changes wait in Review & Apply (step 14).")
     icon_names = ("calamares", "system-software-install", "drive-harddisk")
     CHANGES = ('Calamares ', 'Use Calamares branding ')
 

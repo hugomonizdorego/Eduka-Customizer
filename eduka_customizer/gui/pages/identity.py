@@ -9,7 +9,9 @@ from eduka_customizer.gui.widgets import Page, button, hbox, label
 class IdentityPage(Page):
     title = "Identity"
     nav_title = "Identity"
-    subtitle = "How the system names itself: os-release, computer name, boot menu and installer."
+    subtitle = ("Step 3 · What your distribution is called: name, version, links, computer name and ISO label. "
+                "The fields start with what the ISO says about itself. Your changes wait in Review & Apply (step "
+                "14).")
     icon_names = ("preferences-desktop-personal", "user-info")
     CHANGES = ('Apply identity',)
 

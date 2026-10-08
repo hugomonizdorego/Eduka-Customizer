@@ -503,6 +503,21 @@ def cmd_wallpapers(args):
     return 0
 
 
+def cmd_about(args):
+    from eduka_customizer import AUTHOR, DONATE_URL, FACEBOOK_URL, HOMEPAGE, LICENSE, OLD_NAME
+    from eduka_customizer.gui.pages.about import COMPONENTS
+    print("{} {}  (formerly {})".format(APP_NAME, VERSION_LABEL, OLD_NAME))
+    print("Free and open source software: {}. It comes with ABSOLUTELY NO WARRANTY.".format(LICENSE))
+    print("Made by {} and contributors. Project page: {}".format(AUTHOR, HOMEPAGE))
+    print("Support the project: {}   Facebook: {}".format(DONATE_URL, FACEBOOK_URL))
+    print("\nComponents and their licenses:")
+    for name, use, lic, _home in COMPONENTS:
+        print("  {:26} {:22} {}".format(name, lic, use))
+    print("\nDebian is a registered trademark of Software in the Public Interest, Inc. {} is not affiliated with "
+          "Debian.".format(APP_NAME))
+    return 0
+
+
 def cmd_sounds(args):
     from eduka_customizer.core import sounds
     if args.action == "events":
@@ -879,13 +894,37 @@ def cmd_download(args):
 
 
 def build_parser():
-    ap = argparse.ArgumentParser(prog="distroforge",
-                                 description="{} {} - build live ISO images of Debian-based distributions "
-                                             "(Debian stable, testing, sid and derivatives).".format(APP_NAME, VERSION_LABEL))
+    ap = argparse.ArgumentParser(
+        prog="distroforge", formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="{} {} - build your own Debian-based Linux distribution as a live ISO image\n"
+                    "(from Debian stable, testing, sid or a Debian derivative such as LMDE).".format(
+                        APP_NAME, VERSION_LABEL),
+        epilog="""The commands in the order of the work (most need sudo):
+
+  1  Start            new, download, info
+  2  Repositories     sources
+  3  Identity         brand identity, branding
+  4  Users            users
+  5  Language         language
+  6  Desktop          desktop, eduka-desktop, purpose
+  7  Software         apt, flatpak, apps
+  8  Kernel & Boot    kernel, bootmenu, grub-theme, boot-loader
+  9  Look & Feel      themes, assets, wallpapers, plymouth
+ 10  System Sounds    sounds
+ 11  Welcome Screen   welcome
+ 12  Installer        calamares
+ 13  Advanced         shell, run, hook, live, workshop, recipe
+ 15  Check & Build    check [--fix], build [--target-size 500], test
+
+Other: gui (the window), doctor (tools of this computer), clean, about.
+Help for one command: distroforge COMMAND --help""")
     ap.add_argument("-p", "--project", help="project directory (default: current directory)")
     ap.add_argument("-D", "--debug", action="store_true", help="show debug messages")
     ap.add_argument("-V", "--version", action="version", version="{} {}".format(APP_NAME, VERSION_LABEL))
-    sub = ap.add_subparsers(dest="command")
+    sub = ap.add_subparsers(dest="command", metavar="COMMAND")
+
+    s = sub.add_parser("about", help="version, license, credits and how to support the project")
+    s.set_defaults(func=cmd_about)
 
     s = sub.add_parser("gui", help="start the graphical interface (default)")
     s.add_argument("target", nargs="?", help="project folder or ISO image to open")

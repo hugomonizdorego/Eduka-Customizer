@@ -15,8 +15,10 @@ HIDDEN_KEYS = {"menu_icon", "_settings_revision", "locked", "reserve_workarea",
 
 class DesktopPage(Page):
     title = "Desktop"
-    subtitle = ("Build the desktop: GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, Eduka-Desktop, another desktop "
-                "environment or a window manager. Choose the login manager and default session.")
+    nav_title = "Desktop"
+    subtitle = ("Step 6 · Choose a desktop environment or window manager and how complete it is (Mini, Compact, "
+                "Full, Full with apps), then the login screen, X11 or Wayland and the compositor. Your changes "
+                "wait in Review & Apply (step 14).")
     icon_names = ("preferences-desktop", "user-desktop", "video-display")
     CHANGES = ('Install ', 'Compositor', 'SDDM theme', 'Session type', 'Set default session', 'Set login screen', 'Build Eduka-Desktop', 'Set window manager')
 
