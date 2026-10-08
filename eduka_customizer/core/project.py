@@ -94,6 +94,7 @@ class Project:
             p.load()
         else:
             p.state["created"] = datetime.datetime.now().isoformat(timespec="seconds")
+            p.state["steps_done"] = []
             if name:
                 p.state["name"] = name
         for d in (p.rootfs, p.isodir, p.output, p.cache, p.logs, p.bootdir):
@@ -126,7 +127,25 @@ class Project:
                 merged[key].update(value)
             else:
                 merged[key] = value
+        if "steps_done" not in data:
+            merged["steps_done"] = ["*"]  # made before 0.15: every step stays open
         self.state = merged
+
+    # Steps of the build (step by step navigation) ---------------------------
+    def step_done(self, key):
+        done = self.state.get("steps_done", [])
+        return "*" in done or key in done
+
+    def mark_step(self, key, done=True):
+        steps = [k for k in self.state.setdefault("steps_done", []) if k != key]
+        if done:
+            steps.append(key)
+        self.state["steps_done"] = steps
+        self.save()
+
+    def mark_all_steps(self):
+        self.state["steps_done"] = ["*"]
+        self.save()
 
     def save(self):
         self.state["customizer_version"] = VERSION

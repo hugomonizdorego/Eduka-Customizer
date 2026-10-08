@@ -58,6 +58,9 @@ QProgressBar {{ border: 1px solid {border}; border-radius: 7px; background: {pan
 QProgressBar::chunk {{ background: {accent}; border-radius: 6px; }}
 QPlainTextEdit#log {{ background: {log_bg}; color: {log_text}; font-family: monospace; font-size: 9pt; border-radius: 10px; }}
 QFrame#statusBar {{ background: {panel}; border-top: 1px solid {border}; }}
+QFrame#stepBar {{ background: {panel}; border-top: 1px solid {border}; }}
+QTabWidget#sectionTabs > QTabBar {{ background: {panel}; }}
+QTabWidget#sectionTabs > QTabBar::tab {{ padding: 10px 20px; }}
 QCheckBox::indicator, QRadioButton::indicator {{ width: 16px; height: 16px; }}
 QSlider::groove:horizontal {{ height: 6px; background: {border}; border-radius: 3px; }}
 QSlider::handle:horizontal {{ background: {accent}; width: 16px; margin: -6px 0; border-radius: 8px; }}

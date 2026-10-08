@@ -524,7 +524,7 @@ def test_new_pages_build_and_refresh(cal_project, isotree):
     res = subprocess.run([sys.executable, "-c", GUI_SMOKE, str(cal_project.path)], capture_output=True,
                          text=True, env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
-    assert res.stdout.startswith("ok 20")
+    assert res.stdout.startswith("ok 21")
 
 
 def test_every_data_file_is_installed():

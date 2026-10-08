@@ -598,6 +598,8 @@ class WizardPage(Page):
                     result = build(proj, BuildOptions.from_project(proj), t.set_progress, t.set_stage)
                 else:
                     recipe.run_step(proj, step, proj.path)
+            # The wizard did every step: all menus are open for fine-tuning.
+            proj.mark_all_steps()
             return result
 
         def done(out):

@@ -22,11 +22,95 @@ from eduka_customizer.gui.worker import LogBridge, QtLogHandler, Task
 # Bundled Papirus icons (GPL-3.0), see data/icons/menu/README.md.
 MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "sources",
               "IdentityPage": "identity", "UsersPage": "users", "LanguagePage": "language",
-              "PackagesPage": "packages", "FlatpakPage": "flatpak", "KernelPage": "kernel",
-              "DesktopPage": "desktop", "ThemesPage": "themes", "AppearancePage": "wallpaper",
-              "PlymouthPage": "plymouth", "BrandingPage": "branding", "CalamaresPage": "calamares",
-              "BootMenuPage": "bootmenu", "WorkshopPage": "workshop", "TerminalPage": "terminal",
-              "BuildPage": "build", "SettingsPage": "settings"}
+              "PackagesPage": "packages", "FlatpakPage": "flatpak", "ReplaceAppsPage": "replace",
+              "KernelPage": "kernel", "DesktopPage": "desktop", "ThemesPage": "themes",
+              "AppearancePage": "wallpaper", "PlymouthPage": "plymouth", "BrandingPage": "branding",
+              "CalamaresPage": "calamares", "BootMenuPage": "bootmenu", "WorkshopPage": "workshop",
+              "TerminalPage": "terminal", "BuildPage": "build", "SettingsPage": "settings"}
+
+# The sidebar, in the order of the work. Pages that are used together share one
+# menu (as tabs). (key, menu title, icon, page classes, is a numbered step)
+SECTIONS = [
+    ("start", "Start", "project", ["project.ProjectPage"], True),
+    ("wizard", "Quick Wizard", "wizard", ["wizard.WizardPage"], False),
+    ("sources", "Repositories", "sources", ["sources.SourcesPage"], True),
+    ("identity", "Identity & Branding", "identity", ["identity.IdentityPage", "branding.BrandingPage"], True),
+    ("users", "Users", "users", ["users.UsersPage"], True),
+    ("language", "Language", "language", ["language.LanguagePage"], True),
+    ("desktop", "Desktop", "desktop", ["desktop.DesktopPage"], True),
+    ("software", "Software", "packages", ["packages.PackagesPage", "flatpak.FlatpakPage",
+                                          "replace_apps.ReplaceAppsPage"], True),
+    ("boot", "Kernel & Boot", "kernel", ["kernel.KernelPage", "bootmenu.BootMenuPage"], True),
+    ("look", "Look & Feel", "themes", ["themes.ThemesPage", "appearance.AppearancePage",
+                                       "plymouth.PlymouthPage"], True),
+    ("installer", "Installer", "calamares", ["calamares.CalamaresPage"], True),
+    ("advanced", "Advanced", "terminal", ["terminal.TerminalPage", "workshop.WorkshopPage"], True),
+    ("build", "Check & Build", "build", ["build.BuildPage"], True),
+    ("settings", "Settings", "settings", ["settings_page.SettingsPage"], False),
+]
+
+
+class Section(QWidget):
+    """One menu of the sidebar: a page, or several related pages as tabs, and the
+    Back / Next step bar of the step-by-step build."""
+
+    def __init__(self, main, key, title, pages, step):
+        super().__init__()
+        from eduka_customizer.qt.widgets import QTabWidget
+        self.main, self.key, self.title, self.pages, self.step = main, key, title, pages, step
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
+        self.tabs = None
+        if len(pages) > 1:
+            self.tabs = QTabWidget()
+            self.tabs.setObjectName("sectionTabs")
+            self.tabs.setDocumentMode(True)
+            for page in pages:
+                name = page.nav_title if hasattr(page, "nav_title") else page.title
+                self.tabs.addTab(page, menu_icon(MENU_ICONS.get(page.__class__.__name__), *page.icon_names), name)
+            self.tabs.currentChanged.connect(lambda _i: self.refresh())
+            lay.addWidget(self.tabs, 1)
+        else:
+            lay.addWidget(pages[0], 1)
+        for page in pages:
+            page.section = self
+        self.bar = None
+
+    @property
+    def needs_rootfs(self):
+        return all(p.needs_rootfs for p in self.pages)
+
+    def current(self):
+        return self.tabs.currentWidget() if self.tabs else self.pages[0]
+
+    def show_page(self, page):
+        if self.tabs:
+            self.tabs.setCurrentWidget(page)
+
+    def refresh(self):
+        self.current().refresh()
+
+    def add_bar(self, prev, nxt):
+        from eduka_customizer.gui.widgets import button
+        bar = QFrame()
+        bar.setObjectName("stepBar")
+        h = QHBoxLayout(bar)
+        h.setContentsMargins(28, 8, 28, 10)
+        if prev:
+            h.addWidget(button("◀  Back: {}. {}".format(prev.step, prev.title), lambda: self.main.go_section(prev)))
+        self.state = QLabel("")
+        self.state.setObjectName("muted")
+        h.addStretch(1)
+        h.addWidget(self.state)
+        if nxt:
+            self.next_btn = button("Done — next step: {}. {}  ▶".format(nxt.step, nxt.title),
+                                   lambda: self.main.next_step(self, nxt), "primary")
+            h.addWidget(self.next_btn)
+        else:
+            self.next_btn = None
+        self.layout().addWidget(bar)
+        self.bar = bar
 
 
 def menu_icon(key, *fallback):
@@ -183,56 +267,41 @@ class MainWindow(QMainWindow):
         return s
 
     def _build_pages(self):
-        from eduka_customizer.gui.pages import (appearance, bootmenu, branding, build, calamares, desktop,
-                                                flatpak, identity, kernel, language, packages, plymouth,
-                                                project, settings_page, sources, terminal, themes, users,
-                                                wizard, workshop)
-        # The order of the work, from the source to the ISO. Pages marked False are
-        # not steps (the wizard does everything at once; settings are global).
-        order = [(project.ProjectPage, True), (wizard.WizardPage, False),
-                 (sources.SourcesPage, True), (identity.IdentityPage, True), (users.UsersPage, True),
-                 (language.LanguagePage, True), (packages.PackagesPage, True), (flatpak.FlatpakPage, True),
-                 (kernel.KernelPage, True), (desktop.DesktopPage, True), (themes.ThemesPage, True),
-                 (appearance.AppearancePage, True), (plymouth.PlymouthPage, True),
-                 (branding.BrandingPage, True), (calamares.CalamaresPage, True),
-                 (bootmenu.BootMenuPage, True), (workshop.WorkshopPage, True), (terminal.TerminalPage, True),
-                 (build.BuildPage, True), (settings_page.SettingsPage, False)]
-        self.pages = []
-        steps = []
-        for cls, is_step in order:
-            page = cls(self)
-            self.pages.append(page)
-            self.stack.addWidget(page)
-            name = page.nav_title if hasattr(page, "nav_title") else page.title
+        import importlib
+        self.pages, self.sections, self.steps = [], [], []
+        for key, title, icon_key, classes, is_step in SECTIONS:
+            pages = []
+            for dotted in classes:
+                mod, cls = dotted.split(".")
+                page = getattr(importlib.import_module("eduka_customizer.gui.pages." + mod), cls)(self)
+                pages.append(page)
+                self.pages.append(page)
+            sec = Section(self, key, title, pages, len(self.steps) + 1 if is_step else 0)
+            for page in pages:
+                page.step = sec.step
             if is_step:
-                steps.append(page)
-                name = "{}. {}".format(len(steps), name)
-            page.step = len(steps) if is_step else 0
-            item = QListWidgetItem(menu_icon(MENU_ICONS.get(cls.__name__), *page.icon_names), name)
+                self.steps.append(sec)
+            self.sections.append(sec)
+            self.stack.addWidget(sec)
+            item = QListWidgetItem(menu_icon(icon_key, *pages[0].icon_names), self._nav_text(sec))
             self.nav.addItem(item)
-        # "Next step" at the bottom of every step leads on to Build & Test.
-        for here, nxt in zip(steps, steps[1:]):
-            label_ = nxt.nav_title if hasattr(nxt, "nav_title") else nxt.title
-            here.layout_.addWidget(self._next_button(here, nxt, label_))
+        # Back / "Done — next step" under every step, from the source to the ISO.
+        for n, sec in enumerate(self.steps):
+            sec.add_bar(self.steps[n - 1] if n else None, self.steps[n + 1] if n + 1 < len(self.steps) else None)
         self.nav.setCurrentRow(0)
 
-    def _next_button(self, here, nxt, text):
-        from eduka_customizer.gui.widgets import button, hbox
-        prev_steps = [p for p in self.pages if getattr(p, "step", 0) == here.step - 1 and here.step > 1]
-        widgets = []
-        if prev_steps:
-            prev = prev_steps[0]
-            widgets.append(button("◀  Back", lambda: self.go(prev.__class__.__name__)))
-        widgets += [None, button("Next step: {}. {}  ▶".format(nxt.step, text),
-                                 lambda: self.go(nxt.__class__.__name__), "primary")]
-        return hbox(*widgets)
+    @staticmethod
+    def _nav_text(sec, done=False):
+        if not sec.step:
+            return sec.title
+        return "{}. {}{}".format(sec.step, sec.title, "  ✔" if done else "")
 
     def _actions(self):
         quit_ = QAction("Quit", self)
         quit_.setShortcut(QKeySequence.StandardKey.Quit)
         quit_.triggered.connect(self.close)
         self.addAction(quit_)
-        for i in range(min(9, len(self.pages))):
+        for i in range(min(9, len(self.sections))):
             a = QAction(self)
             a.setShortcut(QKeySequence("Ctrl+{}".format(i + 1)))
             a.triggered.connect(lambda _=False, n=i: self.nav.setCurrentRow(n))
@@ -261,34 +330,95 @@ class MainWindow(QMainWindow):
         self.log_btn.setText("Hide log" if visible else "Show log")
 
     # Navigation ------------------------------------------------------------
+    def free_navigation(self):
+        return settings().getbool("general", "free_navigation")
+
+    def first_open_step(self):
+        """The first step that is not done yet (its menu and all before it are open)."""
+        p = self.project
+        for sec in self.steps:
+            if sec.key == "start":
+                if not (p and p.has_rootfs()):
+                    return sec
+                continue
+            if not p.step_done(sec.key):
+                return sec
+        return None
+
+    def section_open(self, sec):
+        has = bool(self.project and self.project.has_rootfs())
+        if sec.needs_rootfs and not has:
+            return False
+        if not sec.step or self.free_navigation():
+            return True
+        first = self.first_open_step()
+        return first is None or sec.step <= first.step
+
     def _show_page(self, row):
         if row < 0:
             return
-        page = self.pages[row]
-        if page.needs_rootfs and not (self.project and self.project.has_rootfs()):
-            self.stage_label.setText("Open or create a project with a root filesystem first")
+        sec = self.sections[row]
+        if not self.section_open(sec):
+            first = self.first_open_step()
+            if sec.needs_rootfs and not (self.project and self.project.has_rootfs()):
+                self.stage_label.setText("Open or create a project with a system first (step 1)")
+            elif first:
+                self.stage_label.setText("Finish step {}. {} first (press 'Done — next step')".format(
+                    first.step, first.title))
             self.nav.blockSignals(True)
             self.nav.setCurrentRow(self.stack.currentIndex())
             self.nav.blockSignals(False)
             return
         self.stack.setCurrentIndex(row)
         try:
-            page.refresh()
+            sec.refresh()
         except Exception as e:  # a broken page must not take the window down
-            get_logger().error("Could not refresh %s: %s", page.title, e)
+            get_logger().error("Could not refresh %s: %s", sec.title, e)
+
+    def go_section(self, sec):
+        self.nav.setCurrentRow(self.sections.index(sec))
 
     def go(self, page_class_name):
-        for i, p in enumerate(self.pages):
-            if p.__class__.__name__ == page_class_name:
-                self.nav.setCurrentRow(i)
+        for sec in self.sections:
+            for p in sec.pages:
+                if p.__class__.__name__ == page_class_name:
+                    if not self.section_open(sec):
+                        self.stage_label.setText("{} opens at step {}".format(sec.title, sec.step))
+                        return
+                    sec.show_page(p)
+                    self.go_section(sec)
+                    if self.stack.currentWidget() is sec:
+                        sec.refresh()
+                    return
+
+    def next_step(self, sec, nxt):
+        """'Done — next step': mark this step done and open the next one."""
+        if not self.project:
+            return
+        if sec.key == "start" and not self.project.has_rootfs():
+            QMessageBox.information(self, APP_NAME, "Step 1 is done when the project has a system: extract an "
+                                    "ISO, bootstrap Debian or snapshot this computer.")
+            return
+        self.project.mark_step(sec.key)
+        self.update_state()
+        self.go_section(nxt)
 
     def update_state(self):
-        has = bool(self.project and self.project.has_rootfs())
-        for i, page in enumerate(self.pages):
+        for i, sec in enumerate(self.sections):
             item = self.nav.item(i)
-            enabled = has or not page.needs_rootfs
+            enabled = self.section_open(sec)
             flags = item.flags()
             item.setFlags(flags | Qt.ItemFlag.ItemIsEnabled if enabled else flags & ~Qt.ItemFlag.ItemIsEnabled)
+            done = bool(sec.step and self.project and (self.project.has_rootfs() if sec.key == "start"
+                                                       else self.project.step_done(sec.key)))
+            item.setText(self._nav_text(sec, done and not (self.project and "*" in
+                                                           self.project.state.get("steps_done", []))))
+            item.setToolTip("" if enabled else "Opens after step {}".format(max(1, sec.step - 1)))
+            if sec.bar is not None:
+                sec.bar.setVisible(bool(self.project))
+                if sec.next_btn is not None:
+                    sec.next_btn.setEnabled(bool(self.project and self.project.has_rootfs()))
+                sec.state.setText("✔ done" if done else "")
         if self.project:
             self.project_label.setText("{}  —  {}".format(self.project.state.get("name"), self.project.path))
             d = self.project.distro

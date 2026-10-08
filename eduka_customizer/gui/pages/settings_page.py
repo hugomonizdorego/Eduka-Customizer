@@ -51,6 +51,9 @@ class SettingsPage(Page):
             f.addRow(text + ":", e)
         self.oldstable = QCheckBox("Allow Debian oldstable (not recommended)")
         f.addRow("", self.oldstable)
+        self.free_nav = QCheckBox("Free navigation (expert mode): open every menu at any time instead of "
+                                  "one step after the other")
+        f.addRow("", self.free_nav)
         c.add(label("ISO name fields: {id} {name} {version} {codename} {suite} {debian} {arch} {date}", "muted"))
         c.add(hbox(None, button("Save settings", self.save, "primary")))
 
@@ -92,6 +95,7 @@ class SettingsPage(Page):
         for (section, key), e in self.edits.items():
             e.setText(cfg.get(section, key))
         self.oldstable.setChecked(cfg.getbool("debian", "allow_oldstable"))
+        self.free_nav.setChecked(cfg.getbool("general", "free_navigation"))
         host = doctor.host_info()
         text = "This computer: {}.".format(host["distro"].summary())
         if not host["supported"]:
@@ -148,12 +152,14 @@ class SettingsPage(Page):
         for (section, key), e in self.edits.items():
             cfg.set(section, key, e.text().strip())
         cfg.set("debian", "allow_oldstable", "yes" if self.oldstable.isChecked() else "no")
+        cfg.set("general", "free_navigation", "yes" if self.free_nav.isChecked() else "no")
         try:
             cfg.save()
         except OSError as e:
             QMessageBox.warning(self, "Settings", "Could not save: {}".format(e))
             return
         reload()
+        self.main.update_state()
         self.main.stage_label.setText("Settings saved")
 
     def install_missing(self):

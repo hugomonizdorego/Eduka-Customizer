@@ -6,18 +6,30 @@ from pathlib import Path
 
 from eduka_customizer.qt.widgets import QCheckBox, QGridLayout, QLineEdit, QMessageBox, QSpinBox
 
-from eduka_customizer.core import cleanup, qemu
+from eduka_customizer.core import cleanup, preflight, qemu
 from eduka_customizer.core.isobuild import COMPRESSORS, BuildOptions, build, iso_filename
-from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, label
+from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, fill, hbox, label, table
 
 
 class BuildPage(Page):
-    title = "Build & Test"
-    subtitle = ("Create the ISO image (hybrid BIOS/UEFI, writable to USB) and boot it "
-                "in a virtual machine.")
+    title = "Check & Build"
+    nav_title = "Check & Build"
+    subtitle = ("Check the image, create the ISO (hybrid BIOS/UEFI, writable to USB) and boot it "
+                "in a virtual machine. The build only starts when the checks find no problem.")
     icon_names = ("media-optical-burn", "media-optical", "drive-optical")
 
     def build(self):
+        c = self.card("Check before building",
+                      "Finds what would make the build fail, the ISO not boot, or private data leak into it.")
+        self.checks = table(["Result", "Check", "Details"])
+        self.checks.setMinimumHeight(260)
+        self.checks.cellDoubleClicked.connect(self._open_fix)
+        c.add(self.checks)
+        self.check_state = label("Not checked yet.", "muted")
+        c.add(hbox(self.check_state, None, button("Deep check (apt-get check)", lambda: self.run_checks(True)),
+                   button("Check now", self.run_checks, "primary")))
+        self._results = []
+
         c = self.card("Image")
         f = c.form()
         self.iso_name = QLineEdit()
@@ -169,15 +181,61 @@ class BuildPage(Page):
             self.main.live.stop()
             self.main.live = None
         opts = self.options()
-        proj = self.project
         self.project.state["identity"]["volume_label"] = opts.volume_label
         self.project.save()
+        self.run_checks(then_build=opts)
+
+    def _build(self, opts):
+        proj = self.project
 
         def done(out):
             self.test_iso.setText(str(out))
             self.refresh()
             QMessageBox.information(self, "ISO ready", "Your ISO image is ready:\n{}".format(out))
         self.task("Build ISO", lambda t: build(proj, opts, t.set_progress, t.set_stage), done)
+
+    # Checks -----------------------------------------------------------------------
+    MARKS = {"ok": "✔ OK", "info": "ℹ Info", "warn": "⚠ Warning", "fail": "✘ Problem"}
+
+    def run_checks(self, deep=False, then_build=None):
+        proj = self.project
+        if not proj:
+            return
+
+        def done(results):
+            self._show_checks(results)
+            if then_build is None:
+                return
+            fails, warns = preflight.summary(results)
+            if fails:
+                text = "\n".join("• {}: {}".format(x.title, x.detail) for x in results if x.level == "fail")
+                box = QMessageBox(QMessageBox.Icon.Warning, "Check & Build",
+                                  "The checks found {} problem(s). Fix them first (double-click a row to open "
+                                  "the page that fixes it):\n\n{}".format(fails, text), parent=self)
+                box.addButton("Fix first", QMessageBox.ButtonRole.RejectRole)
+                anyway = box.addButton("Build anyway", QMessageBox.ButtonRole.DestructiveRole)
+                box.exec()
+                if box.clickedButton() is not anyway:
+                    return
+            self._build(then_build)
+        self.task("Check the image", lambda t: preflight.run(proj, deep=deep), done)
+
+    def _show_checks(self, results):
+        self._results = results
+        order = {lvl: i for i, lvl in enumerate(reversed(preflight.LEVELS))}
+        results = sorted(results, key=lambda x: order[x.level])
+        self._results = results
+        fill(self.checks, [(self.MARKS[x.level], x.title, x.detail + ("  (double-click to fix)" if x.page and
+                                                                      x.level in ("warn", "fail") else ""))
+                           for x in results])
+        self.checks.setSortingEnabled(False)
+        fails, warns = preflight.summary(results)
+        self.check_state.setText("{} problem(s), {} warning(s){}".format(
+            fails, warns, " — ready to build" if not fails else " — fix the problems before building"))
+
+    def _open_fix(self, row, _col):
+        if 0 <= row < len(self._results) and self._results[row].page:
+            self.main.go(self._results[row].page)
 
     def apt_install(self):
         names = self.apt_line.text().split()

@@ -268,10 +268,32 @@ class Packages:
         _check_names(packages)
         log.info("Removing: %s", " ".join(packages))
         with self.chroot:
+            if autoremove:
+                self.keep_desktop(packages)
             self.chroot.run(APT + (["purge"] if purge else ["remove"]) + packages)
             if autoremove:
                 self.chroot.run(APT + ["autoremove", "--purge"])
         self.project.record("apt-remove", " ".join(packages))
+
+    def keep_desktop(self, packages):
+        """Removing one application can take a metapackage with it (task-gnome-desktop,
+        kde-standard, ...); autoremove would then remove the whole desktop. Mark what
+        those metapackages pulled in as manually installed so it stays."""
+        sim = self.chroot.output(["apt-get", "-s", "purge"] + list(packages), check=False) or ""
+        gone = set(re.findall(r"(?m)^(?:Remv|Purg) (\S+)", sim)) - set(packages)
+        if not gone:
+            return []
+        deps = self.chroot.output(["apt-cache", "depends", "--installed", "--no-suggests", "--no-conflicts",
+                                   "--no-breaks", "--no-replaces", "--no-enhances"] + sorted(gone),
+                                  check=False) or ""
+        names = set(re.findall(r"(?m)^\s+\|?(?:Pre)?(?:Depends|Recommends):\s+<?([^\s<>]+)>?", deps))
+        names |= set(re.findall(r"(?m)^\s{4}(\S+)$", deps))
+        installed = {n for n, *_r in self.installed()}
+        keep = sorted((names & installed) - set(packages) - gone)
+        if keep:
+            log.info("Keeping what %s installed: %d packages marked manual", " ".join(sorted(gone)), len(keep))
+            self.chroot.run(["apt-mark", "manual"] + keep, check=False, quiet=True)
+        return keep
 
     def autoremove(self):
         self.chroot.run(APT + ["autoremove", "--purge"])

@@ -72,6 +72,9 @@ def run_step(project, step, base, build=True):
             fp.set_firstboot(step.get("apps", []))
         else:
             fp.install(step.get("apps", []))
+    elif action == "replace-app":
+        from eduka_customizer.core.replace import Replacer
+        Replacer(project).replace(step["role"], step["package"], step.get("remove", []))
     elif action == "desktop":
         DesktopManager(project).install(step["id"], dm_id=step.get("dm"),
                                         remove_others=step.get("remove_others", False),

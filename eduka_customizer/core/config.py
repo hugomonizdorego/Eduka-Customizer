@@ -19,6 +19,8 @@ DEFAULTS = {
         "recent_projects": "",
         "theme": "auto",
         "terminal": "",
+        # yes: every menu can be opened at any time (expert mode); no: one step after the other.
+        "free_navigation": "no",
     },
     "debian": {
         # Codenames change with every Debian release; update them here.

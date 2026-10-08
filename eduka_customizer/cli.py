@@ -495,6 +495,30 @@ def cmd_wallpapers(args):
     return 0
 
 
+def cmd_apps(args):
+    from eduka_customizer.core import replace
+    if args.action == "roles":
+        for r in replace.roles():
+            print("{:12} {:16} {}".format(r["id"], r["name"], " ".join(r["candidates"])))
+        return 0
+    p = _locked(args) if args.action == "replace" else _project(args)
+    if args.action == "status":
+        for row in replace.status(p.rootfs):
+            print("{:12} {:16} installed: {:30} default: {}".format(row["role"], row["name"],
+                                                                   " ".join(row["installed"]) or "-",
+                                                                   row["default"] or "-"))
+        return 0
+    if not args.role or not args.package:
+        raise SystemExit("Use: apps replace ROLE PACKAGE [--remove-old | --remove PKG ...]")
+    remove = list(args.remove or [])
+    if args.remove_old:
+        remove += [x for x in next(r for r in replace.status(p.rootfs) if r["role"] == args.role)["installed"]
+                   if x != args.package]
+    replace.Replacer(p).replace(args.role, args.package, remove)
+    print("Default {}: {}{}".format(args.role, args.package, " (removed {})".format(" ".join(remove)) if remove else ""))
+    return 0
+
+
 def cmd_purpose(args):
     from eduka_customizer.core import profiles
     if args.action == "list":
@@ -579,9 +603,31 @@ def cmd_bootmenu(args):
     return 0
 
 
+def _print_checks(results):
+    marks = {"ok": "  ok ", "info": " info", "warn": " WARN", "fail": " FAIL"}
+    for x in results:
+        print("{}  {:28} {}".format(marks[x.level], x.title, x.detail))
+
+
+def cmd_check(args):
+    from eduka_customizer.core import preflight
+    p = _project(args)
+    results = preflight.run(p, deep=args.deep)
+    _print_checks(results)
+    fails, warns = preflight.summary(results)
+    print("\n{} problem(s), {} warning(s){}".format(fails, warns, ": ready to build" if not fails else ""))
+    return 1 if fails else 0
+
+
 def cmd_build(args):
+    from eduka_customizer.core import preflight
     from eduka_customizer.core.isobuild import BuildOptions, build
     p = _locked(args)
+    if not args.skip_checks:
+        results = preflight.run(p)
+        if preflight.summary(results)[0]:
+            _print_checks([x for x in results if x.level in ("fail", "warn")])
+            raise SystemExit("Fix the problems above first (or use --skip-checks).")
     opts = BuildOptions.from_project(p)
     for name in ("compression", "level", "volume_label", "iso_name", "boot_mode", "initramfs"):
         v = getattr(args, name, None)
@@ -844,6 +890,14 @@ def build_parser():
     s.add_argument("items", nargs="*")
     s.set_defaults(func=cmd_wallpapers)
 
+    s = sub.add_parser("apps", help="replace the default applications (browser, mail, editor, terminal, ...)")
+    s.add_argument("action", choices=["roles", "status", "replace"])
+    s.add_argument("role", nargs="?", help="browser, mail, office, editor, files, terminal, ...")
+    s.add_argument("package", nargs="?", help="the Debian package that becomes the default")
+    s.add_argument("--remove", nargs="*", help="packages to remove")
+    s.add_argument("--remove-old", action="store_true", help="remove the other installed programs of this kind")
+    s.set_defaults(func=cmd_apps)
+
     s = sub.add_parser("purpose", help="what the distribution is for, and its recommendations")
     s.add_argument("action", choices=["list", "show", "apply"])
     s.add_argument("id", nargs="?", help="education, server, professional, home or other")
@@ -891,7 +945,12 @@ def build_parser():
     s.add_argument("--reuse-squashfs", action="store_true")
     s.add_argument("--keep-installer", action="store_true",
                    help="keep Debian-Installer boot entries")
+    s.add_argument("--skip-checks", action="store_true", help="build even when the checks find problems")
     s.set_defaults(func=cmd_build)
+
+    s = sub.add_parser("check", help="check the image before building (what would break the ISO)")
+    s.add_argument("--deep", action="store_true", help="also run apt-get check inside the image")
+    s.set_defaults(func=cmd_check)
 
     s = sub.add_parser("test", help="boot the ISO in QEMU")
     s.add_argument("--iso")
