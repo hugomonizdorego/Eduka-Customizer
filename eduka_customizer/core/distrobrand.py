@@ -56,14 +56,15 @@ ALTERNATIVES = [
 
 @dataclass
 class BrandingSpec:
-    name: str = "Edukasaun OS"
-    os_id: str = "edukasaun"
-    version: str = "1.0"
-    codename: str = "Kameli"
-    home_url: str = "https://edukasaun.org"
+    # Nothing is preset: the Identity page (or the image itself) names the distribution.
+    name: str = ""
+    os_id: str = ""
+    version: str = ""
+    codename: str = ""
+    home_url: str = ""
     support_url: str = ""
     bug_url: str = ""
-    maintainer: str = "Edukasaun OS Developers <dev@edukasaun.org>"
+    maintainer: str = ""
     logo: str = ""
     accent: str = "#00a879"
     dark: str = "#0f2f27"
@@ -83,19 +84,20 @@ class BrandingSpec:
     @classmethod
     def from_project(cls, project):
         ident = project.state.get("identity", {})
-        spec = cls(name=ident.get("name") or cls.name, os_id=ident.get("id") or cls.os_id,
-                   version=ident.get("version") or cls.version,
-                   codename=ident.get("codename") or cls.codename,
-                   home_url=ident.get("home_url") or cls.home_url,
+        spec = cls(name=ident.get("name") or project.display_name(), os_id=project.os_id(),
+                   version=ident.get("version") or project.distro.version_id or "1.0",
+                   codename=ident.get("codename", ""), home_url=ident.get("home_url", ""),
                    support_url=ident.get("support_url", ""), bug_url=ident.get("bug_url", ""))
         for k, v in project.state.get("branding", {}).get("spec", {}).items():
             if hasattr(spec, k):
                 setattr(spec, k, v)
+        if not spec.maintainer:
+            spec.maintainer = "{} developers <{}@localhost>".format(spec.name or "Distribution", spec.os_id or "root")
         return spec
 
     def validate(self):
         if not SAFE_ID.match(self.os_id):
-            raise ValueError("The OS ID must be lower case letters, digits and '-' (e.g. edukasaun)")
+            raise ValueError("The OS ID must be lower case letters, digits and '-' (e.g. mylinux)")
         if not self.name.strip():
             raise ValueError("The system name is empty")
         for c in (self.accent, self.dark):
@@ -154,7 +156,7 @@ class DistroBranding:
         osr = {"PRETTY_NAME": pretty, "NAME": spec.name, "VERSION_ID": spec.version,
                "VERSION": spec.version + (" ({})".format(spec.codename) if spec.codename else ""),
                "VERSION_CODENAME": info.debian_codename or "", "ID": spec.os_id, "ID_LIKE": "debian",
-               "EDUKASAUN_CODENAME": spec.codename, "DEBIAN_SUITE": info.suite,
+               "DISTRO_CODENAME": spec.codename, "DEBIAN_SUITE": info.suite,
                "HOME_URL": spec.home_url, "SUPPORT_URL": spec.support_url,
                "BUG_REPORT_URL": spec.bug_url, "LOGO": spec.os_id + "-logo"}
         osr = {k: v for k, v in osr.items() if v}

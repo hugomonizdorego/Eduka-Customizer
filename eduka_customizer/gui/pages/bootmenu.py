@@ -78,7 +78,8 @@ class BootMenuPage(Page):
             return
         p = self.project
         boot = p.state.get("boot", {})
-        self.boot_title.setText(boot.get("title") or p.state["identity"].get("name", "Edukasaun OS"))
+        self.boot_title.setText(boot.get("title") or p.state["identity"].get("name") or "")
+        self.boot_title.setPlaceholderText(p.display_name())
         self.timeout.setValue(int(boot.get("timeout", 10)))
         self.params.setText(boot.get("extra_params", "quiet splash"))
         from eduka_customizer.core.cleanup import kernels
@@ -135,7 +136,7 @@ class BootMenuPage(Page):
         if splash:
             boot["splash"] = splash
         build = p.state.setdefault("build", {})
-        build.update({"title": boot["title"] or p.state["identity"].get("name", "Edukasaun OS"),
+        build.update({"title": boot["title"] or p.state["identity"].get("name") or p.display_name(),
                       "timeout": boot["timeout"], "boot_params": boot["extra_params"]})
         p.save()
         if p.has_isotree():

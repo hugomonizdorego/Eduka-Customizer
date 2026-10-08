@@ -75,7 +75,7 @@ class BrandingPage(Page):
                       "Your own GnuPG key and <id>-archive-keyring package, like debian-archive-keyring. "
                       "Use it to sign your own repository later. Keep a backup of the secret key!")
         self.email = QLineEdit()
-        self.email.setPlaceholderText("archive@edukasaun.org")
+        self.email.setPlaceholderText("archive@example.org")
         self.key_state = label("", "muted")
         c.add(hbox(label("E-mail"), self.email, button("Create key", self.create_key)))
         c.add(self.key_state)

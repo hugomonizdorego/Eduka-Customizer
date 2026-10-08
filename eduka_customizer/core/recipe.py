@@ -1,9 +1,9 @@
 """Recipes: replayable JSON descriptions of a customization.
 
-A recipe makes an Edukasaun OS build reproducible (and usable in CI):
+A recipe makes a build reproducible (and usable in CI):
 
     {
-      "name": "Edukasaun OS 1.0 school edition",
+      "name": "My Linux 1.0 school edition",
       "steps": [
         {"action": "sources", "suite": "stable", "backports": true},
         {"action": "apt-install", "packages": ["gcompris-qt", "libreoffice"]},
@@ -199,7 +199,7 @@ def run_step(project, step, base, build=True):
                 b.ensure_plymouth()
             theme = Plymouth(project).install(_path(base, step["import"]))
         elif step.get("logo"):
-            theme = b.generate_plymouth(step.get("name", "edukasaun"), _path(base, step["logo"]),
+            theme = b.generate_plymouth(step.get("name", project.os_id()), _path(base, step["logo"]),
                                         step.get("background", "#0b3d2e"), step.get("color", "#00a879"))
         if theme:
             b.set_plymouth(theme)
@@ -268,7 +268,7 @@ def export(project):
         steps.append({"action": "flatpak", "apps": st["flatpak"]["firstboot"], "firstboot": True})
     steps.append({"action": "boot", **st.get("boot", {})})
     steps.append({"action": "build", "options": st.get("build", {})})
-    return {"name": st.get("name", "Edukasaun OS"), "base": st.get("source", {}).get("label", ""),
+    return {"name": project.display_name(), "base": st.get("source", {}).get("label", ""),
             "steps": steps}
 
 

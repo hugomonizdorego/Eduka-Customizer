@@ -53,7 +53,7 @@ class PlymouthPage(Page):
                       "A simple, fast theme: your logo fading in on a colored background with a progress "
                       "bar, a message line and a password prompt for encrypted disks.")
         f = c.form()
-        self.gen_name = QLineEdit("edukasaun")
+        self.gen_name = QLineEdit("my-splash")
         f.addRow("Name:", self.gen_name)
         self.gen_logo = FilePicker("Logo", "PNG images (*.png)")
         self.gen_prev = ImagePreview(160, 90)

@@ -28,8 +28,8 @@ def apply_language(proj, choice):
 class ProjectPage(Page):
     title = "Start"
     nav_title = "Start / Project"
-    subtitle = ("Build Edukasaun OS from a Debian live ISO (the minimal 'standard' ISO is recommended), "
-                "an Edukasaun OS or Debian-derivative ISO such as LMDE, a fresh Debian base or this computer.")
+    subtitle = ("Build your own Debian-based distribution from a Debian live ISO (the minimal 'standard' "
+                "ISO is recommended), a Debian-derivative ISO such as LMDE, a fresh Debian base or this computer.")
     icon_names = ("go-home", "user-home")
     needs_rootfs = False
 
@@ -38,11 +38,12 @@ class ProjectPage(Page):
                                                  "ISO tree, cache and build output."),
                         self.card("Open project", "Continue working on an earlier project."))
         f = a.form()
-        self.name = QLineEdit("Edukasaun OS")
+        self.name = QLineEdit()
+        self.name.setPlaceholderText("project name, e.g. My Linux")
         f.addRow("Name:", self.name)
         self.folder = FilePicker("Project folder", directory=True)
         base = settings().get("general", "projects_dir")
-        self.folder.setText(os.path.join(base, "edukasaun-os"))
+        self.folder.setText(os.path.join(base, "my-distro"))
         f.addRow("Folder:", self.folder)
         a.add(hbox(None, button("Create project", self.create, "primary", ("folder-new",))))
 
@@ -70,13 +71,13 @@ class ProjectPage(Page):
         v.addWidget(label("<b>Recommended: the Debian live <i>standard</i> ISO</b> "
                           "(debian-live-*-amd64-standard.iso): it has no desktop, so you start from a small, "
                           "clean system and add only what you choose. Every Debian-based live ISO works too: "
-                          "the other Debian live ISOs, Edukasaun OS, and Debian derivatives such as Linux Mint "
+                          "the other Debian live ISOs and Debian derivatives such as Linux Mint "
                           "Debian Edition (LMDE). Ubuntu-based images (Ubuntu, Linux Mint) are refused.",
                           "muted"))
         self.iso = FilePicker("Choose ISO image", "ISO images (*.iso)")
         v.addWidget(self.iso)
         v.addWidget(hbox(None, button("Extract ISO", self.extract, "primary", ("media-optical",))))
-        tabs.addTab(t, "Edukasaun / Debian ISO")
+        tabs.addTab(t, "Debian / Debian-based ISO")
 
         # Download ----------------------------------------------------------------
         t = QWidget()
@@ -111,7 +112,7 @@ class ProjectPage(Page):
         t = QWidget()
         v = QVBoxLayout(t)
         v.addWidget(label("Experimental (remastersys / penguins-eggs style): copy the running "
-                          "Edukasaun OS or Debian system. 'Distribution' removes personal "
+                          "Debian-based system. 'Distribution' removes personal "
                           "accounts and /home; 'Backup' keeps them - never share a backup ISO.",
                           "muted"))
         self.snap_mode = combo([("dist", "Distribution (no personal data)"),
@@ -177,8 +178,8 @@ class ProjectPage(Page):
             return
         if Path(folder, "project.json").exists():
             self.main.open_project(folder)
-        elif self.main.open_project(folder, create=True, name=self.name.text().strip() or "Edukasaun OS"):
-            self.project.state["name"] = self.name.text().strip() or "Edukasaun OS"
+        elif self.main.open_project(folder, create=True, name=self.name.text().strip() or Path(folder).name):
+            self.project.state["name"] = self.name.text().strip() or Path(folder).name
             self.project.save()
         self.refresh()
 

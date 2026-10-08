@@ -23,7 +23,7 @@ HOSTNAME = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$")
 RESERVED = {"root", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail", "news", "uucp",
             "proxy", "www-data", "backup", "list", "irc", "nobody", "systemd-network", "messagebus",
             "sshd", "polkitd", "lightdm", "sddm", "gdm", "avahi", "colord", "pulse", "rtkit"}
-LIVE_CONF = "etc/live/config.conf.d/50-edukasaun.conf"
+LIVE_CONF = "etc/live/config.conf.d/50-eduka-customizer.conf"
 LIVE_SCRIPT = "live/config/1999-eduka-password"
 # Suggested live user for new images: simple to remember and to type.
 SUGGESTED_USER = ("live", "Live")

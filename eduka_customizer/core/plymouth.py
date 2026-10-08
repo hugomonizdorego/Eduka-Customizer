@@ -189,8 +189,7 @@ class Plymouth:
         with self.chroot:
             self.branding.write_plymouth_default(name)
         # The name ends up in a shell script run as root: keep only harmless characters.
-        title = re.sub(r"[^A-Za-z0-9 ._+-]", "", self.project.state.get("identity", {}).get("name", "")) \
-            or "Edukasaun OS"
+        title = re.sub(r"[^A-Za-z0-9 ._+-]", "", self.project.display_name()) or "Linux"
         script = PREVIEW.format(n=seconds, title=title)
         live = LiveSession(self.project)
         live.start(resolution=resolution, mode="root", command="/bin/sh -c '{}'".format(script.replace("'", "")))

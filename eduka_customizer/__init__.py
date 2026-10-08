@@ -1,8 +1,9 @@
-"""Eduka-Customizer - the ISO builder for Edukasaun OS.
+"""Eduka-Customizer - build and customize live ISO images of Debian-based distributions.
 
-Eduka-Customizer remasters Debian based live images (Debian stable,
-testing and sid, and Edukasaun OS itself) into new Edukasaun OS ISO
-images.  Ubuntu and Ubuntu derivatives are intentionally unsupported.
+Eduka-Customizer remasters Debian live images (Debian stable, testing and
+sid, and Debian derivatives such as LMDE) into new live ISO images of your
+own distribution. Ubuntu and Ubuntu-based systems are intentionally not
+supported.
 """
 
 __all__ = ["APP_NAME", "APP_ID", "VERSION", "VERSION_LABEL"]

@@ -45,11 +45,25 @@ def trixie(tmp_path):
     return make_rootfs(tmp_path / "rootfs", DEBIAN_TRIXIE, "13.1", TRIXIE_SOURCES)
 
 
+FILLED_IDENTITY = {"name": "Edukasaun OS", "id": "edukasaun", "version": "1.0", "codename": "Kameli",
+                   "home_url": "https://edukasaun.org", "hostname": "edukasaun", "volume_label": "EDUKASAUN_OS"}
+
+
+@pytest.fixture
+def blank_project(tmp_path):
+    from eduka_customizer.core.project import Project
+    p = Project.create(tmp_path / "blank")
+    make_rootfs_into(p.rootfs)
+    return p
+
+
 @pytest.fixture
 def project(tmp_path):
     from eduka_customizer.core.project import Project
     p = Project.create(tmp_path / "proj")
     make_rootfs_into(p.rootfs)
+    # New projects start without a name; most tests use a distribution that was named.
+    p.state["identity"].update(FILLED_IDENTITY)
     return p
 
 

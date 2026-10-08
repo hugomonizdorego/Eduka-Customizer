@@ -54,7 +54,7 @@ class CalamaresPage(Page):
             row += [label(text), self.colors[key]]
         f.addRow("Colors:", hbox(*row, None))
         self.launcher = QLineEdit()
-        self.launcher.setPlaceholderText("e.g. Install Edukasaun OS")
+        self.launcher.setPlaceholderText("e.g. Install My Linux")
         f.addRow("Desktop launcher:", self.launcher)
         c.add(hbox(None, button("Apply name, images and colors", self.apply_branding, "primary")))
 

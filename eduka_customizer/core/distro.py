@@ -1,6 +1,6 @@
 """Detect and validate the distribution inside a root filesystem.
 
-Only Debian (stable, testing, sid) and Edukasaun OS are accepted.
+Debian (stable, testing, sid) and every Debian-based distribution are accepted.
 Ubuntu and every Ubuntu derivative is rejected on purpose.
 """
 
@@ -56,8 +56,9 @@ class DistroInfo:
         label = {"stable": "Debian stable", "testing": "Debian testing",
                  "sid": "Debian sid (unstable)", "oldstable": "Debian oldstable"}.get(self.suite, self.suite)
         base = "{} ({})".format(label, self.debian_codename or "?")
-        if self.is_edukasaun:
-            return "{} - based on {} - {}".format(self.pretty_name or "Edukasaun OS", base, self.arch)
+        if self.id and self.id != "debian":
+            # Any derivative (Edukasaun OS, LMDE, your own distribution): show its Debian base too.
+            return "{} - based on {} - {}".format(self.pretty_name or self.name or self.id, base, self.arch)
         return "{} - {}".format(self.pretty_name or base, self.arch)
 
 
@@ -233,13 +234,13 @@ def detect(rootfs):
 
 
 def validate(info, rootfs=None):
-    """Raise UnsupportedDistro unless this is Debian, Edukasaun OS or a Debian derivative."""
+    """Raise UnsupportedDistro unless this is Debian or a Debian derivative."""
     ids = [info.id] + list(info.id_like)
     if any(m in ids for m in UBUNTU_MARKERS) or "ubuntu" in info.name.lower() \
             or "ubuntu" in info.pretty_name.lower() or (info.id == "linuxmint" and "debian" not in info.id_like):
         raise UnsupportedDistro(
             "Ubuntu and Ubuntu-based systems are not supported. Eduka-Customizer "
-            "only builds Edukasaun OS from Debian stable, testing or sid.")
+            "builds Debian-based distributions (Debian stable, testing, sid and derivatives).")
     if rootfs is not None:
         lsb = Path(rootfs, "etc/lsb-release")
         if lsb.is_file() and "ubuntu" in lsb.read_text(errors="replace").lower():
@@ -248,7 +249,7 @@ def validate(info, rootfs=None):
         raise UnsupportedDistro("/etc/debian_version is missing: this is not a Debian system.")
     if info.id not in ALLOWED_IDS and not info.is_edukasaun and "debian" not in info.id_like:
         raise UnsupportedDistro(
-            "'{}' is not supported. Debian, Edukasaun OS and Debian derivatives (such as LMDE) "
+            "'{}' is not supported. Debian and Debian derivatives (such as LMDE) "
             "can be customized.".format(info.pretty_name or info.id or "Unknown system"))
     if info.suite == "oldstable" and not settings().getbool("debian", "allow_oldstable"):
         raise UnsupportedDistro(

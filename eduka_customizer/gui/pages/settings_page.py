@@ -25,8 +25,8 @@ FIELDS = [
     ("debian", "mirror", "Debian mirror"),
     ("debian", "security_mirror", "Security mirror"),
     ("debian", "components", "Components"),
-    ("edukasaun", "eduka_desktop_repo", "Eduka-Desktop repository"),
-    ("edukasaun", "eduka_desktop_ref", "Eduka-Desktop branch / tag"),
+    ("eduka_desktop", "repo", "Eduka-Desktop repository"),
+    ("eduka_desktop", "ref", "Eduka-Desktop branch / tag"),
     ("flatpak", "remote_url", "Flathub remote"),
     ("build", "iso_name", "ISO file name template"),
     ("qemu", "memory", "QEMU memory (MiB)"),
@@ -77,7 +77,7 @@ class SettingsPage(Page):
 
         c = self.card("About")
         c.add(label(
-            "<b>{} {}</b> — the ISO builder and customizer for <b>Edukasaun OS</b>, based on Debian "
+            "<b>{} {}</b> — the ISO builder and customizer for <b>Debian-based distributions</b>, based on Debian "
             "stable, testing and sid.<br><br>"
             "Rewritten from <i>Customizer</i> by Ivailo Monev, Mubiin Kimura, Graham Cantin and "
             "contributors. Techniques inspired by <i>Cubic</i> (boot replay, ISO remastering), "
@@ -95,7 +95,7 @@ class SettingsPage(Page):
         host = doctor.host_info()
         text = "This computer: {}.".format(host["distro"].summary())
         if not host["supported"]:
-            text += " Fine as a build computer; only 'snapshot this computer' needs Debian or Edukasaun OS."
+            text += " Fine as a build computer; only 'snapshot this computer' needs a Debian-based system."
         text += "  KVM: {}.".format("yes" if host["kvm"] else "no")
         self.host.setText(text)
         rows = [("✓" if r["ok"] else ("✗ required" if r["required"] else "–"), r["item"], r["package"],

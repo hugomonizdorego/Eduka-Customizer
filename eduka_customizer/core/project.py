@@ -14,25 +14,27 @@ STATE_FILE = "project.json"
 
 DEFAULT_STATE = {
     "format": 1,
-    "name": "Edukasaun OS",
+    "name": "",
     "created": "",
     "customizer_version": VERSION,
     "source": {"kind": "", "path": "", "label": "", "boot_mode": "replay"},
     "distro": {},
     "identity": {
-        "name": "Edukasaun OS",
-        "id": "edukasaun",
-        "version": "1.0",
-        "codename": "Kameli",
-        "home_url": "https://edukasaun.org",
+        # Empty on purpose: every distribution is named by its maker. Until then the
+        # build uses what the image says about itself (os-release).
+        "name": "",
+        "id": "",
+        "version": "",
+        "codename": "",
+        "home_url": "",
         "support_url": "",
         "bug_url": "",
-        "hostname": "edukasaun",
+        "hostname": "",
         "live_user": "live",
         "live_fullname": "Live",
-        "volume_label": "EDUKASAUN_OS",
+        "volume_label": "",
     },
-    "locale": {"default": "en_US.UTF-8", "extra": ["pt_PT.UTF-8", "id_ID.UTF-8"],
+    "locale": {"default": "en_US.UTF-8", "extra": [],
                "timezone": DEFAULT_TIMEZONE, "keyboard": "us"},
     "build": {},
     "boot": {"extra_params": "quiet splash", "timeout": 10, "title": ""},
@@ -107,6 +109,12 @@ class Project:
         p.load()
         for d in (p.output, p.cache, p.logs, p.bootdir):
             d.mkdir(exist_ok=True)
+        if p.has_rootfs():
+            try:
+                from eduka_customizer.core import legacy
+                legacy.migrate(p.rootfs)
+            except OSError:
+                pass  # read-only or foreign files: harmless, the build still works
         return p
 
     def load(self):
@@ -149,6 +157,25 @@ class Project:
     @property
     def distro(self):
         return DistroInfo.from_dict(self.state.get("distro"))
+
+    # Names used when the Identity page is still empty ------------------------
+    def display_name(self):
+        """The distribution's name: from the Identity page, else from the image's os-release."""
+        name = self.state.get("identity", {}).get("name") or self.state.get("name")
+        if name:
+            return name
+        d = self.distro
+        return (d.name or d.pretty_name or "Debian GNU/Linux").strip()
+
+    def os_id(self):
+        import re
+        oid = self.state.get("identity", {}).get("id") or self.distro.id or "debian"
+        return re.sub(r"[^a-z0-9-]", "", oid.lower()) or "debian"
+
+    def volume_label(self):
+        import re
+        label = self.state.get("identity", {}).get("volume_label") or self.display_name().upper()
+        return (re.sub(r"[^A-Za-z0-9_]", "_", label).strip("_") or "LIVE")[:32]
 
     def has_rootfs(self):
         return all((self.rootfs / d).exists() for d in ("etc", "usr", "var"))

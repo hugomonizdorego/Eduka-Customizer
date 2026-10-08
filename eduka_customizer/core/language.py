@@ -125,7 +125,7 @@ class Language:
     def boot_entries(self, title=None):
         st = self.project.state.get("language", {})
         title = title or self.project.state.get("build", {}).get("title") or \
-            self.project.state.get("identity", {}).get("name", "Edukasaun OS")
+            self.project.display_name()
         entries = []
         for locale in st.get("boot_menu", []):
             lang = info(locale)

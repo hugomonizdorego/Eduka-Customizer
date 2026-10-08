@@ -190,7 +190,7 @@ class Calamares:
             names.append(name)
         accent = self.style().get("sidebarBackground", "#0f2f27")
         items = "\n".join(SLIDE.format(image=n) for n in names) or SLIDE_TEXT.format(
-            name=(self.branding().get("strings") or {}).get("productName", "Edukasaun OS"))
+            name=(self.branding().get("strings") or {}).get("productName") or self.project.display_name())
         (d / "show.qml").write_text(SHOW_QML.format(slides=items, ms=max(2, int(seconds)) * 1000,
                                                     background=accent))
 

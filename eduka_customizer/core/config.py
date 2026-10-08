@@ -4,7 +4,7 @@ import configparser
 import os
 from pathlib import Path
 
-# Edukasaun OS is made for Timor-Leste: the default time zone everywhere.
+# Default time zone (Timor-Leste); every project can choose another one.
 DEFAULT_TIMEZONE = "Asia/Dili"
 CONFIG_PATH = Path(os.environ.get("EDUKA_CUSTOMIZER_CONF",
                                   "/etc/eduka-customizer/eduka-customizer.conf"))
@@ -32,14 +32,10 @@ DEFAULTS = {
         "live_iso_url": "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/",
         "testing_live_iso_url": "https://cdimage.debian.org/cdimage/weekly-live-builds/amd64/iso-hybrid/",
     },
-    "edukasaun": {
-        "name": "Edukasaun OS",
-        "id": "edukasaun",
-        "version": "1.0",
-        "codename": "Kameli",
-        "home_url": "https://edukasaun.org",
-        "eduka_desktop_repo": "https://github.com/hugomonizdorego/Eduka-Desktop",
-        "eduka_desktop_ref": "",
+    # Eduka-Desktop is one of the desktops on offer; nothing else about a distribution is preset.
+    "eduka_desktop": {
+        "repo": "https://github.com/hugomonizdorego/Eduka-Desktop",
+        "ref": "",
     },
     "flatpak": {
         "remote_name": "flathub",

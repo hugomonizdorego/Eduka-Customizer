@@ -173,7 +173,7 @@ class DesktopManager:
         self.project.record("display-manager", dm_id)
 
     def _lightdm_conf(self, values):
-        p = Path(self.rootfs, "etc/lightdm/lightdm.conf.d/50-edukasaun.conf")
+        p = Path(self.rootfs, "etc/lightdm/lightdm.conf.d/50-eduka-customizer.conf")
         cp = configparser.ConfigParser(interpolation=None)
         cp.optionxform = str
         if p.exists():
@@ -193,7 +193,7 @@ class DesktopManager:
             log.warning("Session %s is not installed yet", session_id)
         log.info("Default session: %s", session_id)
         self._lightdm_conf({"user-session": session_id, "autologin-session": session_id})
-        sddm = Path(self.rootfs, "etc/sddm.conf.d/50-edukasaun.conf")
+        sddm = Path(self.rootfs, "etc/sddm.conf.d/50-eduka-customizer.conf")
         if Path(self.rootfs, "usr/bin/sddm").exists():
             sddm.parent.mkdir(parents=True, exist_ok=True)
             cp = configparser.ConfigParser(interpolation=None)
@@ -246,7 +246,7 @@ class DesktopManager:
                 self.pkgs.install([pkg])
             if not Path(self.rootfs, "usr/share/sddm/themes", theme).is_dir():
                 raise RuntimeError("SDDM theme not installed: {}".format(theme))
-        p = Path(self.rootfs, "etc/sddm.conf.d/10-edukasaun-theme.conf")
+        p = Path(self.rootfs, "etc/sddm.conf.d/10-eduka-customizer-theme.conf")
         p.parent.mkdir(parents=True, exist_ok=True)
         cp = configparser.ConfigParser(interpolation=None)
         cp.optionxform = str
@@ -284,7 +284,7 @@ class DesktopManager:
                 text = text.replace("[daemon]", "[daemon]\nWaylandEnable=" + value, 1)
             gdm.write_text(text)
         if Path(self.rootfs, "usr/bin/sddm").exists() and kind == "x11":
-            p = Path(self.rootfs, "etc/sddm.conf.d/20-edukasaun-display.conf")
+            p = Path(self.rootfs, "etc/sddm.conf.d/20-eduka-customizer-display.conf")
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("[General]\nDisplayServer=x11\n")
         self.project.state.setdefault("desktop", {})["session_type"] = kind

@@ -13,7 +13,7 @@ from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, 
 
 class BuildPage(Page):
     title = "Build & Test"
-    subtitle = ("Create the Edukasaun OS ISO image (hybrid BIOS/UEFI, writable to USB) and boot it "
+    subtitle = ("Create the ISO image (hybrid BIOS/UEFI, writable to USB) and boot it "
                 "in a virtual machine.")
     icon_names = ("media-optical-burn", "media-optical", "drive-optical")
 
@@ -176,7 +176,7 @@ class BuildPage(Page):
         def done(out):
             self.test_iso.setText(str(out))
             self.refresh()
-            QMessageBox.information(self, "ISO ready", "Your Edukasaun OS image is ready:\n{}".format(out))
+            QMessageBox.information(self, "ISO ready", "Your ISO image is ready:\n{}".format(out))
         self.task("Build ISO", lambda t: build(proj, opts, t.set_progress, t.set_stage), done)
 
     def apt_install(self):

@@ -15,7 +15,7 @@ FIRSTBOOT_LIST = "etc/eduka-customizer/flatpak-firstboot.list"
 FIRSTBOOT_SCRIPT = "usr/libexec/eduka-flatpak-firstboot"
 FIRSTBOOT_UNIT = "etc/systemd/system/eduka-flatpak-firstboot.service"
 
-# Curated educational picks for Edukasaun OS (Flathub application IDs).
+# Curated educational picks (Flathub application IDs).
 EDUCATION_PICKS = [
     ("org.kde.gcompris", "GCompris", "Educational activities for children"),
     ("org.tuxpaint.Tuxpaint", "Tux Paint", "Drawing program for children"),
@@ -60,7 +60,7 @@ exit 0
 """
 
 FIRSTBOOT_SERVICE = """[Unit]
-Description=Install Flatpak applications selected for Edukasaun OS
+Description=Install the Flatpak applications chosen for this system
 Wants=network-online.target
 After=network-online.target
 ConditionPathExists=/{list}

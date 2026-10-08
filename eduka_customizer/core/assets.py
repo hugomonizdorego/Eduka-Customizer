@@ -55,7 +55,7 @@ class Assets:
         self.chroot = Chroot(project.rootfs)
 
     def os_id(self):
-        return self.project.state.get("identity", {}).get("id") or "edukasaun"
+        return self.project.os_id()
 
     # Recognize -------------------------------------------------------------
     def scan(self, paths):
@@ -163,8 +163,7 @@ class Wallpapers:
 
     @property
     def folder(self):
-        os_id = self.project.state.get("identity", {}).get("id") or "edukasaun"
-        return self.rootfs / "usr/share/backgrounds" / safe_name(os_id)
+        return self.rootfs / "usr/share/backgrounds" / safe_name(self.project.os_id())
 
     def list(self):
         if not self.folder.is_dir():

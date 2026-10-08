@@ -181,7 +181,7 @@ def _merge(src, dst):
 
 
 def bump_version(version, tag):
-    """1.0+edukasaun3 -> 1.0+edukasaun4 ; 1.0 -> 1.0+edukasaun1"""
+    """1.0+mylinux3 -> 1.0+mylinux4 ; 1.0 -> 1.0+mylinux1"""
     m = re.match(r"^(.*\+{})(\d+)$".format(re.escape(tag)), version)
     if m:
         return "{}{}".format(m.group(1), int(m.group(2)) + 1)

@@ -82,7 +82,7 @@ class WizardPage(Page):
         self.folder.setText(os.path.join(settings().get("general", "projects_dir"), "my-distro"))
         f.addRow("Project folder:", self.folder)
         self.src_kind = combo([("current", "Keep the system of the open project"),
-                               ("iso", "Debian or Edukasaun OS live ISO"),
+                               ("iso", "Debian or Debian-based live ISO"),
                                ("bootstrap", "New Debian base (build from scratch)")])
         f.addRow("Source:", self.src_kind)
         self.iso = FilePicker("ISO image", "ISO images (*.iso)")
@@ -92,7 +92,7 @@ class WizardPage(Page):
         self.src_note = label("", "muted")
         c.add(self.src_note)
         c.add(label("Recommended source: the Debian live <b>standard</b> ISO (no desktop, minimal). Any Debian "
-                    "live ISO, Edukasaun OS or a Debian derivative such as LMDE works too.", "muted"))
+                    "live ISO or a Debian derivative such as LMDE works too.", "muted"))
         c = self._card(lay, "What is your distribution for?",
                        "Fills the next steps with recommendations (desktop, login screen, look, applications). "
                        "Change anything you like afterwards, or choose 'Other' to decide everything yourself.")
@@ -105,12 +105,16 @@ class WizardPage(Page):
     def _identity(self, lay):
         c = self._card(lay, "Name your distribution")
         f = c.form()
-        self.w_name = QLineEdit("Edukasaun OS")
-        self.w_id = QLineEdit("edukasaun")
+        self.w_name = QLineEdit()
+        self.w_name.setPlaceholderText("e.g. My Linux")
+        self.w_id = QLineEdit()
+        self.w_id.setPlaceholderText("e.g. mylinux")
         self.w_version = QLineEdit("1.0")
         self.w_codename = QLineEdit("Kameli")
-        self.w_home = QLineEdit("https://edukasaun.org")
-        self.w_host = QLineEdit("edukasaun")
+        self.w_home = QLineEdit()
+        self.w_home.setPlaceholderText("https://...")
+        self.w_host = QLineEdit()
+        self.w_host.setPlaceholderText("e.g. mylinux")
         self.w_user = QLineEdit("live")
         for text, w in (("Name:", self.w_name), ("ID:", self.w_id), ("Version:", self.w_version),
                         ("Codename:", self.w_codename), ("Home page:", self.w_home),
@@ -258,7 +262,7 @@ class WizardPage(Page):
         self.w_brand.setChecked(True)
         self.w_keyring = QCheckBox("Create my own APT signing key and <id>-archive-keyring package")
         self.w_email = QLineEdit()
-        self.w_email.setPlaceholderText("archive e-mail, e.g. archive@edukasaun.org")
+        self.w_email.setPlaceholderText("archive e-mail, e.g. archive@example.org")
         self.w_grubname = QCheckBox("Show my distribution name in the GRUB menu")
         self.w_grubname.setChecked(True)
         for w in (self.w_brand, self.w_grubname, self.w_keyring, self.w_email):
@@ -444,7 +448,7 @@ class WizardPage(Page):
         if step == 1:
             import re
             if not re.match(r"^[a-z0-9][a-z0-9-]{1,30}$", self.w_id.text().strip()):
-                return "The ID must be lower case letters, digits and '-' (e.g. edukasaun)."
+                return "The ID must be lower case letters, digits and '-' (e.g. mylinux)."
             if not self.w_name.text().strip():
                 return "Enter a name."
             from eduka_customizer.core.users import check_username

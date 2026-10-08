@@ -275,3 +275,25 @@ def test_archive_links():
     assert not link_stays_inside("theme/x", "../../etc/passwd")
     assert not link_stays_inside("x", "/etc/passwd")
     assert not link_stays_inside("x", "..")
+
+
+def test_new_projects_are_not_edukasaun(blank_project, tmp_path):
+    """0.15: nothing about Edukasaun OS is preset; names fall back to the image's os-release."""
+    p = blank_project
+    ident = p.state["identity"]
+    assert ident["name"] == "" and ident["id"] == "" and ident["volume_label"] == "" and ident["hostname"] == ""
+    from eduka_customizer.core import distro, legacy
+    p.state["distro"] = distro.detect(p.rootfs).to_dict()
+    assert p.display_name() == "Debian GNU/Linux" and p.os_id() == "debian"
+    assert p.volume_label() == "DEBIAN_GNU_LINUX"
+    from eduka_customizer.core.isobuild import BuildOptions
+    o = BuildOptions.from_project(p)
+    assert o.title == "Debian GNU/Linux" and o.volume_label == "DEBIAN_GNU_LINUX"
+    from eduka_customizer.core.branding import Branding
+    with pytest.raises(ValueError, match="name"):
+        Branding(p).apply_identity(dict(ident))
+    old = p.rootfs / "etc/live/config.conf.d/50-edukasaun.conf"
+    old.parent.mkdir(parents=True)
+    old.write_text('LIVE_USERNAME="live"\n')
+    assert legacy.migrate(p.rootfs) == 1
+    assert (p.rootfs / "etc/live/config.conf.d/50-eduka-customizer.conf").exists() and not old.exists()

@@ -15,7 +15,7 @@ HIDDEN_KEYS = {"menu_icon", "_settings_revision", "locked", "reserve_workarea",
 
 class DesktopPage(Page):
     title = "Desktop"
-    subtitle = ("Build the desktop: Eduka-Desktop (default for Edukasaun OS), another desktop "
+    subtitle = ("Build the desktop: GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, Eduka-Desktop, another desktop "
                 "environment or a window manager. Choose the login manager and default session.")
     icon_names = ("preferences-desktop", "user-desktop", "video-display")
 
@@ -93,9 +93,9 @@ class DesktopPage(Page):
         c = self.card("Eduka-Desktop", "Eduka-Panel, Eduka-Menu and Eduka-Menu-Settings, built from "
                                        "git into a .deb and installed into the image.")
         f = c.form()
-        self.repo = QLineEdit(settings().get("edukasaun", "eduka_desktop_repo"))
+        self.repo = QLineEdit(settings().get("eduka_desktop", "repo"))
         f.addRow("Git repository or folder:", self.repo)
-        self.ref = QLineEdit(settings().get("edukasaun", "eduka_desktop_ref"))
+        self.ref = QLineEdit(settings().get("eduka_desktop", "ref"))
         self.ref.setPlaceholderText("default branch")
         f.addRow("Branch / tag:", self.ref)
         self.ed_state = label("", "muted")
@@ -144,7 +144,7 @@ class DesktopPage(Page):
             self.session.setCurrentIndex(self.session.findData(cur))
         dm = dsk.detect_display_manager(rootfs)
         greeter = ""
-        conf = rootfs / "etc/lightdm/lightdm.conf.d/50-edukasaun.conf"
+        conf = rootfs / "etc/lightdm/lightdm.conf.d/50-eduka-customizer.conf"
         if conf.exists():
             import re
             m = re.search(r"greeter-session\s*=\s*(\S+)", conf.read_text())

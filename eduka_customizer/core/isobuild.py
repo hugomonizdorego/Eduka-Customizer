@@ -38,9 +38,9 @@ class BuildOptions:
     compression: str = "zstd"
     level: int = 15
     block_size: str = "1M"
-    volume_label: str = "EDUKASAUN_OS"
+    volume_label: str = ""
     iso_name: str = "{id}-{version}-{suite}-{arch}-{date}.iso"
-    title: str = "Edukasaun OS"
+    title: str = ""
     boot_params: str = "quiet splash"
     timeout: int = 10
     reuse_squashfs: bool = False
@@ -67,8 +67,8 @@ class BuildOptions:
         # earlier build must not hide a later rename.
         ident = project.state.get("identity", {})
         boot = project.state.get("boot", {})
-        o.volume_label = ident.get("volume_label") or o.volume_label
-        o.title = boot.get("title") or ident.get("name") or o.title
+        o.volume_label = ident.get("volume_label") or project.volume_label()
+        o.title = boot.get("title") or ident.get("name") or project.display_name()
         o.boot_params = boot.get("extra_params", o.boot_params)
         o.timeout = int(boot.get("timeout", o.timeout))
         return o
@@ -79,15 +79,15 @@ class BuildOptions:
 
 def sanitize_label(label):
     label = re.sub(r"[^A-Za-z0-9_ .-]", "_", label.strip())[:32]
-    return label or "EDUKASAUN_OS"
+    return label or "LIVE"
 
 
 def iso_filename(template, project):
     info = project.distro
     ident = project.state.get("identity", {})
     values = {
-        "id": ident.get("id") or "edukasaun",
-        "name": ident.get("name") or "Edukasaun-OS",
+        "id": project.os_id(),
+        "name": (ident.get("name") or project.display_name()).replace(" ", "-"),
         "version": ident.get("version") or "0",
         "codename": (ident.get("codename") or "").lower(),
         "suite": info.suite or "debian",
@@ -361,7 +361,7 @@ class Builder:
             args += ["-V", label]
         else:
             args = ["-as", "mkisofs"] + bootloader.BootGenerator(p).xorriso_args(label)
-        args += ["-publisher", "Edukasaun OS", "-preparer", "Eduka-Customizer",
+        args += ["-publisher", p.display_name()[:120], "-preparer", "Eduka-Customizer",
                  "-o", out, p.isodir]
         runner.run(["xorriso"] + args, progress=self.progress)
         return out

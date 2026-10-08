@@ -77,7 +77,7 @@ def cmd_shell(args):
     if not p.has_rootfs():
         log.error("This project has no root filesystem")
         return 1
-    print("Entering the Edukasaun OS image. Type 'exit' to leave.")
+    print("Entering the image. Type 'exit' to leave.")
     print("Everything you change here is saved to the next ISO build.")
     rc = Chroot(p.rootfs).interactive(args.command or None)
     p.mark_initramfs_dirty()
@@ -656,7 +656,7 @@ def cmd_doctor(args):
     print("Host system: {}".format(host["distro"].summary()))
     if not host["supported"]:
         print("  Note: fine as a build computer. Only 'snapshot this computer' needs Debian or "
-              "Edukasaun OS.")
+              "a Debian-based system.")
     print("Root: {}   KVM: {}".format("yes" if host["root"] else "no", "yes" if host["kvm"] else "no"))
     for r in doctor.check():
         print("  [{}] {:52} {:24} {}".format("ok" if r["ok"] else ("!!" if r["required"] else "--"),
@@ -682,8 +682,8 @@ def cmd_download(args):
 
 def build_parser():
     ap = argparse.ArgumentParser(prog="eduka-customizer",
-                                 description="{} {} - ISO builder for Edukasaun OS (Debian stable, "
-                                             "testing and sid).".format(APP_NAME, VERSION_LABEL))
+                                 description="{} {} - build live ISO images of Debian-based distributions "
+                                             "(Debian stable, testing, sid and derivatives).".format(APP_NAME, VERSION_LABEL))
     ap.add_argument("-p", "--project", help="project directory (default: current directory)")
     ap.add_argument("-D", "--debug", action="store_true", help="show debug messages")
     ap.add_argument("-V", "--version", action="version", version="{} {}".format(APP_NAME, VERSION_LABEL))
@@ -695,9 +695,9 @@ def build_parser():
 
     s = sub.add_parser("new", help="create a project from an ISO, a new Debian base or this system")
     s.add_argument("path", nargs="?", default=None)
-    s.add_argument("--name", default="Edukasaun OS")
+    s.add_argument("--name", default="", help="name of the project (the distribution is named on the Identity page)")
     g = s.add_mutually_exclusive_group()
-    g.add_argument("--iso", help="Debian or Edukasaun OS live ISO")
+    g.add_argument("--iso", help="Debian or Debian-based live ISO")
     g.add_argument("--bootstrap", choices=["stable", "testing", "sid"])
     g.add_argument("--snapshot", choices=["dist", "backup"], help="copy the running system")
     s.add_argument("--arch", default="amd64")

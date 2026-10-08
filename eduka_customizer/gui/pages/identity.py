@@ -20,7 +20,7 @@ class IdentityPage(Page):
         c = self.card("System identity",
                       "Written to /usr/lib/os-release (ID_LIKE=debian), /etc/issue and "
                       "/etc/lsb-release. VERSION_CODENAME stays the Debian codename so APT tools "
-                      "keep working; your codename is stored as EDUKASAUN_CODENAME.")
+                      "keep working; your codename is stored as DISTRO_CODENAME.")
         f = c.form()
         self.edits = {}
         for key, text in self.FIELDS:

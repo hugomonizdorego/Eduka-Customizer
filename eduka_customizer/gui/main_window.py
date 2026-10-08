@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
         brand = QLabel("Eduka-Customizer")
         brand.setObjectName("brand")
         v.addWidget(brand)
-        sub = QLabel("{} · ISO builder for Edukasaun OS".format(VERSION_LABEL))
+        sub = QLabel("{} · ISO builder for Debian-based distributions".format(VERSION_LABEL))
         sub.setObjectName("brandSub")
         sub.setWordWrap(True)
         v.addWidget(sub)
