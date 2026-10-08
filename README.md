@@ -1,22 +1,54 @@
-# Eduka-Customizer 0.14 Alpha
+# Eduka-Customizer 0.15 Alpha
 
-**Eduka-Customizer** is the ISO builder for **Edukasaun OS**. It takes a Debian
-live image (or an existing Edukasaun OS image, a fresh Debian base, or the
-running computer) and turns it into a new, bootable Edukasaun OS ISO image.
-You can change anything on the way: packages, Flatpak apps, desktop,
-Plymouth splash, login screen, APT sources and the boot menu. You can also run
-the system's desktop in a window and edit it live.
+**Eduka-Customizer** builds live ISO images of **your own Debian-based
+distribution**. It takes a Debian live image (or a Debian derivative such as
+LMDE, a fresh Debian base, or the running computer) and guides you **step by
+step** to a new, bootable ISO: repositories, identity, users, language,
+desktop, software, kernel and boot menu, look and feel, installer, and a
+**check before the build**. Every name is yours: nothing is preset for a
+particular distribution (earlier versions were made only for Edukasaun OS;
+**Eduka-Desktop** stays available as one of the desktops).
 
-The images it builds are always **Debian stable, testing or sid**, **Edukasaun OS** or a
-**Debian derivative such as LMDE** (Ubuntu-based images are refused as a source). The
-recommended start is the **Debian live standard ISO**: no desktop, small and clean. Eduka-Customizer itself can be
-installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
+The images it builds are always **Debian-based**: Debian stable, testing, sid
+or a **Debian derivative such as LMDE** (Ubuntu-based images are refused as a
+source). The recommended start is the **Debian live standard ISO**: no
+desktop, small and clean. Eduka-Customizer itself can be installed on Debian,
+Debian derivatives, **Ubuntu and Ubuntu-based** computers.
 
-![What is your distribution for?](docs/screenshots/01b-purpose.png)
+![Step by step: Desktop with its editions](docs/screenshots/09-desktop.png)
 
 > Eduka-Customizer is a complete rewrite of *Customizer* (Ivailo Monev,
 > Mubiin Kimura, Graham Cantin and contributors). It takes ideas from
 > *Cubic*, *remastersys* and *penguins-eggs*.
+
+## New in 0.15
+
+* **For every Debian-based distribution.** New projects start empty (name, ID, host name, home page);
+  until you name your distribution the image's own `os-release` is used. Old projects keep working:
+  their `*-edukasaun*` configuration files are renamed automatically.
+* **Step by step.** 12 numbered steps; a step opens when the one before it is done
+  (*Done — next step*). Settings → *Free navigation* opens every menu at any time (expert mode); the
+  Quick Wizard opens all steps when it finishes.
+* **Merged menus.** Related pages share one menu as tabs: *Identity & Branding*, *Software* (Packages,
+  Flatpak, Replace apps), *Kernel & Boot*, *Look & Feel* (Themes & Icons, Wallpaper & Login,
+  Plymouth), *Advanced* (Terminal & Live, Package Workshop).
+* **Desktop editions.** Every desktop and window manager in **Mini**, **Compact**, **Full** or
+  **Full with apps**. The list contains only what Debian ships: GNOME, KDE Plasma, Xfce, Cinnamon,
+  MATE, LXQt, LXDE, Budgie, GNOME Flashback, Enlightenment, Eduka-Desktop and the window managers
+  Openbox, i3, Fluxbox, IceWM, awesome, JWM, herbstluftwm, bspwm, dwm, spectrwm, Sway, labwc, Wayfire
+  and Hyprland (trixie and newer). Native compositors: Mutter, KWin, xfwm4, Muffin, Marco, Metacity,
+  Budgie's and Enlightenment's.
+* **ISO editions.** *What is your distribution for?* now asks for **Minimal**, **Full** or **Full with
+  recommended apps**.
+* **Replace default applications.** Swap the browser, mail, word processor, spreadsheet, editor, file
+  manager, terminal, image viewer, video and music player, PDF viewer, archive manager or calculator:
+  the new program becomes the default for its files (`/etc/xdg/mimeapps.list`) and Debian
+  alternatives (`x-www-browser`, `x-terminal-emulator`, ...), the old one can be removed. Removing an
+  application never takes the desktop with it.
+* **Check & Build.** Checks before every build: distribution, build tools, package database
+  (half-installed packages, `apt-get check`), kernel and initrd, live-boot, desktop sessions and
+  login screen, installer, identity, edited boot files, leftover mounts and `policy-rc.d`, private
+  data, free disk space and the expected ISO size. Real problems stop the build.
 
 ## Features
 
@@ -38,12 +70,14 @@ installed on Debian, Edukasaun OS, **Ubuntu and Ubuntu-based** computers.
 | Themes & Icons | GTK, icon, cursor and LXQt themes, fonts, dark style, one-click theme packs, theme import, desktop icons |
 | Login & session | LightDM (GTK, Slick, Arctica, KDE greeters), SDDM with themes, GDM, LXDM, Ly, greetd; X11 or Wayland; compositor (picom presets, built-in, labwc, KWin, Wayfire, Sway) |
 | Developer logs | Every run writes `/tmp/eduka-customizer/eduka-customizer.log` and `errors.log`; Settings → Create bug report |
-| Source | Extract a Debian or Edukasaun OS live ISO, download an official Debian live ISO (SHA256 and GPG checked), bootstrap a new Debian base with mmdebstrap, or snapshot the running system (remastersys style) |
-| Identity | os-release (`ID=edukasaun`, `ID_LIKE=debian`), version, codename, host name, live user, Calamares branding, protected from `base-files` upgrades |
+| Source | Extract a Debian or Debian-based live ISO, download an official Debian live ISO (SHA256 and GPG checked), bootstrap a new Debian base with mmdebstrap, or snapshot the running system (remastersys style) |
+| Identity | os-release (`ID=yourdistro`, `ID_LIKE=debian`), version, codename, host name, live user, Calamares branding, protected from `base-files` upgrades |
 | Repositories | Switch between stable, testing and sid with a clean deb822 `debian.sources`, add third-party repositories with their own `Signed-By` key, edit every sources file |
 | Packages | Search, install, remove, full-upgrade, install local `.deb` files, import/export package lists |
 | Flatpak | Enable Flathub, search Flathub, curated apps for schools, install into the ISO or on the first boot of the installed system |
-| Desktop | Eduka-Desktop (built from git), LXQt, Xfce, KDE Plasma, GNOME, MATE, Cinnamon, LXDE, Budgie, or window managers (Openbox, i3, Fluxbox, IceWM, awesome, Sway, labwc); login manager (LightDM, SDDM, GDM, LXDM) and default session |
+| Desktop | GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, LXDE, Budgie, GNOME Flashback, Enlightenment, Eduka-Desktop (built from git) or 14 window managers, each in a Mini, Compact, Full or Full-with-apps edition; login manager (LightDM, SDDM, GDM, LXDM, Ly, greetd) and default session |
+| Replace apps | Another browser, mail program, office, editor, file manager, terminal, viewer or player as the default; remove the old one |
+| Check & Build | Checks before every build stop what would break the ISO |
 | Eduka-Desktop | Fetch any branch/tag, build the `.deb`, install it, and set panel/menu/desktop defaults for every new user |
 | Appearance | Plymouth themes (choose, import, or generate one from a logo), wallpaper for all major desktops, login screen background/theme, boot menu title, timeout, kernel options and background |
 | Live edit | Run the image's desktop in a nested window (Xephyr) and change settings directly; changes become the defaults in `/etc/skel` |
@@ -71,14 +105,14 @@ All screenshots, including every Quick Wizard step: [docs/screenshots](docs/scre
 
 ## Install
 
-On Debian 13 (trixie), Edukasaun OS, Ubuntu 22.04/24.04 or an Ubuntu-based system:
+On Debian 13 (trixie), a Debian derivative, Ubuntu 22.04/24.04 or an Ubuntu-based system:
 
 ```sh
-sudo apt install ./release/eduka-customizer_0.14.0~alpha_all.deb   # ready-made package
+sudo apt install ./release/eduka-customizer_0.15.0~alpha_all.deb   # ready-made package
 # or build it yourself:
 sudo apt install debhelper python3-pytest python3-yaml dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.14.0~alpha_all.deb
+sudo apt install ../eduka-customizer_0.15.0~alpha_all.deb
 ```
 
 Or run it from the source tree:
@@ -104,48 +138,43 @@ Every run writes logs for the developers:
 
 1. Start **Eduka-Customizer** from the menu (it asks for the administrator password).
    The fastest way: **Quick Wizard** → Next, Next, Finish.
-2. **Start / Project**: create a project, then choose a Debian live ISO, an
-   Edukasaun OS ISO, *Download Debian*, or *New Debian base*.
-   Choose the default language right there.
-3. Follow the numbered menu with **Next step**: 2. Repositories, 3. Identity,
-   4. Users, 5. Language, 6. Packages, 7. Flatpak apps, 8. Kernel, 9. Desktop,
-   10. Themes & Icons, 11. Wallpaper & Login, 12. Plymouth, 13. Distro Branding,
-   14. Calamares, 15. Boot Menu, 16. Package Workshop, 17. Terminal & Live.
-4. **18. Build & Test**: build the ISO and boot it in QEMU.
-5. Write the ISO to a USB stick: `sudo dd if=edukasaun.iso of=/dev/sdX bs=4M status=progress oflag=sync`.
+2. **1. Start**: create a project, then choose a Debian live ISO (the *standard* ISO is
+   recommended), another Debian-based ISO, *Download Debian*, or *New Debian base*. Answer
+   *What is your distribution for?* and pick the ISO edition, or close it to decide everything yourself.
+3. Press **Done — next step** at the bottom of every step: 2. Repositories, 3. Identity & Branding,
+   4. Users, 5. Language, 6. Desktop, 7. Software, 8. Kernel & Boot, 9. Look & Feel, 10. Installer,
+   11. Advanced. The next menu opens when the step before it is done.
+4. **12. Check & Build**: check the image, build the ISO and boot it in QEMU.
+5. Write the ISO to a USB stick: `sudo dd if=mylinux.iso of=/dev/sdX bs=4M status=progress oflag=sync`.
 
 ## Quick start (command line)
 
 ```sh
-sudo eduka-customizer new ~/eduka --iso debian-live-13.1.0-amd64-lxqt.iso
-cd ~/eduka
+sudo eduka-customizer new ~/mylinux --iso debian-live-13.1.0-amd64-standard.iso
+cd ~/mylinux
 sudo eduka-customizer sources --suite stable
-sudo eduka-customizer desktop install eduka --dm lightdm
-sudo eduka-customizer apt install libreoffice vlc gcompris-qt
+sudo eduka-customizer brand identity name="My Linux" id=mylinux version=1.0 codename=Aurora
+sudo eduka-customizer purpose apply home --edition full_apps          # or: education, server, professional
+sudo eduka-customizer desktop install xfce --edition compact --dm lightdm   # mini, compact, full, full_apps
+sudo eduka-customizer apps replace browser chromium --remove-old       # replace a default application
+sudo eduka-customizer apps status
+sudo eduka-customizer apt install libreoffice vlc
 sudo eduka-customizer flatpak install org.geogebra.GeoGebra --firstboot
-sudo eduka-customizer brand identity name="Edukasaun OS" version=1.0 codename=Kameli
-sudo eduka-customizer branding apply --logo logo.png --wallpaper wallpaper.png --keyring --email archive@edukasaun.org
+sudo eduka-customizer branding apply --logo logo.png --wallpaper wallpaper.png --keyring --email archive@example.org
 sudo eduka-customizer themes apply --gtk Arc --icons Papirus --cursor Breeze_Snow
-sudo eduka-customizer desktop compositor picom --preset glass
-sudo eduka-customizer workshop open base-files   # edit files in ~/eduka/workshop/base-files
-sudo eduka-customizer workshop build base-files
-sudo eduka-customizer purpose apply education                           # or: server, professional, home
 sudo eduka-customizer assets ~/Downloads/Nordic.tar.xz ~/Downloads/*.ttf    # themes, icons, fonts ...
-sudo eduka-customizer wallpapers add ~/Pictures/school/ && sudo eduka-customizer wallpapers default school-1.png
 sudo eduka-customizer users live live --fullname Live --no-password   # live user "live", no password
-sudo eduka-customizer users add admin --admin                          # asks for the password
-sudo eduka-customizer language set pt_PT.UTF-8 --extra en_US.UTF-8 id_ID.UTF-8 --timezone Asia/Dili --boot-menu all
-sudo eduka-customizer calamares users min_length=8 autologin=false root_password=true
+sudo eduka-customizer language set pt_PT.UTF-8 --extra en_US.UTF-8 --timezone Asia/Dili --boot-menu all
 sudo eduka-customizer calamares partition fs=btrfs efi_size=512MiB "swap=[none, file]" initial_swap=file
-sudo eduka-customizer calamares slides slide1.png slide2.png
-sudo eduka-customizer plymouth install mytheme.tar.gz --apply
 sudo eduka-customizer kernel third-party backports --headers
-sudo eduka-customizer bootmenu edit boot/grub/grub.cfg --from my-grub.cfg && sudo eduka-customizer bootmenu apply
+sudo eduka-customizer check --deep                                     # what would break the ISO
 sudo eduka-customizer build
 eduka-customizer test --firmware uefi
 ```
 
-Or apply a recipe: `sudo eduka-customizer -p ~/eduka recipe apply examples/edukasaun-school.json`.
+Eduka-Desktop is still one command away: `sudo eduka-customizer desktop install eduka`.
+Or apply a recipe: `sudo eduka-customizer -p ~/mylinux recipe apply examples/my-distro.json`
+(`examples/edukasaun-school.json` is an Eduka-Desktop school edition).
 
 ## Documentation
 
@@ -156,37 +185,30 @@ Or apply a recipe: `sudo eduka-customizer -p ~/eduka recipe apply examples/eduka
 
 ## Ringkasan (Bahasa Indonesia)
 
-Eduka-Customizer adalah pembangun ISO khusus **Edukasaun OS** berbasis
-**Debian stable, testing dan sid**. Ambil ISO sumber (Debian live atau
-Edukasaun OS), bangun desktop (Eduka-Desktop, LXQt, Xfce, KDE, GNOME, WM),
-pasang aplikasi lewat APT atau Flatpak/Flathub, edit `sources.list`, ganti
-Plymouth, layar login (LightDM GTK, Slick, SDDM, ...), pilih X11/Wayland dan
-compositor, tema & ikon, lalu edit sistem secara langsung (live) di jendela
-dan simpan ke ISO. **Distro Branding** membuat paket branding sendiri
-(pengganti identitas base-files, lsb-release, distro-info-data, desktop-base,
-logo Debian, GRUB, Calamares, keyring) dan **Package Workshop** membuka paket
-Debian terpasang untuk diedit langsung. Versi 0.14: saat ISO dipilih, Eduka-Customizer bertanya **distro untuk apa?**
-(Pendidikan, Server, Profesional, Rumah, Lainnya) lalu memberi rekomendasi
-desktop, layar login, compositor, ikon, tema dan aplikasi — bisa dihapus
-centangnya atau ditutup. Semua paket Debian bisa dicari dan dicentang;
-aplikasi bawaan ISO bisa dihapus; tema, ikon, kursor, font dan wallpaper
-cukup di-*drag & drop*; galeri wallpaper dengan satu default; compositor asli
-GNOME/Cinnamon/KDE/Xfce/MATE; LMDE didukung; ISO yang disarankan: Debian live
-*standard*. Versi 0.13 menambah menu **Users**
-(user live dengan password, tanpa password atau default Debian; akun di
-dalam image; ubah/hapus password; hapus user), zona waktu default
-**Asia/Dili**, dan menu bernomor sesuai urutan kerja sampai Build ISO.
-Versi 0.12 menambah menu **Language**
-(bahasa default, juga saat membuat/menyesuaikan ISO, pilihan bahasa di menu
-boot), **Calamares** (gambar, slideshow, password, partisi, dll.),
-**Plymouth** (pasang dari .deb/.zip/.tar, pratinjau, terapkan, hapus),
-**Boot Menu** (edit grub.cfg, isolinux dan GRUB EFI langsung lalu terapkan
-ke ISO dalam hitungan detik) dan **Kernel** (kernel Debian, backports,
-Liquorix, XanMod, repositori sendiri atau .deb, hapus kernel, GRUB, firmware).
-Paket siap pasang: `release/eduka-customizer_0.14.0~alpha_all.deb`. Cara tercepat: **Quick Wizard**
-(Next, Next, Finish). ISO hasil build bisa langsung diuji di QEMU (BIOS/UEFI).
-Aplikasi ini bisa dipasang di Debian, Edukasaun OS, Ubuntu dan turunannya;
-ISO sumber harus Debian atau Edukasaun OS. Log error: `/tmp/eduka-customizer/`.
+Eduka-Customizer adalah pembangun ISO untuk **semua distribusi berbasis Debian**
+(Debian stable, testing, sid dan turunannya seperti LMDE — bukan berbasis Ubuntu).
+Tidak ada lagi pengaturan bawaan Edukasaun OS: nama, ID, host name dan homepage
+kosong sampai Anda mengisinya; **Eduka-Desktop** tetap tersedia sebagai salah satu
+desktop. Versi 0.15:
+
+* **Langkah demi langkah**: 12 langkah bernomor; langkah berikutnya baru terbuka
+  setelah langkah sebelumnya selesai (**Done — next step**). Mode ahli: Settings →
+  *Free navigation*.
+* **Menu digabung** (tab): Identity & Branding; Software (Packages, Flatpak,
+  Replace apps); Kernel & Boot; Look & Feel (Themes & Icons, Wallpaper & Login,
+  Plymouth); Advanced (Terminal & Live, Package Workshop).
+* **Edisi desktop/WM**: Mini, Compact, Full, Full with apps — daftar DE, WM dan
+  compositor hanya yang tersedia di Debian.
+* **Edisi ISO**: Minimal, Full, Full with recommended apps.
+* **Replace apps**: ganti browser, mail, office, editor, file manager, terminal,
+  penampil gambar/PDF, pemutar video/musik, arsip, kalkulator bawaan dengan
+  program lain; yang lama bisa dihapus tanpa ikut menghapus desktop.
+* **Check & Build**: pemeriksaan sebelum build (database paket, kernel/initrd,
+  live-boot, sesi desktop, installer, file boot, data pribadi, ruang disk, ukuran
+  ISO); masalah serius menghentikan build.
+
+Paket siap pasang: `release/eduka-customizer_0.15.0~alpha_all.deb`. Panduan
+lengkap: [docs/PANDUAN.md](docs/PANDUAN.md). Log error: `/tmp/eduka-customizer/`.
 
 ## License
 

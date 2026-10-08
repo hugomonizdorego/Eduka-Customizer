@@ -1,6 +1,6 @@
 {
   "name": "Edukasaun OS 1.0 - school edition",
-  "comment": "Apply with: sudo eduka-customizer -p PROJECT recipe apply edukasaun-school.json",
+  "comment": "An Edukasaun OS school edition with Eduka-Desktop. Apply with: sudo eduka-customizer -p PROJECT recipe apply edukasaun-school.json",
   "steps": [
     {
       "action": "sources",
@@ -32,7 +32,8 @@
     {
       "action": "desktop",
       "id": "eduka",
-      "dm": "lightdm"
+      "dm": "lightdm",
+      "edition": "compact"
     },
     {
       "action": "eduka-desktop",

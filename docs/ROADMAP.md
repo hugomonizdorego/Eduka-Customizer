@@ -1,7 +1,7 @@
 # Roadmap & rekomendasi
 
-Status: **0.14 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
-berikutnya untuk pengembang Edukasaun OS, diurutkan menurut manfaatnya.
+Status: **0.15 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
+berikutnya untuk pengembang Eduka-Customizer, diurutkan menurut manfaatnya.
 
 ## Selesai di 0.11 Alpha
 Quick Wizard, Distro Branding Studio (paket branding + keyring), Package
@@ -23,7 +23,14 @@ Tujuan distro + rekomendasi, browser paket Debian, hapus aplikasi ISO, drag &
 drop tema/ikon/font/wallpaper, galeri wallpaper, compositor asli, LMDE, ikon
 menu GPL dan ikon aplikasi flat.
 
-## Menuju 0.15 Alpha
+## Selesai di 0.15 Alpha
+Pembangun ISO umum untuk semua distro berbasis Debian (tanpa default Edukasaun
+OS; Eduka-Desktop tetap ada), 12 langkah bertahap dengan menu digabung (tab),
+edisi desktop/WM (Mini, Compact, Full, Full with apps), edisi ISO (Minimal,
+Full, Full with recommended apps), daftar DE/WM/compositor khusus Debian,
+Replace apps, pemeriksaan sebelum build (Check & Build).
+
+## Menuju 0.16 Alpha
 
 1. **Uji penuh dengan ISO Debian 13 live asli** (LXQt dan standard) di
    perangkat keras nyata, BIOS dan UEFI, termasuk Secure Boot. Unit test dan
@@ -31,7 +38,7 @@ menu GPL dan ikon aplikasi flat.
    pengembangan ini.
 2. **Uji Secure Boot pada hardware nyata** dengan GRUB bernama distro
    (EFI/<id> + salinan EFI/debian) dan Calamares.
-3. **Repositori APT Edukasaun** (misalnya `repo.edukasaun.org`) yang berisi
+3. **Repositori APT untuk Eduka-Desktop** (misalnya `repo.edukasaun.org`) yang berisi
    paket `edukasaun-desktop-menu`, tema Plymouth, wallpaper dan
    `edukasaun-keyring`, sehingga update Eduka-Desktop bisa lewat `apt`.
    Eduka-Customizer sudah mendukung penambahan repositori dengan kunci.

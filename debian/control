@@ -46,21 +46,29 @@ Recommends: mmdebstrap | debootstrap,
  xdg-utils,
  qterminal | x-terminal-emulator
 Suggests: calamares-settings-debian
-Description: ISO builder and customizer for Edukasaun OS
- Eduka-Customizer builds Edukasaun OS live images from Debian stable,
- testing or sid. It extracts a Debian or Edukasaun OS live ISO (or
- bootstraps a new Debian base, or snapshots the running system), lets you
- install packages and Flatpak applications, choose the desktop
- (Eduka-Desktop, LXQt, Xfce, KDE Plasma, GNOME, window managers), change
- the Plymouth boot splash, login screen, wallpaper, APT sources and boot
- menu, edit the system live in a nested window, and builds a hybrid
- BIOS/UEFI ISO that can be tested in QEMU.
+Description: ISO builder and customizer for Debian-based distributions
+ Eduka-Customizer builds live images of your own Debian-based distribution
+ from Debian stable, testing, sid or a Debian derivative such as LMDE. It
+ extracts a Debian live ISO (or bootstraps a new Debian base, or snapshots
+ the running system) and guides you step by step: repositories, identity,
+ users, language, desktop or window manager in a Mini, Compact, Full or
+ Full-with-apps edition (GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt,
+ LXDE, Budgie, Enlightenment, Eduka-Desktop, i3, Sway, labwc and more),
+ packages and Flatpak applications, replacing the default applications,
+ kernel, boot menu, themes, the Plymouth boot splash, login screen,
+ wallpaper and the Calamares installer. Checks before building stop what
+ would break the ISO. It can edit the system live in a nested window and
+ builds a hybrid BIOS/UEFI ISO that can be tested in QEMU.
+ .
+ Earlier versions made only Edukasaun OS; the Edukasaun OS defaults are
+ gone and every name is yours to choose.
  .
  It also builds your own branding packages (replacing the identity of
  base-files, lsb-release, distro-info-data, desktop-base, the Debian logos,
  GRUB and the Calamares installer) and lets you edit any installed Debian
  package directly in the Package Workshop.
  .
- Eduka-Customizer runs on Debian, Edukasaun OS, Ubuntu and Ubuntu-based
- systems. The images it builds are always Debian stable, testing, sid or
- Edukasaun OS; Ubuntu-based images are not supported as a source.
+ Eduka-Customizer runs on Debian, Debian derivatives, Ubuntu and
+ Ubuntu-based systems. The images it builds are always Debian-based
+ (Debian stable, testing, sid and derivatives); Ubuntu-based images are not
+ supported as a source.

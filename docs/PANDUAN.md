@@ -1,23 +1,27 @@
-# Panduan singkat Eduka-Customizer 0.14 Alpha
+# Panduan singkat Eduka-Customizer 0.15 Alpha
 
-Eduka-Customizer adalah pembangun ISO khusus **Edukasaun OS**. ISO sumber
-harus **Debian stable, testing, sid** atau **Edukasaun OS** (ISO Ubuntu dan
-turunannya ditolak). Aplikasinya sendiri bisa dipasang di Debian, Edukasaun
-OS, **Ubuntu dan turunannya**.
+Eduka-Customizer adalah pembangun ISO untuk **semua distribusi berbasis
+Debian**: Debian stable, testing, sid dan turunan Debian seperti **LMDE**
+(ISO Ubuntu dan turunannya ditolak). Tidak ada lagi pengaturan bawaan untuk
+Edukasaun OS — nama, ID, host name dan homepage kosong sampai Anda mengisinya
+(selama kosong, nama dari `os-release` image yang dipakai). **Eduka-Desktop**
+tetap tersedia sebagai salah satu desktop. Aplikasinya sendiri bisa dipasang
+di Debian, turunan Debian, **Ubuntu dan turunannya**.
 
 ## Cara tercepat: Quick Wizard
 
-Buka **Quick Wizard ✨** di sidebar, isi 8 langkah (Sumber → Identitas →
+Buka **Quick Wizard** di sidebar, isi 8 langkah (Sumber → Identitas →
 Basis Debian → Desktop → Tampilan → Aplikasi → Branding → Selesai), lalu
-tekan **Finish**. Semua jawaban disimpan sebagai recipe
-`recipe-wizard.json`, dan ISO langsung dibangun.
+tekan **Finish**. Pilih juga *distro untuk apa*, **edisi ISO** dan **edisi
+desktop**. Semua jawaban disimpan sebagai recipe `recipe-wizard.json`, ISO
+langsung dibangun, dan semua langkah di sidebar terbuka untuk penyesuaian.
 
 ## Instalasi
 
 Paket siap pakai untuk dicoba (Debian 13, Ubuntu 24.04 dan turunannya):
 
 ```sh
-sudo apt install ./release/eduka-customizer_0.14.0~alpha_all.deb
+sudo apt install ./release/eduka-customizer_0.15.0~alpha_all.deb
 ```
 
 Atau build sendiri:
@@ -25,125 +29,89 @@ Atau build sendiri:
 ```sh
 sudo apt install debhelper python3-pytest dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.14.0~alpha_all.deb
+sudo apt install ../eduka-customizer_0.15.0~alpha_all.deb
 eduka-customizer doctor        # cek alat yang dibutuhkan
 ```
 
-## Baru di 0.14
+## Baru di 0.15
 
-* **Distro untuk apa?** Saat ISO atau folder dipilih: Pendidikan, Server,
-  Profesional, Rumah atau Lainnya. Muncul rekomendasi (desktop, layar login,
-  compositor, ikon, tema, aplikasi, firmware, installer); hapus centang yang
-  tidak perlu, terapkan, atau tutup untuk membangun sendiri.
-* **Semua paket Debian** bisa dicari dan dicentang (halaman Packages dan
-  Quick Wizard); aplikasi bawaan ISO bisa dihapus.
-* **Drag & drop** tema, ikon, kursor, font, wallpaper, tema Plymouth/SDDM
-  (folder, arsip atau file): otomatis ditaruh di lokasi yang benar.
-* **Galeri wallpaper**: tambah banyak, pilih satu sebagai default (★).
-* **Compositor asli** Cinnamon (Muffin), GNOME (Mutter), KDE (KWin),
-  Xfce (xfwm4), MATE (Marco), Budgie — picom tidak dipakai bersamaan,
-  jadi tidak ada konflik.
-* **ISO yang disarankan:** Debian live *standard* (minimal). Semua Debian
-  dan turunannya seperti **LMDE** bisa dipakai.
-* Ikon menu GPL (Papirus) dan ikon aplikasi baru yang flat.
-* User live default: **live** / **Live**.
+* **Untuk semua distro berbasis Debian** — default Edukasaun OS dihapus.
+  Project lama tetap jalan; file `*-edukasaun*` di image diganti nama otomatis.
+* **Build langkah demi langkah** — 12 langkah bernomor. Langkah berikutnya baru
+  aktif setelah langkah sebelumnya selesai: tekan **Done — next step** di bawah
+  halaman (✔ = selesai). Langkah 1 selesai saat project sudah punya sistem.
+  Mode ahli: **Settings → Free navigation** membuka semua menu kapan saja.
+* **Menu yang mirip digabung** (tab): *Identity & Branding*; *Software*
+  (Packages, Flatpak, Replace apps); *Kernel & Boot*; *Look & Feel* (Themes &
+  Icons, Wallpaper & Login, Plymouth); *Advanced* (Terminal & Live, Package
+  Workshop).
+* **Edisi desktop / WM**: **Mini** (desktop + terminal + file manager, tanpa
+  paket rekomendasi), **Compact** (alat inti, jaringan, pengaturan), **Full**
+  (desktop lengkap seperti di Debian), **Full with apps** (Full + aplikasi yang
+  direkomendasikan: browser, office, mail, media, grafis).
+* **Daftar DE, WM dan compositor hanya yang ada di Debian**: GNOME, KDE Plasma,
+  Xfce, Cinnamon, MATE, LXQt, LXDE, Budgie, GNOME Flashback, Enlightenment,
+  Eduka-Desktop; WM Openbox, i3, Fluxbox, IceWM, awesome, JWM, herbstluftwm,
+  bspwm, dwm, spectrwm, Sway, labwc, Wayfire, Hyprland (Debian 13 ke atas).
+* **Edisi ISO** di jendela *distro untuk apa?*: **Minimal**, **Full**, **Full
+  with recommended apps**.
+* **Replace apps** — ganti program bawaan desktop (browser, e-mail, pengolah
+  kata, spreadsheet, editor teks, file manager, terminal, penampil gambar,
+  pemutar video dan musik, PDF, arsip, kalkulator) dengan program lain. Program
+  baru dipasang dan dijadikan default (`/etc/xdg/mimeapps.list` dan
+  `update-alternatives`); yang lama bisa dihapus. Desktop tidak ikut terhapus.
+* **Check & Build** — pemeriksaan sebelum build: distro, alat build, database
+  paket (paket setengah terpasang, `apt-get check`), kernel dan initrd,
+  live-boot, sesi desktop dan layar login, installer, identitas, file boot yang
+  diedit, mount/`policy-rc.d` tersisa, data pribadi, ruang disk dan perkiraan
+  ukuran ISO. Masalah serius menghentikan build; klik dua kali baris untuk
+  membuka halaman perbaikannya.
 
-## Alur kerja di GUI
+## Alur kerja di GUI (12 langkah)
 
-Menu di sidebar diberi nomor sesuai urutan kerja, dari **1. Start / Project**
-sampai **18. Build & Test**. Setiap halaman punya tombol **Back** dan
-**Next step**. Zona waktu default adalah **Asia/Dili** (Timor-Leste).
-
-**Menu 4. Users** (baru di 0.13):
-
-* **User live** – user yang login saat ISO dijalankan. Pilih nama user, nama
-  lengkap, grup, login otomatis, dan password: default Debian (`live`),
-  **password sendiri**, atau **tanpa password** (hanya username). *Remove*
-  mengembalikan ke default Debian.
-* **Akun di dalam image** – misalnya akun admin: buat dengan atau tanpa
-  password, jadikan administrator (sudo), ubah atau hapus password, hapus
-  akun. Akun ini ada di sesi live dan di setiap komputer yang diinstal dari ISO.
-* Default yang disarankan: user **live**, nama lengkap **Live**.
-* Baris perintah: `sudo eduka-customizer users live live --fullname Live --no-password`,
-  `sudo eduka-customizer users add admin --admin`,
-  `sudo eduka-customizer users passwd admin --no-password`,
-  `sudo eduka-customizer users delete admin`.
-
-Urutan halaman (sama dengan nomor di sidebar):
-
-1. **Start / Project** – buat project (folder kerja), lalu pilih sumber:
-   ISO Debian live / Edukasaun OS, *Download Debian* (otomatis dicek
-   SHA256), *New Debian base* (mmdebstrap), atau *This computer*
-   (snapshot sistem yang sedang berjalan, gaya remastersys).
-2. **Repositories** – pilih stable / testing / sid, tambah repositori
-   sendiri (misalnya repo Edukasaun) beserta kuncinya, edit file sources.
-3. **Identity** – nama OS, versi, codename, URL, nama komputer, label ISO.
-4. **Users** – user live dengan password, tanpa password, atau default
-   Debian; akun di dalam image; ubah/hapus password; hapus akun (lihat di atas).
-5. **Language** – bahasa default (locale), keyboard, zona waktu, terjemahan
-   dan pemeriksa ejaan untuk program yang terpasang, submenu *Language* di
-   menu boot ISO, dan default untuk Calamares. Bahasa juga bisa dipilih di
-   halaman **Start** saat membuat ISO / custom ISO.
-6. **Packages** – cari, pasang, hapus paket; upgrade semua; pasang `.deb`.
-7. **Flatpak apps** – aktifkan Flathub, pilih aplikasi sekolah (GCompris,
-   GeoGebra, Stellarium, ...), pasang ke ISO atau saat boot pertama.
-8. **Kernel** – pasang kernel Debian, backports, Liquorix, XanMod,
-   repositori sendiri atau file .deb; hapus kernel; hold; update initramfs;
-   pilih kernel ISO; pengaturan GRUB sistem terpasang; firmware; DKMS.
-9. **Desktop** – pilih Eduka-Desktop (default), LXQt, Xfce, KDE, GNOME,
-   MATE, Cinnamon, LXDE, Budgie atau window manager (Openbox, i3, Sway, ...).
-   Eduka-Desktop diambil dari GitHub, di-build jadi `.deb`, lalu dipasang.
-   Pengaturan default panel/menu bisa diubah untuk semua user baru. Juga
-   pilihan layar login (LightDM GTK, Slick, Arctica, KDE, SDDM + tema, GDM,
-   LXDM, Ly, greetd), sesi **X11 atau Wayland**, dan **compositor** (picom:
-   ringan/bayangan/kaca blur, bawaan desktop, labwc, KWin, Wayfire, Sway).
-10. **Themes & Icons** – tema GTK, ikon, kursor, font, mode gelap, paket
-    tema sekali klik, impor tema, ikon desktop.
-11. **Wallpaper & Login** – wallpaper default semua desktop dan tampilan
-    layar login.
-12. **Plymouth** – pasang tema dari .deb, .zip, .tar.*, folder atau paket
-    Debian; pratinjau di jendela; terapkan; hapus; buat dari logo.
-13. **Distro Branding** – distro sendiri, bukan sekadar Debian ganti nama:
-    paket `<id>-branding` mengganti identitas base-files (os-release, issue),
-    lsb-release, distro-info-data, desktop-base (wallpaper, login, GRUB),
-    semua logo Debian, GRUB sistem terpasang dan installer Calamares, dengan
-    `dpkg-divert` (tetap aman saat update Debian). Opsional: kunci GPG dan
-    paket `<id>-archive-keyring` sendiri. File `debian/control`, `changelog`,
-    `copyright`, `rules` bisa diedit langsung di GUI. Tidak butuh repositori.
-14. **Calamares** – edit installer langsung: nama, logo dan gambar, warna,
-    slideshow, nama ikon installer, aturan user dan password, password user
-    live, partisi (file system, swap, ukuran EFI, enkripsi), syarat minimum,
-    paket yang dihapus setelah instalasi, dan semua file konfigurasi.
-15. **Boot Menu** – judul, timeout, opsi kernel, latar; edit `grub.cfg`,
-    `isolinux.cfg` dan GRUB di dalam `efi.img` langsung, lalu **terapkan ke
-    ISO sekarang** (beberapa detik, tanpa kompres ulang sistem). Editan
-    disimpan dan dipakai lagi di setiap build.
-16. **Package Workshop** – buka paket terpasang (base-files, desktop-base,
-    ...), edit file langsung, build ulang, pasang dan *hold*; bisa
-    dikembalikan ke versi Debian.
-17. **Terminal & Live** – jalankan desktop image di jendela (*live edit*):
-    semua perubahan langsung tersimpan ke image (default ke `/etc/skel`).
-    Buka terminal root di dalam image, jalankan perintah atau skrip hook.
-    Pasang aplikasi lewat APT, **Synaptic di jendela** atau terminal; juga
-    tepat sebelum build (halaman Build & Test).
-18. **Build & Test** – pilih kompresi (zstd disarankan), opsi pembersihan,
-    lalu *Build ISO image*. Uji di QEMU dengan BIOS, UEFI atau Secure Boot.
+1. **Start** – buat project (folder kerja), lalu pilih sumber: ISO Debian live
+   (disarankan *standard*) atau ISO turunan Debian, *Download Debian* (dicek
+   SHA256), *New Debian base* (mmdebstrap), atau *This computer* (snapshot).
+   Lalu jawab **distro untuk apa?** (Pendidikan, Server, Profesional, Rumah,
+   Lainnya) dan pilih **edisi ISO** — atau tutup untuk membangun sendiri.
+2. **Repositories** – stable / testing / sid, repositori sendiri + kuncinya.
+3. **Identity & Branding** – tab *Identity* (nama OS, ID, versi, codename,
+   URL, nama komputer, label ISO) dan tab *Distro Branding* (paket
+   `<id>-branding`, logo, GRUB, Calamares, keyring).
+4. **Users** – user live dengan password, tanpa password, atau default Debian;
+   akun di dalam image; ubah/hapus password; hapus akun.
+5. **Language** – bahasa default, keyboard, zona waktu (default Asia/Dili),
+   terjemahan, submenu *Language* di menu boot.
+6. **Desktop** – pilih desktop atau WM dan **edisinya** (Mini, Compact, Full,
+   Full with apps), layar login, X11/Wayland, compositor, Eduka-Desktop.
+7. **Software** – tab *Packages* (semua paket Debian, centang/hapus centang,
+   hapus aplikasi bawaan ISO), *Flatpak apps*, *Replace apps*.
+8. **Kernel & Boot** – tab *Kernel* dan *Boot Menu* (edit grub.cfg/isolinux).
+9. **Look & Feel** – tab *Themes & Icons*, *Wallpaper & Login*, *Plymouth*.
+10. **Installer** – Calamares.
+11. **Advanced** – tab *Terminal & Live* (desktop image di jendela, terminal
+    root, Synaptic) dan *Package Workshop*.
+12. **Check & Build** – periksa, build ISO, uji di QEMU (BIOS/UEFI/Secure Boot).
 
 ## Baris perintah
 
 ```sh
-sudo eduka-customizer new ~/eduka --iso debian-live-13.1.0-amd64-lxqt.iso
-sudo eduka-customizer -p ~/eduka desktop install eduka --dm lightdm
-sudo eduka-customizer -p ~/eduka apt install libreoffice vlc
-sudo eduka-customizer -p ~/eduka flatpak install org.kde.gcompris --firstboot
-sudo eduka-customizer -p ~/eduka shell          # terminal di dalam image
-sudo eduka-customizer -p ~/eduka live           # edit live di jendela
-sudo eduka-customizer -p ~/eduka build
-eduka-customizer -p ~/eduka test --firmware uefi
+sudo eduka-customizer new ~/mylinux --iso debian-live-13.1.0-amd64-standard.iso
+sudo eduka-customizer -p ~/mylinux brand identity name="My Linux" id=mylinux version=1.0
+sudo eduka-customizer -p ~/mylinux purpose apply home --edition full_apps
+sudo eduka-customizer -p ~/mylinux desktop install xfce --edition compact --dm lightdm
+sudo eduka-customizer -p ~/mylinux desktop install eduka            # Eduka-Desktop
+sudo eduka-customizer -p ~/mylinux apps replace browser chromium --remove-old
+sudo eduka-customizer -p ~/mylinux flatpak install org.kde.gcompris --firstboot
+sudo eduka-customizer -p ~/mylinux shell          # terminal di dalam image
+sudo eduka-customizer -p ~/mylinux check --deep   # periksa sebelum build
+sudo eduka-customizer -p ~/mylinux build
+eduka-customizer -p ~/mylinux test --firmware uefi
 ```
 
 Build yang bisa diulang (reproducible) memakai *recipe* JSON:
-`sudo eduka-customizer -p ~/eduka recipe apply examples/edukasaun-school.json`.
+`sudo eduka-customizer -p ~/mylinux recipe apply examples/my-distro.json`
+(contoh edisi sekolah dengan Eduka-Desktop: `examples/edukasaun-school.json`).
 
 ## Tips
 

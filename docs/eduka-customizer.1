@@ -1,6 +1,6 @@
-.TH EDUKA-CUSTOMIZER 1 "October 2026" "Eduka-Customizer 0.14 Alpha" "Edukasaun OS"
+.TH EDUKA-CUSTOMIZER 1 "October 2026" "Eduka-Customizer 0.15 Alpha" "Eduka-Customizer"
 .SH NAME
-eduka-customizer \- ISO builder and customizer for Edukasaun OS
+eduka-customizer \- ISO builder and customizer for Debian-based distributions
 .SH SYNOPSIS
 .B eduka-customizer
 [\fB\-p\fR \fIPROJECT\fR] [\fB\-D\fR] \fICOMMAND\fR [\fIoptions\fR]
@@ -8,8 +8,8 @@ eduka-customizer \- ISO builder and customizer for Edukasaun OS
 .B eduka-customizer-pkexec
 [\fIPROJECT\fR|\fIISO\fR]
 .SH DESCRIPTION
-Eduka-Customizer builds Edukasaun OS live images from Debian stable, testing
-or sid. A project holds the root filesystem (\fIrootfs/\fR), the ISO tree
+Eduka-Customizer builds live ISO images of your own Debian-based
+distribution from Debian stable, testing, sid or a Debian derivative. A project holds the root filesystem (\fIrootfs/\fR), the ISO tree
 (\fIiso/\fR), boot images (\fIboot/\fR), caches, logs and the built images
 (\fIoutput/\fR). Ubuntu and Ubuntu-based images are refused.
 .PP
@@ -21,7 +21,7 @@ administrator rights.
 Start the graphical interface.
 .TP
 .B new [PATH] \-\-iso FILE | \-\-bootstrap SUITE | \-\-snapshot dist|backup
-Create a project from a Debian or Edukasaun OS live ISO, a new Debian base
+Create a project from a Debian or Debian-based live ISO, a new Debian base
 (mmdebstrap) or a copy of the running system.
 .TP
 .B info
@@ -47,8 +47,14 @@ Manage Debian packages inside the image.
 .B flatpak setup|install|remove|list|search [APP-ID...] [\-\-firstboot]
 Flathub applications, installed into the image or on first boot.
 .TP
-.B desktop catalog|install|session|dm|list|session-type|compositor|sddm-theme [NAME] [\-\-type x11|wayland] [\-\-preset P]
+.B desktop catalog|install|session|dm|list|session-type|compositor|sddm-theme [NAME] [\-\-edition mini|compact|full|full_apps] [\-\-type x11|wayland] [\-\-preset P]
 Desktop environments, window managers, sessions, login screens, X11/Wayland and compositors.
+\fBinstall\fR takes an edition: Mini, Compact, Full (default) or Full with apps.
+.TP
+.B apps roles|status|replace ROLE PACKAGE [\-\-remove PKG...] [\-\-remove\-old]
+Replace a default application (browser, mail, office, spreadsheet, editor, files,
+terminal, images, video, music, pdf, archive, calculator): install it, make it the
+default for its file types and Debian alternatives, and remove the old ones.
 .TP
 .B eduka-desktop [\-\-repo URL|DIR] [\-\-ref REF] [\-\-deb FILE] [\-\-set SECTION.KEY=VALUE]
 Fetch, build and install Eduka-Desktop and set its defaults for new users.
@@ -72,7 +78,7 @@ Default look for all desktops, theme packs and theme import.
 Default language, keyboard, time zone, translations, the Language submenu of
 the ISO boot menu and the Calamares defaults.
 .TP
-.B purpose list|show ID|apply ID [\-\-only KEY,KEY]
+.B purpose list|show ID|apply ID [\-\-only KEY,KEY] [\-\-edition minimal|full|full_apps]
 What the distribution is for (education, server, professional, home, other) and its
 recommendations (desktop, session, compositor, look, apps, flatpak, firmware, installer, plymouth).
 .TP
@@ -108,8 +114,12 @@ rebuilds the ISO in seconds without recompressing the system.
 .B live [\-\-session S] [\-\-resolution WxH] [\-\-mode skel|root|sandbox]
 Run the image's desktop in a nested Xephyr window; changes are saved into the image.
 .TP
-.B build [\-\-compression zstd|xz|gzip|lz4|lzo] [\-\-boot\-mode auto|replay|generate] ...
-Build the hybrid BIOS/UEFI ISO image.
+.B check [\-\-deep]
+Check the image before building: what would make the build fail, the ISO not
+boot or private data leak into it. Exits with 1 when there are problems.
+.TP
+.B build [\-\-compression zstd|xz|gzip|lz4|lzo] [\-\-boot\-mode auto|replay|generate] [\-\-skip\-checks] ...
+Check, then build the hybrid BIOS/UEFI ISO image.
 .TP
 .B test [\-\-firmware uefi|bios|secureboot] [\-\-disk]
 Boot the image in QEMU.
@@ -140,11 +150,13 @@ Project state and history.
 Developer logs: eduka-customizer.log, errors.log and bug reports.
 .SH EXAMPLES
 .nf
-sudo eduka-customizer new ~/eduka --iso debian-live-13.1.0-amd64-lxqt.iso
-sudo eduka-customizer -p ~/eduka desktop install eduka
-sudo eduka-customizer -p ~/eduka flatpak install org.kde.gcompris \-\-firstboot
-sudo eduka-customizer -p ~/eduka build
-eduka-customizer -p ~/eduka test \-\-firmware uefi
+sudo eduka-customizer new ~/mylinux \-\-iso debian-live-13.1.0-amd64-standard.iso
+sudo eduka-customizer -p ~/mylinux desktop install xfce \-\-edition full_apps
+sudo eduka-customizer -p ~/mylinux apps replace browser chromium \-\-remove-old
+sudo eduka-customizer -p ~/mylinux flatpak install org.kde.gcompris \-\-firstboot
+sudo eduka-customizer -p ~/mylinux check
+sudo eduka-customizer -p ~/mylinux build
+eduka-customizer -p ~/mylinux test \-\-firmware uefi
 .fi
 .SH SEE ALSO
 .BR xorriso (1),

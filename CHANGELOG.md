@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.15.0 Alpha — 2026-10-08
+
+### Changed
+* **A builder for every Debian-based distribution.** Eduka-Customizer is no
+  longer made only for Edukasaun OS: new projects start without a name, ID,
+  host name, home page or codename, and every fallback comes from the image's
+  own `os-release` (ISO file name, volume label, boot menu title, xorriso
+  publisher, branding). The Education purpose recommends Xfce; Eduka-Desktop
+  stays in the list of desktops. Configuration files in the image are called
+  `*-eduka-customizer*` (old `*-edukasaun*` files are renamed when a project
+  is opened). `[edukasaun]` in the settings is now `[eduka_desktop]`.
+* **Menus merged into 12 steps** with tabs: Start, Repositories, Identity &
+  Branding, Users, Language, Desktop, Software (Packages, Flatpak apps,
+  Replace apps), Kernel & Boot, Look & Feel (Themes & Icons, Wallpaper &
+  Login, Plymouth), Installer, Advanced (Terminal & Live, Package Workshop),
+  Check & Build.
+* **Step by step.** A step opens when the one before it is done (*Done — next
+  step*, ✔ in the sidebar). Settings → *Free navigation (expert mode)* opens
+  every menu; the Quick Wizard opens every step when it finishes; projects
+  from older versions keep every step open.
+
+### New
+* **Desktop editions**: Mini, Compact, Full and Full with apps for every desktop
+  and window manager (GUI, Quick Wizard, `desktop install --edition`, recipes).
+* **Debian-only desktop list**: GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt,
+  LXDE, Budgie, GNOME Flashback, Enlightenment, Eduka-Desktop; Openbox, i3,
+  Fluxbox, IceWM, awesome, JWM, herbstluftwm, bspwm, dwm, spectrwm, Sway, labwc,
+  Wayfire, Hyprland. Native compositors Metacity and Enlightenment's added.
+* **ISO editions**: Minimal, Full, Full with recommended apps in *What is your
+  distribution for?*, the Quick Wizard and `purpose apply --edition`.
+* **Replace apps**: replace the default browser, mail, word processor,
+  spreadsheet, editor, file manager, terminal, image viewer, video and music
+  player, PDF viewer, archive manager or calculator (`data/apps.json`); sets
+  `/etc/xdg/mimeapps.list` and `update-alternatives`; CLI `apps`; recipe
+  action `replace-app`.
+* **Check & Build**: checks before every build (`core/preflight.py`, CLI
+  `check [--deep]`, `build --skip-checks`).
+* `examples/my-distro.json`: a general Debian-based distribution.
+
+### Fixed
+* Removing an application that a metapackage depends on
+  (`task-gnome-desktop`, `kde-standard`, ...) no longer lets `autoremove`
+  remove the whole desktop: what the metapackage installed is marked manual
+  first.
+
 ## 0.14.0 Alpha — 2026-10-07
 
 ### New

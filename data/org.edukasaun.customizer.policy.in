@@ -7,7 +7,7 @@
   <icon_name>eduka-customizer</icon_name>
   <action id="org.edukasaun.customizer.pkexec">
     <description>Run Eduka-Customizer</description>
-    <message>Eduka-Customizer needs administrator rights to build Edukasaun OS images</message>
+    <message>Eduka-Customizer needs administrator rights to build ISO images</message>
     <defaults>
       <allow_any>auth_admin</allow_any>
       <allow_inactive>auth_admin</allow_inactive>

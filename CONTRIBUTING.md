@@ -1,6 +1,6 @@
 # Contributing to Eduka-Customizer
 
-Thank you for helping Edukasaun OS!
+Thank you for helping Eduka-Customizer!
 
 ## Development setup
 
@@ -26,7 +26,7 @@ debian/                  Debian packaging (3.0 native)
 
 ## Rules
 
-* Keep the scope: Debian stable/testing/sid and Edukasaun OS only.
+* Keep the scope: Debian stable/testing/sid and Debian-based distributions only (never Ubuntu-based).
 * New features go into `core/` first (with a test), then get a GUI page or
   card and, when useful, a CLI command and a recipe action.
 * Long operations run through `MainWindow.run_task` so the GUI never freezes.
