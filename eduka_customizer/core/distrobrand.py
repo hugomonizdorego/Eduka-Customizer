@@ -295,7 +295,43 @@ class DistroBranding:
         hook.chmod(0o755)
 
     def _calamares(self, spec, files, divert):
+        """Brand the installer. When the ISO has a Calamares branding, its component name and
+        files stay what they are (settings.conf, module ids, efiBootloaderId untouched): only
+        texts, colors and our images are added, so the installer keeps working."""
+        from eduka_customizer.core import yamlconf
+        from eduka_customizer.core.calamares import Calamares
         rootfs = self.project.rootfs
+        cal = Calamares(self.project)
+        iso_desc = cal.branding_dir() / "branding.desc" if cal.settings_path().exists() else None
+        if iso_desc is not None and iso_desc.exists():
+            comp = cal.branding_name()
+            bdir = files / "etc/calamares/branding" / comp
+            bdir.mkdir(parents=True, exist_ok=True)
+            images = {}
+            if spec.logo:
+                imaging.write_png(spec.logo, bdir / "{}-logo.png".format(spec.os_id), (256, 256), fit="contain")
+                imaging.write_png(spec.logo, bdir / "{}-welcome.png".format(spec.os_id), (480, 300), fit="contain")
+                images = {"productLogo": "{}-logo.png".format(spec.os_id),
+                          "productIcon": "{}-logo.png".format(spec.os_id),
+                          "productWelcome": "{}-welcome.png".format(spec.os_id)}
+            text = iso_desc.read_text(errors="replace")
+            data = yamlconf.load(text)
+            strings = dict(data.get("strings") or {})
+            strings.update({k: v for k, v in (
+                ("productName", spec.name), ("shortProductName", spec.name), ("version", spec.version),
+                ("shortVersion", spec.version), ("versionedName", "{} {}".format(spec.name, spec.version)),
+                ("shortVersionedName", "{} {}".format(spec.name, spec.version)),
+                ("productUrl", spec.home_url), ("supportUrl", spec.support_url or spec.home_url),
+                ("knownIssuesUrl", spec.bug_url or spec.home_url), ("releaseNotesUrl", spec.home_url)) if v})
+            values = {"strings": strings}
+            if images:
+                values["images"] = dict(data.get("images") or {}, **images)
+            style = dict(data.get("style") or {})
+            for key, value in (("SidebarBackground", spec.dark), ("SidebarBackgroundCurrent", spec.accent)):
+                style[cal._style_key(style, key)] = value
+            values["style"] = style
+            divert("/etc/calamares/branding/{}/branding.desc".format(comp), yamlconf.update(text, values))
+            return
         bdir = files / "etc/calamares/branding" / spec.os_id
         bdir.mkdir(parents=True, exist_ok=True)
         if spec.logo:

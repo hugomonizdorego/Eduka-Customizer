@@ -523,17 +523,21 @@ class Branding:
         if not base.is_dir():
             return False
         changed = False
+        # The EFI folder name comes from bootloaderEntryName unless bootloader.conf sets
+        # efiBootloaderId: never change it then, or Debian's signed GRUB would not boot.
+        boot = self.rootfs / "etc/calamares/modules/bootloader.conf"
+        fixed_id = boot.exists() and re.search(r"(?m)^efiBootloaderId:\s*\S", boot.read_text(errors="replace"))
         for desc in base.glob("*/branding.desc"):
             text = desc.read_text(errors="replace")
             for key, value in (("productName", product), ("shortProductName", product),
                                ("version", version), ("shortVersion", version),
                                ("versionedName", "{} {}".format(product, version)),
                                ("shortVersionedName", "{} {}".format(product, version)),
-                               ("bootloaderEntryName", product.replace(" ", "")),
+                               ("bootloaderEntryName", product.replace(" ", "") if fixed_id else ""),
                                ("productUrl", url)):
                 if value:
                     text = re.sub(r'(?m)^(\s*{}:\s*).*$'.format(key),
-                                  lambda m, v=value: m.group(1) + '"{}"'.format(v), text)
+                                  lambda m, v=value: m.group(1) + '"{}"'.format(v.replace('"', "'")), text)
             desc.write_text(text)
             changed = True
         return changed

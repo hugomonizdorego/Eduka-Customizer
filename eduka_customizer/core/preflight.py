@@ -161,10 +161,21 @@ def run(project, deep=False):
     else:
         add("info", "Desktop", "No graphical desktop: the ISO boots to a text console.", "DesktopPage")
     # 6. Installer
-    if "calamares" in have and not Path(r, "etc/calamares/settings.conf").is_file():
-        add("warn", "Installer", "Calamares is installed without /etc/calamares/settings.conf.", "CalamaresPage")
-    elif "calamares" in have:
-        add("ok", "Installer", "Calamares is configured")
+    if "calamares" in have or Path(r, "etc/calamares/settings.conf").is_file():
+        from eduka_customizer.core import calamares_check
+        res = calamares_check.check(p)
+        problems = [x for x in res if x[0] == "fail"]
+        warns = [x for x in res if x[0] == "warn"]
+        for _l, where, msg in problems[:6]:
+            add("fail", "Installer", "{}: {}".format(where, msg), "CalamaresPage")
+        if len(problems) > 6:
+            add("fail", "Installer", "{} more problems: see Installer → Check the installer".format(len(problems) - 6),
+                "CalamaresPage")
+        if warns:
+            add("warn", "Installer", "; ".join("{}: {}".format(w, m) for _l, w, m in warns[:3]), "CalamaresPage")
+        if not problems:
+            add("ok", "Installer", "Calamares {} checked: settings, branding, modules".format(
+                calamares_check._version(r) and "{}.{}".format(*calamares_check._version(r)) or ""))
     else:
         add("info", "Installer", "No installer: the ISO only runs live.", "CalamaresPage")
     # 7. Identity

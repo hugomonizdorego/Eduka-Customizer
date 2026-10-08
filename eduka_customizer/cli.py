@@ -361,12 +361,20 @@ def cmd_language(args):
 
 def cmd_calamares(args):
     from eduka_customizer.core.calamares import Calamares
-    p = _locked(args)
+    p = _project(args) if args.action in ("show", "check") else _locked(args)
     c = Calamares(p)
     # Only 'set' takes a module name; for the others the first word is already a value.
     values = ([args.module] if args.module and args.action != "set" else []) + args.values
     if args.action == "install":
         c.install()
+    elif args.action == "check":
+        from eduka_customizer.core import calamares_check as cc
+        res = cc.check(p)
+        for level, where, msg in res:
+            print("{:5} {:48} {}".format({"ok": "ok", "warn": "WARN", "fail": "FAIL"}[level], where, msg))
+        fails, warns = cc.summary(res)
+        print("\n{} problem(s), {} warning(s)".format(fails, warns))
+        return 1 if fails else 0
     elif args.action == "show":
         print(json.dumps(c.summary(), indent=2))
         print("Branding:", c.branding_name(), "| modules:", " ".join(c.modules()))
@@ -938,7 +946,7 @@ def build_parser():
     s.set_defaults(func=cmd_language)
 
     s = sub.add_parser("calamares", help="edit the Calamares installer")
-    s.add_argument("action", choices=["show", "install", "set", "branding", "slides", "users", "partition",
+    s.add_argument("action", choices=["show", "check", "install", "set", "branding", "slides", "users", "partition",
                                       "live-password"])
     s.add_argument("module", nargs="?", help="for set: settings or a module name (users, partition, ...)")
     s.add_argument("values", nargs="*", help="KEY=VALUE (YAML values) or files")

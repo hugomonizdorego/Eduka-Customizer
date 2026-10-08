@@ -1,12 +1,15 @@
 """Calamares page: installer branding, images, slideshow, users and passwords,
 partitions, requirements and the raw configuration files."""
 
-from eduka_customizer.qt.widgets import (QCheckBox, QDoubleSpinBox, QFileDialog, QLineEdit, QListWidget,
-                                          QMessageBox, QSpinBox)
+from eduka_customizer.qt.core import Qt
+from eduka_customizer.qt.widgets import (QCheckBox, QDoubleSpinBox, QFileDialog, QFormLayout, QHBoxLayout, QLineEdit,
+                                          QListWidget, QListWidgetItem, QMessageBox, QPlainTextEdit, QSpinBox,
+                                          QWidget)
 
 from eduka_customizer.core import calamares as cal
 from eduka_customizer.gui.pages.appearance import IMAGES, ColorButton
-from eduka_customizer.gui.widgets import FilePicker, FileTreeEditor, ImagePreview, Page, button, combo, hbox, label
+from eduka_customizer.gui.widgets import (FilePicker, FileTreeEditor, ImagePreview, Page, button, combo, fill, hbox,
+                                          label, table)
 
 COLORS = [("sidebarBackground", "Sidebar", "#0f2f27"), ("sidebarText", "Sidebar text", "#ffffff"),
           ("sidebarBackgroundCurrent", "Current step", "#00a879"), ("sidebarTextCurrent", "Current step text", "#ffffff")]
@@ -58,17 +61,53 @@ class CalamaresPage(Page):
         f.addRow("Desktop launcher:", self.launcher)
         c.add(hbox(None, button("Apply name, images and colors", self.apply_branding, "primary")))
 
-        c = self.card("Slideshow while installing", "One image per slide (PNG, JPG, SVG); 800×440 works best.")
+        c = self.card("Slideshow while installing",
+                      "Slides people read while the system installs: a title, text (**bold**, *italic*, "
+                      "[links](https://...)), a picture and colors. Image-only slides work too (800×440).")
+        row_w = QWidget()
+        row = QHBoxLayout(row_w)
+        row.setContentsMargins(0, 0, 0, 0)
         self.slides = QListWidget()
-        self.slides.setMaximumHeight(140)
-        c.add(self.slides)
+        self.slides.setFixedWidth(260)
+        self.slides.setMinimumHeight(230)
+        self.slides.currentRowChanged.connect(self._slide_selected)
+        row.addWidget(self.slides)
+        ed = QWidget()
+        f = QFormLayout(ed)
+        self.sl_title = QLineEdit()
+        self.sl_text = QPlainTextEdit()
+        self.sl_text.setMinimumHeight(90)
+        self.sl_image = FilePicker("Slide picture", IMAGES)
+        self.sl_bg = ColorButton("#0f2f27")
+        self.sl_fg = ColorButton("#ffffff")
+        f.addRow("Title:", self.sl_title)
+        f.addRow("Text:", self.sl_text)
+        f.addRow("Picture:", self.sl_image)
+        f.addRow("Colors:", hbox(label("Background"), self.sl_bg, label("Text"), self.sl_fg, None))
+        row.addWidget(ed, 1)
+        c.add(row_w)
+        self._loading_slide = False
+        self.sl_title.textChanged.connect(self._slide_edited)
+        self.sl_text.textChanged.connect(self._slide_edited)
+        self.sl_image.changed.connect(self._slide_edited)
+        for b in (self.sl_bg, self.sl_fg):
+            b.clicked.connect(self._slide_edited)
         self.seconds = QSpinBox()
         self.seconds.setRange(2, 60)
         self.seconds.setValue(8)
-        c.add(hbox(button("Add images...", self.add_slides), button("Remove", self.remove_slide, "danger"),
-                   button("Up", lambda: self.move_slide(-1)), button("Down", lambda: self.move_slide(1)),
-                   label("Seconds per slide"), self.seconds, None,
+        c.add(hbox(button("Add text slide", self.add_text_slide), button("Add image slides...", self.add_slides),
+                   button("Remove", self.remove_slide, "danger"), button("Up", lambda: self.move_slide(-1)),
+                   button("Down", lambda: self.move_slide(1)), label("Seconds per slide"), self.seconds, None,
                    button("Apply slideshow", self.apply_slides, "primary")))
+
+        c = self.card("Check the installer",
+                      "A careful check of settings.conf, the branding, every module of the sequence and their "
+                      "configuration against the image: what would stop Calamares or make the installation fail.")
+        self.check_table = table(["Result", "File", "Details"])
+        self.check_table.setMinimumHeight(200)
+        c.add(self.check_table)
+        self.check_state = label("", "muted")
+        c.add(hbox(self.check_state, None, button("Check the installer", self.run_check, "primary")))
 
         # Users ---------------------------------------------------------------------------
         a, b = self.row(self.card("Users and passwords"), self.card("Live user"))
@@ -194,7 +233,12 @@ class CalamaresPage(Page):
             self.prev[k].show_file(str(path) if path and path.exists() else "")
             w.setText("")
         self.slides.clear()
-        self.slides.addItems(c.slides())
+        for sl in c.slide_data():
+            self._add_slide_item(sl)
+        self.seconds.setValue(int(self.project.state.get("calamares_slides", {}).get("seconds", 8)))
+        if self.slides.count():
+            self.slides.setCurrentRow(0)
+        self.run_check()
         launcher = c.launcher()
         if launcher:
             import re
@@ -275,9 +319,52 @@ class CalamaresPage(Page):
                 c.set_launcher_name(launcher)
         self._run("Calamares branding", work)
 
+    # Slides ---------------------------------------------------------------------------
+    @staticmethod
+    def _slide_label(sl):
+        import os
+        return sl.get("title") or (os.path.basename(sl["image"]) if sl.get("image") else "(empty slide)")
+
+    def _add_slide_item(self, sl):
+        it = QListWidgetItem(self._slide_label(sl))
+        it.setData(Qt.ItemDataRole.UserRole, dict(sl))
+        self.slides.addItem(it)
+        return it
+
+    def _slide_selected(self, row):
+        it = self.slides.item(row)
+        if not it:
+            return
+        sl = it.data(Qt.ItemDataRole.UserRole)
+        self._loading_slide = True
+        self.sl_title.setText(sl.get("title", ""))
+        self.sl_text.setPlainText(sl.get("text", ""))
+        self.sl_image.setText(sl.get("image", ""))
+        self.sl_bg.set(sl.get("background") or self.colors["sidebarBackground"].color)
+        self.sl_fg.set(sl.get("color") or "#ffffff")
+        self._loading_slide = False
+
+    def _slide_edited(self, *_a):
+        it = self.slides.currentItem()
+        if self._loading_slide or not it:
+            return
+        sl = {"title": self.sl_title.text(), "text": self.sl_text.toPlainText(), "image": self.sl_image.text(),
+              "background": self.sl_bg.color, "color": self.sl_fg.color}
+        it.setData(Qt.ItemDataRole.UserRole, sl)
+        it.setText(self._slide_label(sl))
+
+    def add_text_slide(self):
+        name = self.s["productName"].text() or self.project.display_name()
+        it = self._add_slide_item({"title": "Welcome to {}".format(name),
+                                   "text": "{} is being installed. This takes a few minutes.".format(name),
+                                   "image": "", "background": self.colors["sidebarBackground"].color,
+                                   "color": "#ffffff"})
+        self.slides.setCurrentItem(it)
+
     def add_slides(self):
         files, _ = QFileDialog.getOpenFileNames(self, "Slideshow images", "", IMAGES)
-        self.slides.addItems(files)
+        for f in files:
+            self._add_slide_item({"title": "", "text": "", "image": f, "background": "", "color": ""})
 
     def remove_slide(self):
         for it in self.slides.selectedItems():
@@ -292,25 +379,22 @@ class CalamaresPage(Page):
         self.slides.setCurrentRow(row + step)
 
     def apply_slides(self):
-        import shutil
-        import tempfile
-        proj = self.project
-        # Copy first: applying deletes the old slide-NN.png files, which may be in the list.
-        tmp = tempfile.mkdtemp(prefix="eduka-slides-")
-        files = []
-        for i in range(self.slides.count()):
-            src = self.slides.item(i).text()
-            dst = "{}/{:02d}-{}".format(tmp, i, src.split("/")[-1])
-            shutil.copy2(src, dst)
-            files.append(dst)
-        seconds = self.seconds.value()
+        slides = [self.slides.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.slides.count())]
+        proj, seconds = self.project, self.seconds.value()
+        self._run("Calamares slideshow", lambda t: cal.Calamares(proj).set_branding(slides=slides,
+                                                                                    slide_seconds=seconds))
 
-        def work(t):
-            try:
-                cal.Calamares(proj).set_branding(slides=files, slide_seconds=seconds)
-            finally:
-                shutil.rmtree(tmp, ignore_errors=True)
-        self._run("Calamares slideshow", work)
+    def run_check(self):
+        from eduka_customizer.core import calamares_check as cc
+        res = cc.check(self.project)
+        marks = {"ok": "✔ OK", "warn": "⚠ Warning", "fail": "✘ Problem"}
+        order = {"fail": 0, "warn": 1, "ok": 2}
+        fill(self.check_table, [(marks[l], w, m) for l, w, m in sorted(res, key=lambda x: order[x[0]])])
+        self.check_table.setSortingEnabled(False)
+        self.check_table.resizeColumnToContents(1)
+        fails, warns = cc.summary(res)
+        self.check_state.setText("{} problem(s), {} warning(s){}".format(
+            fails, warns, " — the installer looks fine" if not fails else ""))
 
     def apply_users(self):
         proj = self.project

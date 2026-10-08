@@ -378,3 +378,132 @@ def test_window_themes(project, nochroot):
     assert "LookAndFeelPackage=org.kde.breezedark.desktop" in (r / "etc/xdg/kdeglobals").read_text()
     with pytest.raises(ValueError):
         th.apply_extra(xfwm4="../../etc")
+
+
+# Calamares: careful checks, text slides ----------------------------------------------------------
+
+DEBIAN_SETTINGS = """---
+modules-search: [ local, /usr/lib/calamares/modules ]
+
+instances:
+- id:       before_bootloader
+  module:   contextualprocess
+  config:   before_bootloader_context.conf
+- id:       logs
+  module:   shellprocess
+  config:   shellprocess_logs.conf
+
+sequence:
+- show:
+  - welcome
+  - locale
+  - partition
+  - users
+  - summary
+- exec:
+  - partition
+  - mount
+  - unpackfs
+  - users
+  - displaymanager
+  - contextualprocess@before_bootloader
+  - bootloader
+  - packages
+  - shellprocess@logs
+  - umount
+- show:
+  - finished
+
+branding: debian
+prompt-install: true
+"""
+
+
+@pytest.fixture
+def cal(project):
+    r = project.rootfs
+    mods = r / "usr/lib/x86_64-linux-gnu/calamares/modules"
+    for m in ("welcome", "locale", "partition", "users", "summary", "mount", "unpackfs", "displaymanager",
+              "contextualprocess", "bootloader", "packages", "shellprocess", "umount", "finished"):
+        (mods / m).mkdir(parents=True)
+        (mods / m / "module.desc").write_text("---\ntype: job\nname: {}\n".format(m))
+    etc = r / "etc/calamares"
+    (etc / "modules").mkdir(parents=True)
+    (etc / "settings.conf").write_text(DEBIAN_SETTINGS)
+    b = etc / "branding/debian"
+    b.mkdir(parents=True)
+    (b / "branding.desc").write_text("---\ncomponentName: debian\nstrings:\n    productName: Debian\n"
+                                     "    bootloaderEntryName: Debian\nimages:\n    productLogo: \"logo.png\"\n"
+                                     "slideshowAPI: 2\nslideshow: \"show.qml\"\nstyle:\n    SidebarBackground: \"#2c3133\"\n")
+    (b / "logo.png").write_bytes(b"png")
+    (b / "show.qml").write_text('import QtQuick 2.0;\nimport calamares.slideshow 1.0;\nPresentation { Slide { } }\n')
+    (etc / "modules/unpackfs.conf").write_text("---\nunpack:\n    - source: \"/run/live/medium/live/filesystem.squashfs\"\n"
+                                               "      sourcefs: \"squashfs\"\n      destination: \"\"\n")
+    (etc / "modules/before_bootloader_context.conf").write_text("---\ndontChroot: false\n")
+    (etc / "modules/shellprocess_logs.conf").write_text("---\nscript:\n    - command: \"/usr/sbin/calamares-logs-helper @@ROOT@@\"\n")
+    (etc / "modules/bootloader.conf").write_text("---\nefiBootLoader: \"grub\"\nefiBootloaderId: \"debian\"\n")
+    (etc / "modules/packages.conf").write_text("---\nbackend: apt\noperations:\n  - remove:\n      - live-boot\n"
+                                               "  - try_remove:\n      - calamares\n")
+    (etc / "modules/displaymanager.conf").write_text("---\ndisplaymanagers:\n  - lightdm\n  - sddm\n")
+    (etc / "modules/partition.conf").write_text("---\ndefaultFileSystemType: \"ext4\"\n"
+                                                "availableFileSystemTypes: [\"ext4\", \"btrfs\"]\n")
+    for f in ("usr/bin/calamares", "usr/sbin/grub-install", "usr/sbin/grub-mkconfig", "usr/bin/efibootmgr",
+              "usr/sbin/lightdm", "usr/sbin/mkfs.ext4", "usr/sbin/mkfs.btrfs", "usr/sbin/calamares-logs-helper"):
+        (r / f).parent.mkdir(parents=True, exist_ok=True)
+        (r / f).write_text("")
+    st = r / "var/lib/dpkg/status"
+    st.write_text(st.read_text() + "\nPackage: calamares\nStatus: install ok installed\nVersion: 3.3.14-1\n")
+    return project
+
+
+def test_calamares_check_clean(cal):
+    from eduka_customizer.core import calamares_check as cc
+    res = cc.check(cal)
+    fails = [x for x in res if x[0] == "fail"]
+    assert not fails, fails
+    assert any("branding 'debian' is complete" in x[2] for x in res)
+    assert cc.loaders_for((3, 2)) == ["grub", "sb-shim", "systemd-boot"]
+    assert "refind" in cc.loaders_for((3, 3))
+
+
+def test_calamares_check_finds_problems(cal):
+    from eduka_customizer.core import calamares_check as cc
+    r = cal.rootfs
+    etc = r / "etc/calamares"
+    desc = etc / "branding/debian/branding.desc"
+    desc.write_text(desc.read_text().replace("componentName: debian", "componentName: mylinux")
+                    .replace("logo.png", "missing.png"))
+    (etc / "branding/debian/show.qml").write_text("import QtQuick 2.0;\nPresentation { Slide { }\n")
+    (etc / "settings.conf").write_text(DEBIAN_SETTINGS.replace("  - umount", "  - umount\n  - nosuchmodule"))
+    (etc / "modules/unpackfs.conf").write_text("---\nunpack:\n    - source: \"/cdrom/casper/filesystem.squashfs\"\n")
+    (etc / "modules/bootloader.conf").write_text("---\nefiBootLoader: \"refind\"\n")
+    (etc / "modules/packages.conf").write_text("---\nbackend: apt\noperations:\n  - remove:\n      - not-there\n")
+    (etc / "modules/displaymanager.conf").write_text("---\ndisplaymanagers:\n  - gdm\n")
+    (etc / "modules/partition.conf").write_text("---\ndefaultFileSystemType: \"xfs\"\n")
+    (r / "usr/sbin/calamares-logs-helper").unlink()
+    text = " | ".join(x[2] for x in cc.check(cal) if x[0] == "fail")
+    for needle in ("componentName 'mylinux'", "missing.png", "'{' and '}'", "nosuchmodule",
+                   "not a live-boot path", "refind needs /usr/sbin/refind-install", "not-there",
+                   "displaymanagers gdm", "mkfs.xfs", "calamares-logs-helper"):
+        assert needle in text, needle
+    assert cc.summary(cc.check(cal))[0] >= 10
+
+
+def test_calamares_text_slides(cal, tmp_path):
+    from eduka_customizer.core.calamares import Calamares
+    from tests.test_v012 import png
+    c = Calamares(cal)
+    c.set_branding(slides=[{"title": 'Say "hello"', "text": "Line one\n**Bold** and [web](https://e.org)",
+                            "background": "#112233", "color": "#ffffff"},
+                           str(png(tmp_path / "s.png"))], slide_seconds=5)
+    qml = (cal.rootfs / "etc/calamares/branding/debian/show.qml").read_text()
+    assert 'text: "Say \\"hello\\""' in qml and "<b>Bold</b>" in qml and "<br>" in qml
+    assert 'source: "slide-02.png"' in qml and "interval: 5000" in qml
+    assert (cal.rootfs / "etc/calamares/branding/debian/slide-02.png").exists()
+    data = c.slide_data()
+    assert data[0]["title"] == 'Say "hello"' and data[1]["image"].endswith("slide-02.png")
+    from eduka_customizer.core import calamares_check as cc
+    assert not [x for x in cc.check(cal) if x[0] == "fail"]
+    # Applying the same slides again (their images are the current files) keeps them.
+    c.set_branding(slides=data, slide_seconds=5)
+    assert (cal.rootfs / "etc/calamares/branding/debian/slide-02.png").exists()
