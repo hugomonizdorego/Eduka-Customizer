@@ -163,7 +163,7 @@ class Sources:
         legacy = self.rootfs / "etc/apt/sources.list"
         if legacy.exists() and re.search(r"(?m)^\s*deb\s", legacy.read_text(errors="replace")):
             shutil.move(str(legacy), str(legacy) + ".eduka-old")
-            legacy.write_text("# Moved to /etc/apt/sources.list.d/debian.sources by Eduka-Customizer\n")
+            legacy.write_text("# Moved to /etc/apt/sources.list.d/debian.sources by DistroForge\n")
         for p in self.files():
             if p.suffix == ".sources" and p.name != "debian.sources":
                 stz = parse_deb822(p.read_text(errors="replace"))
@@ -191,7 +191,7 @@ class Sources:
         """Store a repository key (URL or local file, armored or binary)."""
         if re.match(r"^https?://", key):
             log.info("Downloading key %s", key)
-            req = urllib.request.Request(key, headers={"User-Agent": "Eduka-Customizer"})
+            req = urllib.request.Request(key, headers={"User-Agent": "DistroForge"})
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = resp.read()
         else:

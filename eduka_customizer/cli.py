@@ -1,4 +1,4 @@
-"""Command line interface: eduka-customizer <command> [options]."""
+"""Command line interface: distroforge <command> [options]."""
 
 import argparse
 import json
@@ -24,7 +24,7 @@ def _project(args, create=False):
 def _locked(args):
     p = _project(args)
     p.lock()
-    logmod.add_file_handler(p.logs / "eduka-customizer.log")
+    logmod.add_file_handler(p.logs / "distroforge.log")
     return p
 
 
@@ -40,7 +40,7 @@ def cmd_new(args):
     from eduka_customizer.core.project import Project
     p = Project.create(args.path or args.project or os.getcwd(), name=args.name)
     p.lock()
-    logmod.add_file_handler(p.logs / "eduka-customizer.log")
+    logmod.add_file_handler(p.logs / "distroforge.log")
     if args.iso:
         from eduka_customizer.core import iso
         info = iso.extract(p, args.iso)
@@ -872,7 +872,7 @@ def cmd_download(args):
 
 
 def build_parser():
-    ap = argparse.ArgumentParser(prog="eduka-customizer",
+    ap = argparse.ArgumentParser(prog="distroforge",
                                  description="{} {} - build live ISO images of Debian-based distributions "
                                              "(Debian stable, testing, sid and derivatives).".format(APP_NAME, VERSION_LABEL))
     ap.add_argument("-p", "--project", help="project directory (default: current directory)")

@@ -22,7 +22,7 @@ class ThemesPage(Page):
     def build(self):
         c = self.card("Add your own themes, icons, cursors and fonts",
                       "Drop them here: folders, archives (.zip, .tar.gz, .tar.xz) or files (.ttf, .otf, "
-                      ".deb). Eduka-Customizer recognizes each one and puts it where it belongs: themes in "
+                      ".deb). DistroForge recognizes each one and puts it where it belongs: themes in "
                       "/usr/share/themes, icons and cursors in /usr/share/icons, fonts in /usr/share/fonts, "
                       "wallpapers in the wallpaper gallery, Plymouth and SDDM themes in theirs.")
         self.drop = DropZone("Drop themes, icon or cursor themes, fonts, wallpapers or their archives here",

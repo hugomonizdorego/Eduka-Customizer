@@ -1,14 +1,14 @@
-.TH EDUKA-CUSTOMIZER 1 "October 2026" "Eduka-Customizer 0.16 Alpha" "Eduka-Customizer"
+.TH DISTROFORGE 1 "October 2026" "DistroForge 0.17 Alpha" "DistroForge"
 .SH NAME
-eduka-customizer \- ISO builder and customizer for Debian-based distributions
+distroforge \- ISO builder and customizer for Debian-based distributions
 .SH SYNOPSIS
-.B eduka-customizer
+.B distroforge
 [\fB\-p\fR \fIPROJECT\fR] [\fB\-D\fR] \fICOMMAND\fR [\fIoptions\fR]
 .br
-.B eduka-customizer-pkexec
+.B distroforge-pkexec
 [\fIPROJECT\fR|\fIISO\fR]
 .SH DESCRIPTION
-Eduka-Customizer builds live ISO images of your own Debian-based
+DistroForge builds live ISO images of your own Debian-based
 distribution from Debian stable, testing, sid or a Debian derivative. A project holds the root filesystem (\fIrootfs/\fR), the ISO tree
 (\fIiso/\fR), boot images (\fIboot/\fR), caches, logs and the built images
 (\fIoutput/\fR). Ubuntu and Ubuntu-based images are refused.
@@ -152,26 +152,26 @@ Check (and install) the host tools.
 Download and verify an official Debian live image.
 .SH FILES
 .TP
-.I /etc/eduka-customizer/eduka-customizer.conf
+.I /etc/distroforge/distroforge.conf
 Global settings (Debian codenames, mirrors, Eduka-Desktop repository, build defaults).
 .TP
-.I /usr/share/eduka-customizer/exclude.list
+.I /usr/share/distroforge/exclude.list
 Paths excluded from the squashfs.
 .TP
 .I PROJECT/project.json
 Project state and history.
 .TP
-.I /tmp/eduka-customizer/
-Developer logs: eduka-customizer.log, errors.log and bug reports.
+.I /tmp/distroforge/
+Developer logs: distroforge.log, errors.log and bug reports.
 .SH EXAMPLES
 .nf
-sudo eduka-customizer new ~/mylinux \-\-iso debian-live-13.1.0-amd64-standard.iso
-sudo eduka-customizer -p ~/mylinux desktop install xfce \-\-edition full_apps
-sudo eduka-customizer -p ~/mylinux apps replace browser chromium \-\-remove-old
-sudo eduka-customizer -p ~/mylinux flatpak install org.kde.gcompris \-\-firstboot
-sudo eduka-customizer -p ~/mylinux check
-sudo eduka-customizer -p ~/mylinux build
-eduka-customizer -p ~/mylinux test \-\-firmware uefi
+sudo distroforge new ~/mylinux \-\-iso debian-live-13.1.0-amd64-standard.iso
+sudo distroforge -p ~/mylinux desktop install xfce \-\-edition full_apps
+sudo distroforge -p ~/mylinux apps replace browser chromium \-\-remove-old
+sudo distroforge -p ~/mylinux flatpak install org.kde.gcompris \-\-firstboot
+sudo distroforge -p ~/mylinux check
+sudo distroforge -p ~/mylinux build
+distroforge -p ~/mylinux test \-\-firmware uefi
 .fi
 .SH SEE ALSO
 .BR xorriso (1),

@@ -74,16 +74,16 @@ def remove_handler(handler):
 
 
 # Developer logs: every run writes here so crashes can be reported and fixed.
-DEBUG_DIR = os.environ.get("EDUKA_CUSTOMIZER_LOG_DIR", "/tmp/eduka-customizer")
-DEBUG_LOG = os.path.join(DEBUG_DIR, "eduka-customizer.log")
+DEBUG_DIR = os.environ.get("DISTROFORGE_LOG_DIR") or os.environ.get("EDUKA_CUSTOMIZER_LOG_DIR") or "/tmp/distroforge"
+DEBUG_LOG = os.path.join(DEBUG_DIR, "distroforge.log")
 ERROR_LOG = os.path.join(DEBUG_DIR, "errors.log")
 _debug_ready = False
 
 
 def setup_debug_log(component="cli"):
-    """Log everything to /tmp/eduka-customizer/ and catch unhandled errors.
+    """Log everything to /tmp/distroforge/ and catch unhandled errors.
 
-    eduka-customizer.log  full debug log (rotated, 5 MiB x 3)
+    distroforge.log       full debug log (rotated, 5 MiB x 3)
     errors.log            errors and tracebacks only
     """
     global _debug_ready, DEBUG_DIR, DEBUG_LOG, ERROR_LOG
@@ -91,7 +91,7 @@ def setup_debug_log(component="cli"):
         return DEBUG_DIR
     try:
         DEBUG_DIR = _safe_dir(DEBUG_DIR)
-        DEBUG_LOG = os.path.join(DEBUG_DIR, "eduka-customizer.log")
+        DEBUG_LOG = os.path.join(DEBUG_DIR, "distroforge.log")
         ERROR_LOG = os.path.join(DEBUG_DIR, "errors.log")
         for path in (DEBUG_LOG, ERROR_LOG):
             if os.path.islink(path):
@@ -120,7 +120,7 @@ def setup_debug_log(component="cli"):
         return None
     _debug_ready = True
     from eduka_customizer import VERSION
-    logger.debug("===== Eduka-Customizer %s %s started: %s", VERSION, component, " ".join(sys.argv))
+    logger.debug("===== DistroForge %s %s started: %s", VERSION, component, " ".join(sys.argv))
     logger.debug("Python %s on %s, uid %s", platform.python_version(), platform.platform(), os.geteuid())
     try:
         with open("/etc/os-release") as fh:

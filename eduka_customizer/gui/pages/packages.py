@@ -141,7 +141,7 @@ class PackagesPage(Page):
         path, _ = QFileDialog.getSaveFileName(self, "Export package list", "packages.txt", "Text files (*.txt)")
         if path:
             inst, rem = self.browser.changes()
-            lines = ["# Eduka-Customizer package list. '-name' means remove."] + inst + ["-" + n for n in rem]
+            lines = ["# DistroForge package list. '-name' means remove."] + inst + ["-" + n for n in rem]
             with open(path, "w") as fh:
                 fh.write("\n".join(lines) + "\n")
 

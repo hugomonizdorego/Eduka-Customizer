@@ -38,7 +38,7 @@ def command(project, iso, firmware="uefi", memory=None, cpus=None, disk=False,
         raise RuntimeError("QEMU is not installed (package qemu-system-x86)")
     memory = str(memory or cfg.get("qemu", "memory"))
     cpus = str(cpus or cfg.get("qemu", "cpus"))
-    cmd = [qemu, "-name", "Eduka-Customizer test", "-m", memory, "-smp", cpus,
+    cmd = [qemu, "-name", "DistroForge test", "-m", memory, "-smp", cpus,
            "-machine", "q35" + (",smm=on" if firmware == "secureboot" else ""),
            "-device", "virtio-vga", "-display", display,
            "-device", "qemu-xhci", "-device", "usb-tablet",

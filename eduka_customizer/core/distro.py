@@ -239,7 +239,7 @@ def validate(info, rootfs=None):
     if any(m in ids for m in UBUNTU_MARKERS) or "ubuntu" in info.name.lower() \
             or "ubuntu" in info.pretty_name.lower() or (info.id == "linuxmint" and "debian" not in info.id_like):
         raise UnsupportedDistro(
-            "Ubuntu and Ubuntu-based systems are not supported. Eduka-Customizer "
+            "Ubuntu and Ubuntu-based systems are not supported. DistroForge "
             "builds Debian-based distributions (Debian stable, testing, sid and derivatives).")
     if rootfs is not None:
         lsb = Path(rootfs, "etc/lsb-release")

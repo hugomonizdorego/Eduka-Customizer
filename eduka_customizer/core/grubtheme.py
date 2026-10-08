@@ -195,7 +195,7 @@ class GrubThemes:
             if not inst.exists():
                 fsutil.copytree(d, inst, symlinks=False)
             drop.parent.mkdir(parents=True, exist_ok=True)
-            drop.write_text('# GRUB theme chosen in Eduka-Customizer\nGRUB_THEME="/boot/grub/themes/{}/theme.txt"\n'
+            drop.write_text('# GRUB theme chosen in DistroForge\nGRUB_THEME="/boot/grub/themes/{}/theme.txt"\n'
                             'GRUB_GFXMODE=auto\n'.format(name))
         elif drop.exists():
             drop.unlink()

@@ -199,6 +199,12 @@ def run(project, deep=False):
             "IdentityPage")
     else:
         add("ok", "Identity", "{} (ISO label {})".format(p.state["identity"]["name"], p.volume_label()))
+        import re as _re
+        marks = [m for m in ("Debian", "Ubuntu", "Linux Mint", "Fedora", "Red Hat", "Windows")
+                 if _re.search(r"\b{}\b".format(m), p.state["identity"]["name"], _re.I)]
+        if marks:
+            add("warn", "Identity", "The name uses the trademark '{}': give your distribution a name of its own "
+                "(see About → Trademarks)".format(marks[0]), "IdentityPage")
     # 8. Boot menu edits
     try:
         from eduka_customizer.core import bootedit

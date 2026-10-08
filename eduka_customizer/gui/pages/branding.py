@@ -14,7 +14,7 @@ from eduka_customizer.gui.widgets import (FilePicker, FileTreeEditor, ImagePrevi
 class BrandingPage(Page):
     title = "Distro Branding"
     nav_title = "Distro Branding"
-    subtitle = ("Make the system your own distribution, not just Debian renamed. Eduka-Customizer "
+    subtitle = ("Make the system your own distribution, not just Debian renamed. DistroForge "
                 "builds a <id>-branding package that replaces the identity of base-files, "
                 "lsb-release, distro-info-data, desktop-base, the Debian logos, GRUB and the "
                 "Calamares installer with dpkg diversions, plus an optional archive keyring. "
@@ -170,7 +170,7 @@ class BrandingPage(Page):
             self.dark.set(art["dark"])
         if not quiet:
             self.main.stage_label.setText("Loaded from the ISO: " + ", ".join(sorted(art)) if art else
-                                          "The ISO has no artwork Eduka-Customizer recognizes")
+                                          "The ISO has no artwork DistroForge recognizes")
 
     def spec(self):
         s = BrandingSpec.from_project(self.project)

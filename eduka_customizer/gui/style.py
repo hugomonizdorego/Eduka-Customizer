@@ -1,4 +1,4 @@
-"""Look and feel of the Eduka-Customizer window (Eduka green accent)."""
+"""Look and feel of the DistroForge window (Eduka green accent)."""
 
 ACCENT = "#00a879"
 
@@ -55,6 +55,9 @@ QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus {{ border: 1px solid {acc
 QListWidget::item, QTreeWidget::item {{ padding: 3px 2px; }}
 QComboBox, QSpinBox, QDoubleSpinBox {{ min-height: 28px; }}
 QPushButton#sideButton {{ background: transparent; color: {side_text}; border: none; padding: 9px 20px; text-align: left; }}
+QPushButton#sideDonate {{ background: rgba(255,255,255,0.08); color: #ffd48a; border: 1px solid rgba(255,212,138,0.35);
+    border-radius: 10px; padding: 8px 14px; margin: 4px 14px; text-align: left; font-weight: 700; }}
+QPushButton#sideDonate:hover {{ background: rgba(255,212,138,0.15); }}
 QPushButton#sideButton:hover {{ color: white; background: rgba(255,255,255,0.07); }}
 QHeaderView::section {{ background: {soft}; border: none; border-bottom: 1px solid {border}; padding: 6px; font-weight: 700; }}
 QTabWidget::pane {{ border: none; }}

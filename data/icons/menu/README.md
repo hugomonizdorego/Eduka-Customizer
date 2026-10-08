@@ -33,4 +33,5 @@ elementary+ (GPL-3) icon themes.
 | Welcome Screen | welcome.svg | org.gnome.Tour |
 | Replace apps | replace.svg | preferences-desktop-default-applications |
 | Check & Build | build.svg | brasero (disk-burner) |
+| About | about.svg | system-help |
 | Settings | settings.svg | preferences-system (utilities-tweak-tool) |

@@ -363,7 +363,7 @@ class Builder:
             args += ["-V", label]
         else:
             args = ["-as", "mkisofs"] + bootloader.BootGenerator(p).xorriso_args(label)
-        args += ["-publisher", p.display_name()[:120], "-preparer", "Eduka-Customizer",
+        args += ["-publisher", p.display_name()[:120], "-preparer", "DistroForge",
                  "-o", out, p.isodir]
         runner.run(["xorriso"] + args, progress=self.progress)
         return out

@@ -87,7 +87,7 @@ def from_api(timeout=30, per_page=250, progress=None):
             if progress:
                 progress("Flathub: {} (page {})".format(title, page))
             url = "{}/collection/category/{}?page={}&per_page={}".format(api, cat, page, per_page)
-            req = urllib.request.Request(url, headers={"User-Agent": "Eduka-Customizer",
+            req = urllib.request.Request(url, headers={"User-Agent": "DistroForge",
                                                        "Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode())

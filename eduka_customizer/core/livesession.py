@@ -83,7 +83,7 @@ class LiveSession:
         self.xephyr = subprocess.Popen(
             [runner.which("Xephyr"), ":{}".format(self.display), "-ac", "-br", "-noreset",
              "-resizeable", "-screen", resolution, "-title",
-             "Eduka-Customizer live session (changes are saved to the image)"],
+             "DistroForge live session (changes are saved to the image)"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         sock = Path("/tmp/.X11-unix/X{}".format(self.display))
         for _ in range(100):

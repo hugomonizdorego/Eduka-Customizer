@@ -1,4 +1,4 @@
-"""Global settings (/etc/eduka-customizer/eduka-customizer.conf)."""
+"""Global settings (/etc/distroforge/distroforge.conf)."""
 
 import configparser
 import os
@@ -6,16 +6,19 @@ from pathlib import Path
 
 # Default time zone (Timor-Leste); every project can choose another one.
 DEFAULT_TIMEZONE = "Asia/Dili"
-CONFIG_PATH = Path(os.environ.get("EDUKA_CUSTOMIZER_CONF",
-                                  "/etc/eduka-customizer/eduka-customizer.conf"))
+CONFIG_PATH = Path(os.environ.get("DISTROFORGE_CONF") or os.environ.get("EDUKA_CUSTOMIZER_CONF") or
+                   "/etc/distroforge/distroforge.conf")
+# Settings of the versions called Eduka-Customizer are read when there are no new ones yet.
+OLD_CONFIG_PATH = Path("/etc/eduka-customizer/eduka-customizer.conf")
 
 # Directory holding exclude.list, desktops.json, templates, ...
-DATA_DIR = Path(os.environ.get("EDUKA_CUSTOMIZER_DATA", "/usr/share/eduka-customizer"))
+DATA_DIR = Path(os.environ.get("DISTROFORGE_DATA") or os.environ.get("EDUKA_CUSTOMIZER_DATA") or
+                "/usr/share/distroforge")
 _SOURCE_DATA = Path(__file__).resolve().parents[2] / "data"
 
 DEFAULTS = {
     "general": {
-        "projects_dir": "/home/eduka-customizer",
+        "projects_dir": "/home/distroforge",
         "recent_projects": "",
         "theme": "auto",
         "terminal": "",
@@ -67,6 +70,8 @@ class Settings:
         self.parser.read_dict(DEFAULTS)
         if self.path.is_file():
             self.parser.read(self.path, encoding="utf-8")
+        elif self.path == CONFIG_PATH and OLD_CONFIG_PATH.is_file():
+            self.parser.read(OLD_CONFIG_PATH, encoding="utf-8")
         # Settings of versions before 0.15 called the Eduka-Desktop section [edukasaun].
         if self.parser.has_section("edukasaun"):
             for key in ("repo", "ref"):
@@ -95,7 +100,7 @@ class Settings:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".tmp")
         with open(tmp, "w", encoding="utf-8") as fh:
-            fh.write("# Eduka-Customizer settings. Edited by the GUI as well.\n")
+            fh.write("# DistroForge settings. Edited by the GUI as well.\n")
             self.parser.write(fh)
         os.replace(tmp, self.path)
 

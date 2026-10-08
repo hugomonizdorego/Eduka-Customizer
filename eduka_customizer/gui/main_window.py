@@ -27,7 +27,7 @@ MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "
               "AppearancePage": "wallpaper", "PlymouthPage": "plymouth", "BrandingPage": "branding",
               "CalamaresPage": "calamares", "BootMenuPage": "bootmenu", "WorkshopPage": "workshop",
               "TerminalPage": "terminal", "BuildPage": "build", "SettingsPage": "settings", "SoundsPage": "sounds",
-              "WelcomePage": "welcome", "GrubDesignPage": "bootmenu"}
+              "WelcomePage": "welcome", "GrubDesignPage": "bootmenu", "AboutPage": "about"}
 
 # The sidebar, in the order of the work. Pages that are used together share one
 # menu (as tabs). (key, menu title, icon, page classes, is a numbered step)
@@ -51,6 +51,7 @@ SECTIONS = [
     ("advanced", "Advanced", "terminal", ["terminal.TerminalPage", "workshop.WorkshopPage"], True),
     ("build", "Check & Build", "build", ["build.BuildPage"], True),
     ("settings", "Settings", "settings", ["settings_page.SettingsPage"], False),
+    ("about", "About", "about", ["about.AboutPage"], False),
 ]
 
 
@@ -133,10 +134,10 @@ def menu_icon(key, *fallback):
 def app_icon():
     from eduka_customizer.qt.gui import QIcon
     from eduka_customizer.core.config import data_file
-    ic = icon("eduka-customizer")
+    ic = icon("distroforge")
     if ic.isNull():
-        for path in (data_file("icons", "eduka-customizer.svg"),
-                     data_file("..", "icons", "eduka-customizer.svg")):
+        for path in (data_file("icons", "distroforge.svg"),
+                     data_file("..", "icons", "distroforge.svg")):
             if path.exists():
                 return QIcon(str(path))
     return ic
@@ -161,7 +162,7 @@ class MainWindow(QMainWindow):
         from eduka_customizer.core import log as logmod
         logmod.on_unhandled_error(lambda t, e, tb: self.bridge.crashed.emit("{}: {}".format(t.__name__, e)))
         self.log_handler = QtLogHandler(self.bridge)
-        self.log_handler.setLevel(OUTPUT)  # debug details go to /tmp/eduka-customizer
+        self.log_handler.setLevel(OUTPUT)  # debug details go to /tmp/distroforge
         get_logger().addHandler(self.log_handler)
         get_logger().setLevel(logging.DEBUG)
 
@@ -208,7 +209,7 @@ class MainWindow(QMainWindow):
         v = QVBoxLayout(side)
         v.setContentsMargins(0, 0, 0, 10)
         v.setSpacing(0)
-        brand = QLabel("Eduka-Customizer")
+        brand = QLabel("DistroForge")
         brand.setObjectName("brand")
         v.addWidget(brand)
         sub = QLabel("{} · ISO builder for Debian-based distributions".format(VERSION_LABEL))
@@ -220,11 +221,21 @@ class MainWindow(QMainWindow):
         self.nav.setIconSize(QSize(22, 22))
         self.nav.currentRowChanged.connect(self._show_page)
         v.addWidget(self.nav, 1)
+        donate = QPushButton("♥  Support {}".format(APP_NAME))
+        donate.setObjectName("sideDonate")
+        donate.setToolTip("Donate with PayPal: a gift keeps the project going")
+        donate.clicked.connect(self._donate)
+        v.addWidget(donate)
         self.theme_btn = QPushButton("Dark mode")
         self.theme_btn.setObjectName("sideButton")
         self.theme_btn.clicked.connect(self.toggle_theme)
         v.addWidget(self.theme_btn)
         return side
+
+    def _donate(self):
+        from eduka_customizer import DONATE_URL
+        from eduka_customizer.gui.pages.about import open_url
+        open_url(DONATE_URL)
 
     def _header(self):
         h = QFrame()
@@ -492,7 +503,7 @@ class MainWindow(QMainWindow):
             return False
         self.close_project()
         self.project = proj
-        self._file_handler = add_file_handler(proj.logs / "eduka-customizer.log")
+        self._file_handler = add_file_handler(proj.logs / "distroforge.log")
         settings().add_recent(proj.path)
         get_logger().info("Opened project %s", proj.path)
         self.update_state()

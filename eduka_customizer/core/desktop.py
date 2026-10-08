@@ -484,7 +484,7 @@ class DesktopManager:
         ours = Path(r, "etc/xdg/autostart/picom.desktop")
         if ours.exists() and "NoDisplay=true" in ours.read_text(errors="replace") and \
                 "Exec=picom\n" in ours.read_text(errors="replace"):
-            ours.unlink()  # the entry Eduka-Customizer wrote for picom
+            ours.unlink()  # the entry DistroForge wrote for picom
         if c["id"] == "xfwm4":
             xml = Path(r, "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml")
             if xml.exists():
@@ -523,13 +523,13 @@ class DesktopManager:
 
 
 PICOM = {
-    "light": "# picom (Eduka-Customizer preset: light)\nbackend = \"xrender\";\nvsync = true;\n"
+    "light": "# picom (DistroForge preset: light)\nbackend = \"xrender\";\nvsync = true;\n"
              "shadow = false;\nfading = true;\nfade-delta = 6;\n",
-    "shadows": "# picom (Eduka-Customizer preset: shadows)\nbackend = \"xrender\";\nvsync = true;\n"
+    "shadows": "# picom (DistroForge preset: shadows)\nbackend = \"xrender\";\nvsync = true;\n"
                "shadow = true;\nshadow-radius = 12;\nshadow-opacity = 0.35;\nshadow-offset-x = -10;\n"
                "shadow-offset-y = -10;\nshadow-exclude = [ \"class_g = 'eduka-panel'\", \"_GTK_FRAME_EXTENTS@:c\" ];\n"
                "fading = true;\nfade-delta = 5;\ncorner-radius = 8;\n",
-    "glass": "# picom (Eduka-Customizer preset: glass, needs OpenGL)\nbackend = \"glx\";\nvsync = true;\n"
+    "glass": "# picom (DistroForge preset: glass, needs OpenGL)\nbackend = \"glx\";\nvsync = true;\n"
              "shadow = true;\nshadow-radius = 16;\nshadow-opacity = 0.3;\nfading = true;\n"
              "blur-method = \"dual_kawase\";\nblur-strength = 6;\nblur-background = true;\n"
              "corner-radius = 12;\nblur-background-exclude = [ \"window_type = 'desktop'\" ];\n",

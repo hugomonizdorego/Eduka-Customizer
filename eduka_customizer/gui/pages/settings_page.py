@@ -1,4 +1,4 @@
-"""Settings, host check (doctor) and About."""
+"""Settings, host check (doctor) and the error log."""
 
 import os
 import shutil
@@ -8,7 +8,7 @@ import time
 
 from eduka_customizer.qt.widgets import QCheckBox, QLineEdit, QMessageBox, QPlainTextEdit
 
-from eduka_customizer import APP_NAME, HOMEPAGE, VERSION_LABEL
+from eduka_customizer import APP_NAME, VERSION_LABEL
 from eduka_customizer.core import doctor
 from eduka_customizer.core import log as logmod
 from eduka_customizer import qt as qtmod
@@ -36,12 +36,12 @@ FIELDS = [
 
 class SettingsPage(Page):
     title = "Settings"
-    subtitle = "Global preferences, host computer check and information about Eduka-Customizer."
+    subtitle = "Preferences, the tools of this computer and the error log."
     icon_names = ("preferences-system", "configure")
     needs_rootfs = False
 
     def build(self):
-        c = self.card("Preferences", "Stored in /etc/eduka-customizer/eduka-customizer.conf. Update the "
+        c = self.card("Preferences", "Stored in /etc/distroforge/distroforge.conf. Update the "
                                      "codenames when Debian makes a new release.")
         f = c.form()
         self.edits = {}
@@ -57,7 +57,7 @@ class SettingsPage(Page):
         c.add(label("ISO name fields: {id} {name} {version} {codename} {suite} {debian} {arch} {date}", "muted"))
         c.add(hbox(None, button("Save settings", self.save, "primary")))
 
-        c = self.card("Host computer", "Tools Eduka-Customizer uses on this computer.")
+        c = self.card("Host computer", "Tools DistroForge uses on this computer.")
         self.host = label("", "muted")
         c.add(self.host)
         self.checks = table(["", "Tool", "Package", "Used for"])
@@ -67,7 +67,7 @@ class SettingsPage(Page):
                    button("Install missing packages", self.install_missing, "primary")))
 
         c = self.card("Logs and error reports",
-                      "Every run writes a debug log and an error log to /tmp/eduka-customizer/. "
+                      "Every run writes a debug log and an error log to /tmp/distroforge/. "
                       "Send them to the developers when something fails.")
         self.log_paths = label("", "muted")
         c.add(self.log_paths)
@@ -78,17 +78,8 @@ class SettingsPage(Page):
         c.add(hbox(button("Open log folder", self.open_logs), button("Reload", self.load_errors), None,
                    button("Create bug report", self.bug_report, "primary")))
 
-        c = self.card("About")
-        c.add(label(
-            "<b>{} {}</b> — the ISO builder and customizer for <b>Debian-based distributions</b>, based on Debian "
-            "stable, testing and sid.<br><br>"
-            "Rewritten from <i>Customizer</i> by Ivailo Monev, Mubiin Kimura, Graham Cantin and "
-            "contributors. Techniques inspired by <i>Cubic</i> (boot replay, ISO remastering), "
-            "<i>remastersys</i> (system snapshot, clean-up) and <i>penguins-eggs</i> (hybrid "
-            "BIOS/UEFI boot, exclusion lists).<br><br>"
-            "Desktop: <i>Eduka-Desktop</i> — github.com/hugomonizdorego/Eduka-Desktop<br>"
-            "Apps: <i>Flathub</i> — flathub.org<br><br>"
-            "License: GNU GPL version 3 or later. {}".format(APP_NAME, VERSION_LABEL, HOMEPAGE)))
+        c.add(hbox(button("About {}, licenses and donations...".format(APP_NAME), lambda: self.main.go("AboutPage")),
+                   None))
 
     def refresh(self):
         cfg = settings()
@@ -124,7 +115,7 @@ class SettingsPage(Page):
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def bug_report(self):
-        """Pack logs and project state into /tmp/eduka-customizer/bug-report-*.tar.gz."""
+        """Pack logs and project state into /tmp/distroforge/bug-report-*.tar.gz."""
         name = os.path.join(logmod.DEBUG_DIR, time.strftime("bug-report-%Y%m%d-%H%M%S.tar.gz"))
         with tarfile.open(name, "w:gz") as tf:
             for f in os.listdir(logmod.DEBUG_DIR):
@@ -132,13 +123,13 @@ class SettingsPage(Page):
                     tf.add(os.path.join(logmod.DEBUG_DIR, f), arcname=f)
             p = self.main.project
             if p:
-                for extra in (p.state_file, p.logs / "eduka-customizer.log", p.logs / "live-session.log",
+                for extra in (p.state_file, p.logs / "distroforge.log", p.logs / "live-session.log",
                               p.logs / "qemu.log"):
                     if extra.exists():
                         tf.add(str(extra), arcname="project/" + extra.name)
             info = doctor.host_info()
             import io
-            data = "Eduka-Customizer {}\nHost: {}\nQt: {}\n".format(
+            data = "DistroForge {}\nHost: {}\nQt: {}\n".format(
                 VERSION_LABEL, info["distro"].summary(), qtmod.version())
             ti = tarfile.TarInfo("system.txt")
             ti.size = len(data.encode())

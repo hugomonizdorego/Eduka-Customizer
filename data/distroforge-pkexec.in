@@ -1,5 +1,5 @@
 #!/bin/sh
-# Start the Eduka-Customizer GUI as administrator through polkit while
+# Start the DistroForge GUI as administrator through polkit while
 # keeping access to the user's X11 or Wayland display.
 set -e
 if [ "$1" = "--as-root" ]; then
@@ -13,12 +13,12 @@ if [ "$1" = "--as-root" ]; then
         shift
     done
     [ "$1" = "--" ] && shift
-    exec @PREFIX@/bin/eduka-customizer gui "$@"
+    exec @PREFIX@/bin/distroforge gui "$@"
 fi
 if [ "$(id -u)" = 0 ]; then
-    exec @PREFIX@/bin/eduka-customizer gui "$@"
+    exec @PREFIX@/bin/distroforge gui "$@"
 fi
-exec pkexec @PREFIX@/bin/eduka-customizer-pkexec --as-root \
+exec pkexec @PREFIX@/bin/distroforge-pkexec --as-root \
     "WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}" "XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-}" \
     "XDG_SESSION_TYPE=${XDG_SESSION_TYPE:-}" "QT_QPA_PLATFORM=${QT_QPA_PLATFORM:-}" \
     "QT_SCALE_FACTOR=${QT_SCALE_FACTOR:-}" "LANG=${LANG:-C.UTF-8}" "LANGUAGE=${LANGUAGE:-}" \

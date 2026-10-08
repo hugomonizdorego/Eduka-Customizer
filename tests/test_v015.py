@@ -248,7 +248,7 @@ assert not w.section_open(w.sections[keys.index("sources")])
 w.project = Project.open(sys.argv[1])
 w.update_state()
 open_ = [s.key for s in w.sections if w.section_open(s)]
-assert open_ == ["start", "wizard", "sources", "settings"], open_
+assert open_ == ["start", "wizard", "sources", "settings", "about"], open_
 w.next_step(w.steps[1], w.steps[2])
 assert w.section_open(w.sections[keys.index("identity")])
 assert not w.section_open(w.sections[keys.index("users")])
@@ -274,7 +274,7 @@ def test_gui_steps_and_merged_menus(tmp_path):
     res = subprocess.run([sys.executable, "-c", GUI_STEPS, str(p.path)], capture_output=True, text=True,
                          env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
-    assert res.stdout.startswith("ok 24 16")
+    assert res.stdout.startswith("ok 25 17")
 
 
 def test_cli_check_and_apps(project):

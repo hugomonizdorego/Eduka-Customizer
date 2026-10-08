@@ -16,7 +16,7 @@ FIRSTBOOT_SCRIPT = "usr/libexec/eduka-flatpak-firstboot"
 FIRSTBOOT_UNIT = "etc/systemd/system/eduka-flatpak-firstboot.service"
 
 FIRSTBOOT_SH = """#!/bin/sh
-# Installs Flatpak applications chosen in Eduka-Customizer on first boot.
+# Installs Flatpak applications chosen in DistroForge on first boot.
 set -u
 LIST=/{list}
 [ -s "$LIST" ] || exit 0
@@ -180,7 +180,7 @@ def search_flathub(term, timeout=20):
     body = json.dumps({"query": term, "filters": []}).encode()
     req = urllib.request.Request(api + "/search", data=body, method="POST",
                                  headers={"Content-Type": "application/json",
-                                          "User-Agent": "Eduka-Customizer"})
+                                          "User-Agent": "DistroForge"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode())
     hits = data.get("hits", data if isinstance(data, list) else [])

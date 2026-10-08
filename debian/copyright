@@ -1,17 +1,22 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: Eduka-Customizer
+Upstream-Name: DistroForge
 Source: https://github.com/hugomonizdorego/Eduka-Customizer
 
 Files: *
-Copyright: 2026 Edukasaun OS Developers
+Copyright: 2026 Hugo Moniz do Rego and the DistroForge contributors
            2010-2013 Ivailo Monev (Customizer)
            2013-2017 Mubiin Kimura (Customizer)
            2015-2017 Graham Cantin (Customizer)
 License: GPL-3+
 Comment:
- Eduka-Customizer is a rewrite of Customizer (GPL-2+). Ideas and
+ DistroForge (formerly Eduka-Customizer) is a rewrite of Customizer (GPL-2+). Ideas and
  techniques are adapted from Cubic (GPL-3+), remastersys (GPL-3) and
  penguins-eggs (MIT/GPL-2); no code from those projects is copied verbatim.
+
+Files: data/icons/menu/*.svg
+Copyright: 2016-2024 Alexey Varfolomeev, Sergei Eremenko and the Papirus Development Team
+License: GPL-3+
+Comment: Papirus icon theme, https://github.com/PapirusDevelopmentTeam/papirus-icon-theme
 
 License: GPL-3+
  This program is free software: you can redistribute it and/or modify

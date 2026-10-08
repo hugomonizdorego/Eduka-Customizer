@@ -47,7 +47,7 @@ APP_GROUPS = [
 class WizardPage(Page):
     title = "Quick Wizard"
     nav_title = "Quick Wizard ✨"
-    subtitle = ("Answer a few questions and Eduka-Customizer builds your distribution: source, "
+    subtitle = ("Answer a few questions and DistroForge builds your distribution: source, "
                 "identity, desktop, look, applications and branding — then Finish.")
     icon_names = ("tools-wizard", "system-run", "applications-system")
     needs_rootfs = False

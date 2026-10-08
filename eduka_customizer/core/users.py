@@ -118,7 +118,7 @@ class Users:
         if bad:
             raise ValueError("Invalid group name(s): {}".format(", ".join(bad)))
         fullname = _clean_text(fullname) or username
-        lines = ["# Live user, written by Eduka-Customizer (Users page)"]
+        lines = ["# Live user, written by DistroForge (Users page)"]
         if hostname:
             lines.append('LIVE_HOSTNAME="{}"'.format(hostname))
         lines += ['LIVE_USERNAME="{}"'.format(username), 'LIVE_USER_FULLNAME="{}"'.format(fullname),
@@ -257,7 +257,7 @@ class Users:
 
 
 LIVE_PASSWORD = """#!/bin/sh
-# Live user password, written by Eduka-Customizer (Users page).
+# Live user password, written by DistroForge (Users page).
 # Runs after live-config created the live user.
 [ -e /var/lib/live/config/eduka-password ] && exit 0
 for f in /etc/live/config.conf /etc/live/config.conf.d/*.conf; do [ -r "$f" ] && . "$f"; done

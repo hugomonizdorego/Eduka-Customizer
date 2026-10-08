@@ -416,7 +416,7 @@ class Kernels:
 
     def set_grub_defaults(self, values):
         """Write a drop-in that wins over /etc/default/grub and the branding package."""
-        lines = ["# Written by Eduka-Customizer (Kernel page). Used when GRUB is installed or updated."]
+        lines = ["# Written by DistroForge (Kernel page). Used when GRUB is installed or updated."]
         for key in GRUB_KEYS:
             v = values.get(key)
             if v is None or v == "":

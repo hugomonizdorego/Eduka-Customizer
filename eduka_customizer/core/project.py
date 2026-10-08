@@ -106,7 +106,7 @@ class Project:
     def open(cls, path):
         p = cls(path)
         if not p.state_file.is_file():
-            raise FileNotFoundError("Not an Eduka-Customizer project: {}".format(p.path))
+            raise FileNotFoundError("Not an DistroForge project: {}".format(p.path))
         p.load()
         for d in (p.output, p.cache, p.logs, p.bootdir):
             d.mkdir(exist_ok=True)
@@ -161,7 +161,7 @@ class Project:
             fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             fh.close()
-            raise ProjectLocked("Another Eduka-Customizer instance is using {}".format(self.path))
+            raise ProjectLocked("Another DistroForge instance is using {}".format(self.path))
         fh.write(str(os.getpid()))
         fh.flush()
         self._lock_fh = fh

@@ -11,7 +11,7 @@ from eduka_customizer.core.config import settings
 from eduka_customizer.core.log import log
 
 FLAVORS = ["standard", "lxqt", "xfce", "kde", "gnome", "mate", "cinnamon", "lxde"]
-UA = {"User-Agent": "Eduka-Customizer"}
+UA = {"User-Agent": "DistroForge"}
 
 
 def base_url(suite):

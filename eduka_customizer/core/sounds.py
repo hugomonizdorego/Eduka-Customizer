@@ -80,7 +80,7 @@ OVERRIDE = "92_eduka-sounds"
 SAFE_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,40}$")
 
 PLAYER_SH = """#!/bin/sh
-# Plays one event of the system sound theme (Eduka-Customizer).
+# Plays one event of the system sound theme (DistroForge).
 # Usage: play-sound EVENT   e.g. play-sound system-bootup
 THEME="$(cat /usr/lib/eduka-customizer-sounds/theme 2>/dev/null)"
 [ -n "$THEME" ] || exit 0

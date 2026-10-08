@@ -260,12 +260,12 @@ def test_menu_icons_exist_for_every_page():
     src = (root / "eduka_customizer/gui/main_window.py").read_text()
     import re
     keys = re.findall(r'"(\w+Page)": "(\w+)"', src)
-    assert len(keys) == 24
+    assert len(keys) == 25
     for _page, key in keys:
         assert data_file("icons", "menu", key + ".svg").exists(), key
     assert "GPL-3.0" in (root / "data/icons/menu/README.md").read_text()
     for size in (16, 32, 48, 256):
-        assert (root / "icons/hicolor/{0}x{0}/apps/eduka-customizer.png".format(size)).exists()
+        assert (root / "icons/hicolor/{0}x{0}/apps/distroforge.png".format(size)).exists()
 
 
 def test_archive_links():

@@ -1,6 +1,6 @@
 """Build binary .deb packages from a small Debian source tree.
 
-The trees written by Eduka-Customizer are valid Debian source packages
+The trees written by DistroForge are valid Debian source packages
 (debian/control, changelog, copyright, rules, install, maintainer scripts),
 so they can also be built with dpkg-buildpackage and published in a real
 repository later. For speed and to avoid needing debhelper on the host,
