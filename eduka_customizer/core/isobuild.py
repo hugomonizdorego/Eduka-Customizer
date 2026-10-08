@@ -195,7 +195,8 @@ class Builder:
     def ensure_live_stack(self):
         rootfs = self.project.rootfs
         pkgs = Packages(self.project)
-        missing = [x for x in LIVE_PACKAGES if not pkgs.is_installed(x)]
+        from eduka_customizer.core import initsystem
+        missing = [x for x in initsystem.live_packages(rootfs) if not pkgs.is_installed(x)]
         if not list(Path(rootfs, "boot").glob("vmlinuz-*")):
             missing.append(KERNEL_PACKAGE.get(self.project.distro.arch, "linux-image-amd64"))
         if missing:
@@ -386,6 +387,8 @@ class Builder:
         Kernels(p).finalize_temp_repos()
         with self.chroot:
             self.ensure_live_stack()
+            from eduka_customizer.core import initsystem
+            initsystem.sync_services(self.project)
             self.initramfs()
             self.stage("Cleaning up")
             cleanup.run(p, self.opts.cleanup)

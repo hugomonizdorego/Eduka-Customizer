@@ -11,7 +11,12 @@ from pathlib import Path
 
 from eduka_customizer.core.config import settings
 
-ALLOWED_IDS = ("debian", "edukasaun")
+ALLOWED_IDS = ("debian", "edukasaun", "devuan")
+# Devuan codename -> the Debian release it is built from ("ceres" is Devuan unstable).
+DEVUAN = {"beowulf": "buster", "chimaera": "bullseye", "daedalus": "bookworm", "excalibur": "trixie",
+          "freia": "forky", "ceres": "sid"}
+# Devuan derivatives (all Debian-based through Devuan): Refracta, Exe GNU/Linux, Gnuinos,
+# heads, Maemo Leste, Crowz, Star, MiyoLinux. They are found by ID, ID_LIKE or /etc/devuan_version.
 # Ubuntu and systems built on it. Linux Mint is only refused when it is Ubuntu-based:
 # Linux Mint Debian Edition (LMDE, ID_LIKE=debian) is a Debian derivative and welcome.
 UBUNTU_MARKERS = ("ubuntu", "pop", "elementary", "zorin", "neon",
@@ -43,6 +48,8 @@ class DistroInfo:
     arch: str = ""
     is_edukasaun: bool = False
     apt_suites: list = field(default_factory=list)
+    is_devuan: bool = False
+    devuan_codename: str = ""
 
     def to_dict(self):
         return asdict(self)
@@ -56,6 +63,11 @@ class DistroInfo:
         label = {"stable": "Debian stable", "testing": "Debian testing",
                  "sid": "Debian sid (unstable)", "oldstable": "Debian oldstable"}.get(self.suite, self.suite)
         base = "{} ({})".format(label, self.debian_codename or "?")
+        if self.is_devuan:
+            base = "Devuan {} (follows {}, {})".format(self.devuan_codename or "?", label,
+                                                       self.debian_codename or "?")
+            if self.id == "devuan":
+                return "{} - {}".format(base, self.arch)
         if self.id and self.id != "debian":
             # Any derivative (LMDE, your own distribution, ...): show its Debian base too.
             return "{} - based on {} - {}".format(self.pretty_name or self.name or self.id, base, self.arch)
@@ -142,18 +154,24 @@ def apt_suites(rootfs):
                     continue
                 uris = re.search(r"(?im)^URIs:\s*(.+)$", stanza)
                 m = re.search(r"(?im)^Suites:\s*(.+)$", stanza)
-                uri_ok = bool(uris and "debian" in uris.group(1))
+                uri_ok = bool(uris and ("debian" in uris.group(1) or "devuan" in uris.group(1)))
                 if m and uri_ok:
-                    suites += m.group(1).split()
+                    suites += [_debian_suite(x) for x in m.group(1).split()]
         else:
             for line in text.splitlines():
                 line = line.split("#", 1)[0].strip()
                 if not line.startswith(("deb ", "deb-src ")):
                     continue
                 tokens = re.sub(r"\[[^\]]*\]", "", line).split()
-                if len(tokens) >= 3 and "debian" in tokens[1]:
-                    suites.append(tokens[2])
+                if len(tokens) >= 3 and ("debian" in tokens[1] or "devuan" in tokens[1]):
+                    suites.append(_debian_suite(tokens[2]))
     return suites
+
+
+def _debian_suite(suite):
+    """A Devuan suite (daedalus-updates) as the Debian suite it follows (bookworm-updates)."""
+    base, sep, rest = suite.partition("-")
+    return DEVUAN[base] + sep + rest if base in DEVUAN else suite
 
 
 def detect_suite(debian_codename, debian_version, suites, codenames=None):
@@ -209,6 +227,14 @@ def detect(rootfs):
     dv = resolve_in_root(rootfs, "etc/debian_version")
     info.debian_version = dv.read_text(errors="replace").strip() if dv and dv.is_file() else ""
     info.apt_suites = apt_suites(rootfs)
+    devuan_file = resolve_in_root(rootfs, "etc/devuan_version")
+    devuan_text = devuan_file.read_text(errors="replace").strip() if devuan_file and devuan_file.is_file() else ""
+    info.is_devuan = info.id == "devuan" or "devuan" in info.id_like or bool(devuan_text)
+    if info.is_devuan:
+        for candidate in (devuan_text.split("/")[0], info.codename if info.id == "devuan" else ""):
+            if candidate in DEVUAN:
+                info.devuan_codename = candidate
+                break
 
     codenames = settings().suite_codenames()
     major = info.debian_version.split(".")[0]
@@ -218,6 +244,11 @@ def detect(rootfs):
         info.debian_codename = info.debian_version.split("/")[0]
     elif info.id == "debian" and info.codename:
         info.debian_codename = info.codename
+    if not info.debian_codename and info.devuan_codename:
+        info.debian_codename = DEVUAN[info.devuan_codename]
+    if info.debian_version and not re.match(r"^\d", info.debian_version) and \
+            info.debian_version.split("/")[0] in DEVUAN:
+        info.debian_codename = DEVUAN[info.debian_version.split("/")[0]]
     suite_codes = {s.split("-")[0] for s in info.apt_suites}
     if not info.debian_codename:
         for code in codenames.values():
@@ -245,11 +276,11 @@ def validate(info, rootfs=None):
         lsb = Path(rootfs, "etc/lsb-release")
         if lsb.is_file() and "ubuntu" in lsb.read_text(errors="replace").lower():
             raise UnsupportedDistro("This filesystem identifies itself as Ubuntu (/etc/lsb-release).")
-    if not info.debian_version:
+    if not info.debian_version and not info.is_devuan:
         raise UnsupportedDistro("/etc/debian_version is missing: this is not a Debian system.")
     if info.id not in ALLOWED_IDS and not info.is_edukasaun and "debian" not in info.id_like:
         raise UnsupportedDistro(
-            "'{}' is not supported. Debian and Debian derivatives (such as LMDE) "
+            "'{}' is not supported. Debian, Devuan and their derivatives (such as LMDE) "
             "can be customized.".format(info.pretty_name or info.id or "Unknown system"))
     if info.suite == "oldstable" and not settings().getbool("debian", "allow_oldstable"):
         raise UnsupportedDistro(

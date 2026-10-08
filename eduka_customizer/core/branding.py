@@ -19,6 +19,20 @@ BACKGROUNDS = "usr/share/backgrounds/{id}"
 PLYMOUTH_THEMES = "usr/share/plymouth/themes"
 SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 HOSTNAME = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
+
+
+def split_hostname(value, fallback="debian"):
+    """(short name, full name or '') of a host name such as 'pc', 'pc.example.org' or
+    'localhost.localdomain' (ISOs often ship that one: it becomes *fallback*).
+    ValueError when it cannot be a host name."""
+    value = (value or "").strip().strip(".").lower()
+    if not value or value.split(".")[0] in ("localhost", "localhost6"):
+        value = fallback
+    labels = value.split(".")
+    if len(value) > 253 or not all(HOSTNAME.match(x) for x in labels):
+        raise ValueError("Invalid host name: '{}'. Use letters, digits and '-' (for example mylinux or "
+                         "mylinux.example.org).".format(value))
+    return labels[0], value if len(labels) > 1 else ""
 USERNAME = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
 
 
@@ -49,16 +63,25 @@ class Branding:
         p = resolve_in_root(self.rootfs, "etc/os-release")
         return parse_os_release(p.read_text()) if p and p.is_file() else {}
 
-    def apply_identity(self, ident, protect=True):
-        """Write os-release, issue, hostname and live-config defaults."""
+    @staticmethod
+    def check_identity(ident):
+        """The OS ID of *ident*; ValueError for what apply_identity would refuse. Pages call it
+        before a change waits in Review & Apply, so applying does not fail later."""
         name = (ident.get("name") or "").strip()
         if not name:
             raise ValueError("Enter the name of your distribution first (Identity page)")
-        version = ident.get("version", "")
-        codename = ident.get("codename", "")
         os_id = (ident.get("id") or re.sub(r"[^a-z0-9-]", "", name.lower().replace(" ", "-")) or "linux").lower()
         if not SAFE.match(os_id):
-            raise ValueError("Invalid OS ID: {}".format(os_id))
+            raise ValueError("Invalid OS ID: '{}'. Use lower-case letters, digits, '.', '_' and '-'.".format(os_id))
+        split_hostname(ident.get("hostname") or os_id, os_id)
+        return os_id
+
+    def apply_identity(self, ident, protect=True):
+        """Write os-release, issue, hostname and live-config defaults."""
+        os_id = self.check_identity(ident)
+        name = ident["name"].strip()
+        version = ident.get("version", "")
+        codename = ident.get("codename", "")
         old = self.os_release()
         info = self.project.distro
         debian_code = info.debian_codename or old.get("VERSION_CODENAME", "")
@@ -93,12 +116,13 @@ class Branding:
         lsb = self.rootfs / "etc/lsb-release"
         lsb.write_text('DISTRIB_ID="{}"\nDISTRIB_RELEASE="{}"\nDISTRIB_CODENAME="{}"\n'
                        'DISTRIB_DESCRIPTION="{}"\n'.format(name, version, debian_code, data["PRETTY_NAME"]))
-        self.set_hostname(ident.get("hostname") or os_id)
+        self.set_hostname(ident.get("hostname") or os_id, os_id)
+        ident["hostname"] = split_hostname(ident.get("hostname") or os_id, os_id)[0]
         from eduka_customizer.core.users import Users
         live = Users(self.project).live()
         # Keep the live user chosen on the Users page unless the caller names one.
         self.set_live_user(ident.get("live_user") or live["username"],
-                           ident.get("live_fullname") or live["fullname"], ident.get("hostname") or os_id)
+                           ident.get("live_fullname") or live["fullname"], ident["hostname"])
         self.project.state["identity"].update(ident)
         self.project.record("identity", data["PRETTY_NAME"])
         log.info("Identity set to %s", data["PRETTY_NAME"])
@@ -115,15 +139,15 @@ class Branding:
         if src.exists() and not dst.exists():
             shutil.copy2(src, dst)
 
-    def set_hostname(self, hostname):
-        if not HOSTNAME.match(hostname):
-            raise ValueError("Invalid hostname: {}".format(hostname))
-        (self.rootfs / "etc/hostname").write_text(hostname + "\n")
+    def set_hostname(self, hostname, fallback=None):
+        short, full = split_hostname(hostname, fallback or self.project.os_id() or "debian")
+        hostname = short
+        (self.rootfs / "etc/hostname").write_text(short + "\n")
         hosts = self.rootfs / "etc/hosts"
         text = hosts.read_text() if hosts.exists() else "127.0.0.1\tlocalhost\n"
         text = re.sub(r"(?m)^127\.0\.1\.1\s.*\n?", "", text)
         lines = text.rstrip("\n").split("\n")
-        lines.insert(1, "127.0.1.1\t{}".format(hostname))
+        lines.insert(1, "127.0.1.1\t{}".format("{} {}".format(full, short) if full else short))
         hosts.write_text("\n".join(lines) + "\n")
 
     def set_live_user(self, username, fullname, hostname):

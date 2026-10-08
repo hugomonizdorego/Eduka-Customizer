@@ -157,10 +157,13 @@ def run(project, deep=False):
         add("info", "Temporary repositories", "{} file(s) from the kernel terminal: removed by the build unless a "
             "kernel was installed from them".format(len(temp)), "KernelPage")
     have = _installed(r)
-    live_missing = [x for x in ("live-boot", "live-config", "live-config-systemd") if x not in have]
+    from eduka_customizer.core import initsystem
+    live_missing = [x for x in initsystem.live_packages(r) if x not in have]
     add("warn" if live_missing else "ok", "Live boot support",
         "Missing {}: the build installs them (needs internet).".format(" ".join(live_missing)) if live_missing
         else "live-boot and live-config are installed", "PackagesPage" if live_missing else "")
+    for level, text in initsystem.check(p):
+        add(level, "Init system", text, "InitSystemPage" if level != "ok" else "")
     # 5. Desktop and login
     from eduka_customizer.core import desktop as dsk
     sessions = dsk.sessions(r)

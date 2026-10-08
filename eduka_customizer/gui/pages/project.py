@@ -99,15 +99,15 @@ class ProjectPage(Page):
         v.addWidget(label("Create a minimal Debian system with mmdebstrap and add your desktop "
                           "afterwards. The boot menu is generated (BIOS + UEFI, Secure Boot when "
                           "shim-signed is installed).", "muted"))
-        self.bs_suite = combo([("stable", "Debian stable"), ("testing", "Debian testing"),
-                               ("sid", "Debian sid (unstable)")])
+        self.bs_family = combo([("debian", "Debian (systemd)"), ("devuan", "Devuan (no systemd: sysvinit)")])
+        self.bs_suite = combo([("stable", "Stable"), ("testing", "Testing"), ("sid", "Unstable (sid / ceres)")])
         self.bs_arch = combo(["amd64", "i386", "arm64"])
         self.bs_variant = combo([("important", "Important (recommended)"), ("standard", "Standard"),
                                  ("minbase", "Minimal")])
-        v.addWidget(hbox(self.bs_suite, self.bs_arch, self.bs_variant))
+        v.addWidget(hbox(self.bs_family, self.bs_suite, self.bs_arch, self.bs_variant))
         v.addWidget(hbox(None, button("Bootstrap new base", self.bootstrap, "primary",
                                       ("system-run",))))
-        tabs.addTab(t, "New Debian base")
+        tabs.addTab(t, "New Debian / Devuan base")
 
         # Snapshot -------------------------------------------------------------------
         t = QWidget()
@@ -271,12 +271,13 @@ class ProjectPage(Page):
         from eduka_customizer.core import bootstrap
         proj, lang = self.project, self._language()
         suite, arch, variant = self.bs_suite.currentData(), self.bs_arch.currentData(), self.bs_variant.currentData()
+        devuan = self.bs_family.currentData() == "devuan"
 
         def work(t):
-            info = bootstrap.bootstrap(proj, suite, arch, variant)
+            info = bootstrap.bootstrap(proj, suite, arch, variant, devuan=devuan)
             apply_language(proj, lang)
             return info
-        self.task("Bootstrap Debian " + suite, work, self._done)
+        self.task("Bootstrap {} {}".format("Devuan" if devuan else "Debian", suite), work, self._done)
 
     def snapshot(self):
         if not self._confirm_replace():

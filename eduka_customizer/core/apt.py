@@ -106,6 +106,33 @@ def debian_sources(suite, mirror=None, security_mirror=None, components=None,
     return stanzas
 
 
+def devuan_codenames():
+    cfg = settings()
+    return {"oldstable": cfg.get("devuan", "oldstable"), "stable": cfg.get("devuan", "stable"),
+            "testing": cfg.get("devuan", "testing"), "sid": "ceres"}
+
+
+def devuan_sources(suite, mirror=None, components=None, updates=True, security=True, backports=False,
+                   deb_src=False):
+    """The stanzas of a devuan.sources file (deb.devuan.org/merged has updates and security too)."""
+    cfg = settings()
+    if suite not in ("stable", "testing", "sid", "oldstable"):
+        raise ValueError("Unsupported suite: {}".format(suite))
+    name = devuan_codenames()[suite]
+    mirror = mirror or cfg.get("devuan", "mirror")
+    components = components or cfg.get("devuan", "components")
+    suites = [name]
+    if suite not in ("sid", "testing"):
+        if updates:
+            suites.append(name + "-updates")
+        if security:
+            suites.append(name + "-security")
+        if backports and suite == "stable":
+            suites.append(name + "-backports")
+    return [{"Types": "deb deb-src" if deb_src else "deb", "URIs": mirror, "Suites": " ".join(suites),
+             "Components": components, "Signed-By": cfg.get("devuan", "keyring")}]
+
+
 # --------------------------------------------------------------------------
 # Source file management
 
@@ -157,20 +184,32 @@ class Sources:
             p.unlink()
             log.info("Removed %s", p.relative_to(self.rootfs))
 
-    def set_debian(self, suite, **kw):
-        """Replace the Debian entries with a clean deb822 debian.sources."""
-        stanzas = debian_sources(suite, **kw)
+    def is_devuan(self):
+        return (self.rootfs / "etc/devuan_version").exists() or \
+            "devuan" in " ".join(p.read_text(errors="replace") for p in self.files())
+
+    def set_debian(self, suite, devuan=None, **kw):
+        """Replace the Debian (or Devuan) entries with a clean deb822 debian.sources / devuan.sources."""
+        if devuan is None:
+            devuan = self.is_devuan()
+        if devuan:
+            kw.pop("security_mirror", None)
+            kw.pop("use_codename", None)
+            stanzas = devuan_sources(suite, **kw)
+        else:
+            stanzas = debian_sources(suite, **kw)
+        own = "devuan.sources" if devuan else "debian.sources"
         legacy = self.rootfs / "etc/apt/sources.list"
         if legacy.exists() and re.search(r"(?m)^\s*deb\s", legacy.read_text(errors="replace")):
             shutil.move(str(legacy), str(legacy) + ".eduka-old")
-            legacy.write_text("# Moved to /etc/apt/sources.list.d/debian.sources by DistroForge\n")
+            legacy.write_text("# Moved to /etc/apt/sources.list.d/{} by DistroForge\n".format(own))
         for p in self.files():
-            if p.suffix == ".sources" and p.name != "debian.sources":
+            if p.suffix == ".sources" and p.name != own:
                 stz = parse_deb822(p.read_text(errors="replace"))
-                if stz and all("deb.debian.org" in s.get("URIs", "") or
+                if stz and all("deb.debian.org" in s.get("URIs", "") or "devuan.org" in s.get("URIs", "") or
                                "security.debian.org" in s.get("URIs", "") for s in stz):
                     p.rename(p.with_name(p.name + ".eduka-old"))
-        self.write("debian.sources", format_deb822(stanzas))
+        self.write(own, format_deb822(stanzas))
         return stanzas
 
     def add_repository(self, name, uri, suites, components="main", key=None, arch=None):

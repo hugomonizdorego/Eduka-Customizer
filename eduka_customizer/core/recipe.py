@@ -107,6 +107,9 @@ def run_step(project, step, base, build=True):
         if step.get("settings"):
             b.configure(step["id"], dict(b.settings(step["id"]), **step["settings"]), write=False)
         b.use(step["id"], timeout=step.get("timeout"))
+    elif action == "init-system":
+        from eduka_customizer.core import initsystem
+        initsystem.use(project, step["id"])
     elif action == "replace-app":
         from eduka_customizer.core.replace import Replacer
         Replacer(project).replace(step["role"], step["package"], step.get("remove", []))

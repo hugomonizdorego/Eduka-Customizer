@@ -141,6 +141,12 @@ def _install_loader_tools(loader_id):
     return fix
 
 
+def _live_stack(project):
+    from eduka_customizer.core import initsystem
+    from eduka_customizer.core.apt import Packages
+    Packages(project).install(initsystem.live_packages(project.rootfs))
+
+
 # (message pattern, what the fix does, function(match) -> fix(project))
 RULES = [
     (r"choose the boot loader again|is chosen but not installed in the image",
@@ -177,8 +183,10 @@ RULES = [
     (r"mount\(s\) are active", "Release the mounts", lambda m: _unmount),
     (r"Missing: .*\(sudo apt install squashfs-tools xorriso\)", "Install squashfs-tools and xorriso on this "
      "computer", lambda m: _host_tools),
-    (r"Missing (live-boot|live-config)", "Install live-boot, live-config and live-config-systemd",
-     lambda m: _install("live-boot", "live-config", "live-config-systemd")),
+    (r"Missing (live-boot|live-config)", "Install live-boot and live-config for the init system",
+     lambda m: _live_stack),
+    (r"(live-config-\w+) is missing: live-config", "Install {1}", lambda m: _install(m.group(1))),
+    (r"elogind is missing", "Install elogind and libpam-elogind", lambda m: _install("elogind", "libpam-elogind")),
     (r"No kernel in /boot", "Install the Debian kernel (linux-image-amd64)", lambda m: _install("linux-image-amd64")),
 ]
 

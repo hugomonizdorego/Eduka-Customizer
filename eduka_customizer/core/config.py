@@ -39,6 +39,15 @@ DEFAULTS = {
         "live_iso_url": "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/",
         "testing_live_iso_url": "https://cdimage.debian.org/cdimage/weekly-live-builds/amd64/iso-hybrid/",
     },
+    # Devuan: Debian without systemd (sysvinit, OpenRC or runit). Its releases follow Debian's.
+    "devuan": {
+        "oldstable": "daedalus",
+        "stable": "excalibur",
+        "testing": "freia",
+        "mirror": "http://deb.devuan.org/merged",
+        "components": "main contrib non-free non-free-firmware",
+        "keyring": "/usr/share/keyrings/devuan-archive-keyring.gpg",
+    },
     # Eduka-Desktop is one of the desktops on offer; nothing else about a distribution is preset.
     "eduka_desktop": {
         "repo": "https://github.com/hugomonizdorego/Eduka-Desktop",

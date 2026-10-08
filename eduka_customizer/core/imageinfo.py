@@ -57,7 +57,7 @@ def identity(project):
     }
     host = Path(r, "etc/hostname")
     out["hostname"] = host.read_text(errors="replace").strip().split("\n")[0] if host.is_file() else ""
-    if out["hostname"] in ("localhost", "") and out["id"]:
+    if out["hostname"].split(".")[0] in ("localhost", "localhost6", "") and out["id"]:
         out["hostname"] = out["id"]
     out["volume_label"] = (project.state.get("source", {}) or {}).get("volume_id", "") or ""
     user = ""

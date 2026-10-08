@@ -1,6 +1,6 @@
 """Identity page: OS name, version, computer name."""
 
-from eduka_customizer.qt.widgets import QCheckBox, QLineEdit
+from eduka_customizer.qt.widgets import QMessageBox, QCheckBox, QLineEdit
 
 from eduka_customizer.core import imageinfo
 from eduka_customizer.gui.widgets import Page, button, hbox, label
@@ -72,6 +72,11 @@ class IdentityPage(Page):
         from eduka_customizer.core.branding import Branding
         ident = dict(self.project.state.get("identity", {}))
         ident.update({k: e.text().strip() for k, e in self.edits.items()})
+        try:
+            Branding.check_identity(ident)
+        except ValueError as e:
+            QMessageBox.warning(self, "Identity", str(e))
+            return
         proj, protect, cal = self.project, self.protect.isChecked(), self.calamares.isChecked()
 
         def work(t):

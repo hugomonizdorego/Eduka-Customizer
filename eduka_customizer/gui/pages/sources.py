@@ -36,14 +36,15 @@ class RepoDialog(QDialog):
 class SourcesPage(Page):
     title = "Repositories"
     nav_title = "Repositories"
-    subtitle = ("Step 2 · Where packages come from: the Debian release (stable, testing or sid) and extra "
-                "repositories.")
+    subtitle = ("Step 2 · Where packages come from: the Debian or Devuan release (stable, testing or unstable) "
+                "and extra repositories. Your changes wait in Review & Apply (step 12).")
     icon_names = ("software-properties", "preferences-system-network", "network-server")
+    CHANGES = ("Set Debian", "Set Devuan")
 
     def build(self):
-        c = self.card("Debian suite", "Writes a clean deb822 file "
-                                      "/etc/apt/sources.list.d/debian.sources. Old Debian entries are "
-                                      "kept as *.eduka-old.")
+        c = self.card("Release", "Writes a clean deb822 file /etc/apt/sources.list.d/debian.sources "
+                                 "(devuan.sources for Devuan). Old entries are kept as *.eduka-old.")
+        self.suite_card = c
         f = c.form()
         self.suite = combo([("stable", "Stable"), ("testing", "Testing"), ("sid", "Sid (unstable)")])
         f.addRow("Suite:", self.suite)
@@ -87,6 +88,26 @@ class SourcesPage(Page):
         if not self.project:
             return
         d = self.project.distro
+        from eduka_customizer.core.apt import devuan_codenames
+        if d.is_devuan:
+            codes = devuan_codenames()
+            names = [("stable", "Stable ({})".format(codes["stable"])), ("testing", "Testing ({})".format(
+                codes["testing"])), ("sid", "Unstable (ceres)")]
+            mirror, comps = settings().get("devuan", "mirror"), settings().get("devuan", "components")
+        else:
+            codes = settings().suite_codenames()
+            names = [("stable", "Stable ({})".format(codes["stable"])), ("testing", "Testing ({})".format(
+                codes["testing"])), ("sid", "Sid (unstable)")]
+            mirror, comps = settings().get("debian", "mirror"), settings().get("debian", "components")
+        if [self.suite.itemData(i) for i in range(self.suite.count())] and \
+                self.suite.itemText(0) != names[0][1]:
+            self.suite.clear()
+            for key, text in names:
+                self.suite.addItem(text, key)
+        if not self.mirror.text().strip() or self.mirror.text().strip() in (
+                settings().get("debian", "mirror"), settings().get("devuan", "mirror")):
+            self.mirror.setText(mirror)
+            self.components.setText(comps)
         idx = self.suite.findData(d.suite)
         if idx >= 0:
             self.suite.setCurrentIndex(idx)
@@ -96,13 +117,23 @@ class SourcesPage(Page):
         for p in Sources(self.project.rootfs).files():
             self.files.addItem(p.name)
         self.files.blockSignals(False)
-        items = self.files.findItems(current or "debian.sources", Qt.MatchFlag.MatchExactly)
+        items = self.files.findItems(current or ("devuan.sources" if d.is_devuan else "debian.sources"),
+                                     Qt.MatchFlag.MatchExactly)
         if items:
             self.files.setCurrentItem(items[0])
         elif self.files.count():
             self.files.setCurrentRow(0)
 
+    def _devuan(self):
+        return bool(self.project and self.project.distro.is_devuan)
+
     def _stanzas(self):
+        if self._devuan():
+            from eduka_customizer.core.apt import devuan_sources
+            return devuan_sources(self.suite.currentData(), mirror=self.mirror.text().strip() or None,
+                                  components=self.components.text().strip() or None,
+                                  updates=self.updates.isChecked(), security=self.security.isChecked(),
+                                  backports=self.backports.isChecked(), deb_src=self.debsrc.isChecked())
         return debian_sources(self.suite.currentData(), mirror=self.mirror.text().strip() or None,
                               components=self.components.text().strip() or None,
                               updates=self.updates.isChecked(), security=self.security.isChecked(),
@@ -110,7 +141,8 @@ class SourcesPage(Page):
                               use_codename=self.codename.isChecked())
 
     def preview(self):
-        QMessageBox.information(self, "debian.sources", format_deb822(self._stanzas()))
+        QMessageBox.information(self, "devuan.sources" if self._devuan() else "debian.sources",
+                                format_deb822(self._stanzas()))
 
     def apply_suite(self):
         suite = self.suite.currentData()
@@ -124,14 +156,16 @@ class SourcesPage(Page):
                 return
         stanzas = self._stanzas()
         proj = self.project
+        devuan = self._devuan()
+        own = "devuan.sources" if devuan else "debian.sources"
 
         def work(t):
             src = Sources(proj.rootfs)
-            src.set_debian(suite)
-            src.write("debian.sources", format_deb822(stanzas))
+            src.set_debian(suite, devuan=devuan)
+            src.write(own, format_deb822(stanzas))
             Packages(proj).update()
             proj.record("sources", suite)
-        self.task("Set Debian {} sources".format(suite), work)
+        self.task("Set {} {} sources".format("Devuan" if devuan else "Debian", suite), work)
 
     def load_file(self, name):
         if name and self.project:

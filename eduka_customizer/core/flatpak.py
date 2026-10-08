@@ -19,7 +19,9 @@ FIRSTBOOT_SH = """#!/bin/sh
 # Installs Flatpak applications chosen in DistroForge on first boot.
 set -u
 LIST=/{list}
+DONE=/var/lib/eduka-flatpak-firstboot.done
 [ -s "$LIST" ] || exit 0
+[ -e "$DONE" ] && exit 0
 for i in $(seq 1 30); do
     getent hosts dl.flathub.org >/dev/null 2>&1 && break
     sleep 10
@@ -30,7 +32,10 @@ while read -r app; do
     case "$app" in ''|'#'*) continue ;; esac
     flatpak install --system --noninteractive -y {remote} "$app" || failed=1
 done < "$LIST"
-[ "$failed" = 0 ] && systemctl disable eduka-flatpak-firstboot.service
+if [ "$failed" = 0 ]; then
+    touch "$DONE"
+    command -v systemctl >/dev/null 2>&1 && systemctl disable eduka-flatpak-firstboot.service 2>/dev/null
+fi
 exit 0
 """
 

@@ -29,7 +29,7 @@ PARTITION_CHOICES = [("none", "Let the user choose"), ("erase", "Erase disk"),
 RESTART_MODES = [("user-unchecked", "Offer restart, unchecked"), ("user-checked", "Offer restart, checked"),
                  ("always", "Always restart"), ("never", "Never restart")]
 LIVE_PACKAGES = ["calamares", "calamares-settings-debian", "live-boot", "live-boot-doc",
-                 "live-config", "live-config-doc", "live-config-systemd", "live-tools", "live-task-localisation",
+                 "live-config", "live-config-doc", "live-config-systemd", "live-config-sysvinit", "live-tools", "live-task-localisation",
                  "live-task-recommended"]
 
 

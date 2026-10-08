@@ -46,7 +46,7 @@ def cmd_new(args):
         info = iso.extract(p, args.iso)
     elif args.bootstrap:
         from eduka_customizer.core import bootstrap
-        info = bootstrap.bootstrap(p, args.bootstrap, args.arch, args.variant)
+        info = bootstrap.bootstrap(p, args.bootstrap, args.arch, args.variant, devuan=args.devuan)
     elif args.snapshot:
         from eduka_customizer.core import snapshot
         info = snapshot.snapshot(p, args.snapshot)
@@ -672,6 +672,25 @@ def cmd_boot_loader(args):
     return 0
 
 
+def cmd_init(args):
+    from eduka_customizer.core import initsystem
+    p = _project(args) if args.action == "list" else _locked(args)
+    if args.action == "list":
+        for iid, name, desc, ok, why, cur in initsystem.options(p):
+            print("{} {:10} {}".format("*" if cur else (" " if ok else "-"), iid, desc if ok else
+                                       "not available: " + why))
+        for level, text in initsystem.check(p):
+            print("  {:5} {}".format(level, text))
+        return 0
+    if not args.item:
+        raise SystemExit("Use: init use systemd|sysvinit|openrc|runit")
+    try:
+        initsystem.use(p, args.item)
+    except (ValueError, RuntimeError) as e:
+        raise SystemExit(str(e))
+    return 0
+
+
 def cmd_apps(args):
     from eduka_customizer.core import replace
     if args.action == "roles":
@@ -951,7 +970,7 @@ def build_parser():
   5  Language         language
   6  Desktop          desktop, eduka-desktop, purpose
   7  Software         apt, flatpak, apps
-  8  Kernel & Boot    kernel, boot-loader, bootmenu, grub-theme
+  8  Kernel & Boot    kernel, boot-loader, init, bootmenu, grub-theme
   9  Look & Feel      themes, assets, wallpapers, plymouth, sounds, welcome
  10  Installer        calamares
  11  Advanced         shell, run, hook, live, workshop, recipe
@@ -978,6 +997,7 @@ Help for one command: distroforge COMMAND --help""")
     g = s.add_mutually_exclusive_group()
     g.add_argument("--iso", help="Debian or Debian-based live ISO")
     g.add_argument("--bootstrap", choices=["stable", "testing", "sid"])
+    s.add_argument("--devuan", action="store_true", help="with --bootstrap: a Devuan base (no systemd)")
     g.add_argument("--snapshot", choices=["dist", "backup"], help="copy the running system")
     s.add_argument("--arch", default="amd64")
     s.add_argument("--variant", default="important", choices=["important", "standard", "minbase"])
@@ -1147,6 +1167,11 @@ Help for one command: distroforge COMMAND --help""")
     s.add_argument("item", nargs="?", help="grub, grub-secureboot, systemd-boot, refind, efistub or syslinux")
     s.add_argument("values", nargs="*", help="for set: KEY=VALUE, for example TIMEOUT=3 CMDLINE='quiet splash'")
     s.set_defaults(func=cmd_boot_loader)
+
+    s = sub.add_parser("init", help="init system: systemd, SysVinit, OpenRC or runit")
+    s.add_argument("action", choices=["list", "use"])
+    s.add_argument("item", nargs="?", help="systemd, sysvinit, openrc or runit")
+    s.set_defaults(func=cmd_init)
 
     s = sub.add_parser("apps", help="replace the default applications (browser, mail, editor, terminal, ...)")
     s.add_argument("action", choices=["roles", "status", "replace"])
