@@ -18,9 +18,9 @@ COLORS = [("sidebarBackground", "Sidebar", "#0f2f27"), ("sidebarText", "Sidebar 
 class CalamaresPage(Page):
     title = "Installer (Calamares)"
     nav_title = "Installer"
-    subtitle = ("Step 12 · The graphical installer that puts your distribution on a computer: name, logo, "
+    subtitle = ("Step 10 · The graphical installer that puts your distribution on a computer: name, logo, "
                 "colors, slides, user and partition rules. 'Check the installer' finds what would make it fail. "
-                "Your changes wait in Review & Apply (step 14).")
+                "Your changes wait in Review & Apply (step 12).")
     icon_names = ("calamares", "system-software-install", "drive-harddisk")
     CHANGES = ('Calamares ', 'Use Calamares branding ')
 

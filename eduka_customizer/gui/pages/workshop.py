@@ -10,7 +10,7 @@ from eduka_customizer.gui.widgets import FileTreeEditor, Page, button, combo, hb
 class WorkshopPage(Page):
     title = "Package Workshop"
     nav_title = "Package Workshop"
-    subtitle = ("Step 13 · For experts: open an installed Debian package, change its files, then rebuild and "
+    subtitle = ("Step 11 · For experts: open an installed Debian package, change its files, then rebuild and "
                 "install it.")
     icon_names = ("package-x-generic", "applications-utilities", "document-edit")
 

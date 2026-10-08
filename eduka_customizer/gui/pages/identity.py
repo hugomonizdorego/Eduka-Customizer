@@ -11,7 +11,7 @@ class IdentityPage(Page):
     nav_title = "Identity"
     subtitle = ("Step 3 · What your distribution is called: name, version, links, computer name and ISO label. "
                 "The fields start with what the ISO says about itself. Your changes wait in Review & Apply (step "
-                "14).")
+                "12).")
     icon_names = ("preferences-desktop-personal", "user-info")
     CHANGES = ('Apply identity',)
 

@@ -16,7 +16,7 @@ class BrandingPage(Page):
     nav_title = "Distro Branding"
     subtitle = ("Step 3 · Your name, logo, colors and artwork everywhere: system information, login, GRUB, boot "
                 "splash and installer. DistroForge packs them into a <id>-branding package, so Debian updates "
-                "keep them. Your changes wait in Review & Apply (step 14).")
+                "keep them. Your changes wait in Review & Apply (step 12).")
     icon_names = ("preferences-desktop-theme-global", "applications-graphics", "emblem-favorite")
     CHANGES = ('Apply distro branding', 'Build edited branding packages')
 

@@ -29,7 +29,7 @@ class LanguagePage(Page):
     nav_title = "Language"
     subtitle = ("Step 5 · Language, keyboard and time zone of the live system, the installer and installed "
                 "computers, and more languages to choose from in the boot menu. Your changes wait in Review & "
-                "Apply (step 14).")
+                "Apply (step 12).")
     icon_names = ("preferences-desktop-locale", "config-language", "preferences-desktop-keyboard")
     CHANGES = ('Apply language ',)
 

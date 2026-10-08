@@ -20,7 +20,7 @@ class UsersPage(Page):
     title = "Users and Passwords"
     nav_title = "Users"
     subtitle = ("Step 4 · The user of the live session (with a password, without one, or Debian's default) and "
-                "accounts that every installed computer gets. Your changes wait in Review & Apply (step 14).")
+                "accounts that every installed computer gets. Your changes wait in Review & Apply (step 12).")
     icon_names = ("system-users", "user-identity", "preferences-system-users")
     CHANGES = ('Change password of ', 'Create account ', 'Delete account ', 'Remove password of ', 'Save live user')
 

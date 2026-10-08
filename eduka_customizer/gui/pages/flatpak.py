@@ -18,7 +18,7 @@ class FlatpakPage(Page):
     nav_title = "Flatpak apps"
     subtitle = ("Step 7 · Applications from Flathub by category. Install them into the ISO, or on the first "
                 "start of an installed computer to keep the ISO small. Your changes wait in Review & Apply (step "
-                "14).")
+                "12).")
     icon_names = ("flatpak-discover", "applications-other", "system-software-update")
     CHANGES = ('Flatpak: ', 'Uninstall Flatpak apps')
 
@@ -179,9 +179,8 @@ class FlatpakPage(Page):
     def open_selected(self):
         rows = sorted({i.row() for i in self.results.selectedIndexes()})
         if rows:
-            import subprocess
-            subprocess.Popen(["xdg-open", flathub_url(self.results.item(rows[0], 1).text())],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            from eduka_customizer.gui.opener import open_url
+            open_url(flathub_url(self.results.item(rows[0], 1).text()))
 
     def add_results(self):
         ids = sorted(self._ticked())

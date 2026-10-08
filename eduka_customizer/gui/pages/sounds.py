@@ -27,8 +27,8 @@ def play_on_host(path):
 class SoundsPage(Page):
     title = "System Sounds"
     nav_title = "System Sounds"
-    subtitle = ("Step 10 · Sounds for start-up, login, log out, shutdown, errors, notifications and devices. "
-                "They become the default sounds of every desktop. Your changes wait in Review & Apply (step 14).")
+    subtitle = ("Step 9 · Sounds for start-up, login, log out, shutdown, errors, notifications and devices. "
+                "They become the default sounds of every desktop. Your changes wait in Review & Apply (step 12).")
     icon_names = ("preferences-desktop-sound", "audio-volume-high", "multimedia-volume-control")
     CHANGES = ('Apply system sounds', 'Remove system sounds', 'Sound theme ')
 

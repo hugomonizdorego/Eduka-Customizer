@@ -27,6 +27,7 @@ elementary+ (GPL-3) icon themes.
 | Distro Branding | branding.svg | preferences-desktop-color |
 | Calamares | calamares.svg | calamares (ubiquity-kde) |
 | Boot Menu | bootmenu.svg | grub-customizer |
+| Boot Loader | bootloader.svg | boot (system-shutdown) |
 | Package Workshop | workshop.svg | application-x-deb (gdebi) |
 | Terminal & Live | terminal.svg | utilities-terminal |
 | System Sounds | sounds.svg | yast-sound (preferences-desktop-sound) |

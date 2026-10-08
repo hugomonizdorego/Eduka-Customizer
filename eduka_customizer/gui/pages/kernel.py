@@ -2,7 +2,7 @@
 removal, initramfs, GRUB defaults of the installed system, firmware and DKMS."""
 
 from eduka_customizer.qt.core import Qt
-from eduka_customizer.qt.widgets import (QCheckBox, QFileDialog, QLineEdit, QMessageBox, QPlainTextEdit, QSpinBox,
+from eduka_customizer.qt.widgets import (QCheckBox, QFileDialog, QLineEdit, QMessageBox, QPlainTextEdit,
                                           QTreeWidget, QTreeWidgetItem)
 
 from eduka_customizer.core.kernel import THIRD_PARTY, Kernels
@@ -17,10 +17,10 @@ class KernelPage(Page):
     title = "Kernel"
     nav_title = "Kernel"
     subtitle = ("Step 8 · The Linux kernel of your distribution: Debian kernels, backports or third-party "
-                "kernels, firmware and drivers, and the GRUB settings of installed systems. Your changes wait in "
-                "Review & Apply (step 14).")
+                "kernels, firmware and drivers. Your changes wait in "
+                "Review & Apply (step 12).")
     icon_names = ("preferences-system", "cpu", "applications-system")
-    CHANGES = ('Install ', 'Remove kernel', 'Hold ', 'Unhold ', 'Update initramfs', 'Copy kernel', 'update-grub', 'Rebuild DKMS', 'Save GRUB', 'Use ')
+    CHANGES = ('Install ', 'Remove kernel', 'Hold ', 'Unhold ', 'Update initramfs', 'Copy kernel', 'update-grub', 'Rebuild DKMS', 'Use ')
 
     def build(self):
         c = self.card("Installed kernels")
@@ -101,28 +101,11 @@ class KernelPage(Page):
         c.add(hbox(button("Install .deb files...", self.install_debs), None,
                    button("Add repository and install", self.install_repo, "primary")))
 
-        c = self.card("GRUB of the installed system",
-                      "Written to /etc/default/grub.d/95-eduka-customizer.cfg and used when Calamares "
-                      "installs GRUB (and by every later update-grub).")
-        f = c.form()
-        self.g_timeout = QSpinBox()
-        self.g_timeout.setRange(-1, 120)
-        self.g_timeout.setSuffix(" s")
-        f.addRow("Timeout:", self.g_timeout)
-        self.g_style = combo([("menu", "Show the menu"), ("countdown", "Countdown"), ("hidden", "Hidden (Shift/Esc shows it)")])
-        f.addRow("Menu:", self.g_style)
-        self.g_default = combo([("0", "First entry"), ("saved", "Last chosen entry")])
-        f.addRow("Default entry:", self.g_default)
-        self.g_cmdline = QLineEdit()
-        f.addRow("Kernel options:", self.g_cmdline)
-        self.g_osprober = QCheckBox("Find other systems (Windows, other Linux) for the menu (os-prober)")
-        f.addRow("", self.g_osprober)
-        self.g_recovery = QCheckBox("Hide recovery entries")
-        f.addRow("", self.g_recovery)
-        self.g_gfx = combo(["", "auto", "1024x768", "1280x800", "1920x1080"], editable=True)
-        f.addRow("Resolution:", self.g_gfx)
-        c.add(hbox(button("Run update-grub", self.update_grub), None,
-                   button("Save GRUB settings", self.save_grub, "primary")))
+        c = self.card("GRUB of the installed system")
+        c.add(hbox(label("Timeout, kernel options, menu and other systems of installed computers are set on the "
+                         "Boot Loader tab.", "muted"), None,
+                   button("Boot Loader...", lambda: self.main.go("BootLoaderPage")),
+                   button("Run update-grub", self.update_grub)))
 
         c = self.card("Drivers")
         c.add(label("Firmware makes Wi-Fi, graphics and sound work on most laptops (needs the non-free-firmware "
@@ -160,17 +143,7 @@ class KernelPage(Page):
         self.meta.setText("Kept up to date by: " + ", ".join(
             "{}{}".format(m["package"], " (held)" if m["held"] else "") for m in meta) if meta
             else "No kernel metapackage: kernels are not updated automatically.")
-        g = k.grub_defaults()
-        try:
-            self.g_timeout.setValue(int(g.get("GRUB_TIMEOUT", "5")))
-        except ValueError:
-            self.g_timeout.setValue(5)
-        self.g_style.setCurrentIndex(max(0, self.g_style.findData(g.get("GRUB_TIMEOUT_STYLE", "menu"))))
-        self.g_default.setCurrentIndex(max(0, self.g_default.findData(g.get("GRUB_DEFAULT", "0"))))
-        self.g_cmdline.setText(g.get("GRUB_CMDLINE_LINUX_DEFAULT", "quiet splash"))
-        self.g_osprober.setChecked(g.get("GRUB_DISABLE_OS_PROBER", "true") == "false")
-        self.g_recovery.setChecked(g.get("GRUB_DISABLE_RECOVERY", "false") == "true")
-        self.g_gfx.setCurrentText(g.get("GRUB_GFXMODE", ""))
+
 
     def _run(self, name, func):
         self.task(name, func, lambda _r: (self.refresh(), self.main.update_state()))
@@ -312,22 +285,6 @@ class KernelPage(Page):
         if files:
             proj = self.project
             self._run("Install kernel packages", lambda t: Kernels(proj).install_debs(files))
-
-    def save_grub(self):
-        values = {"GRUB_TIMEOUT": str(self.g_timeout.value()), "GRUB_TIMEOUT_STYLE": self.g_style.currentData(),
-                  "GRUB_DEFAULT": self.g_default.currentData(),
-                  "GRUB_CMDLINE_LINUX_DEFAULT": self.g_cmdline.text().strip(),
-                  "GRUB_DISABLE_OS_PROBER": "false" if self.g_osprober.isChecked() else "true",
-                  "GRUB_DISABLE_RECOVERY": "true" if self.g_recovery.isChecked() else "false",
-                  "GRUB_GFXMODE": self.g_gfx.currentText().strip()}
-        if values["GRUB_DEFAULT"] == "saved":
-            values["GRUB_SAVEDEFAULT"] = "true"
-        try:
-            self.k().set_grub_defaults(values)
-        except ValueError as e:
-            QMessageBox.warning(self, "GRUB", str(e))
-            return
-        self.main.stage_label.setText("GRUB settings saved")
 
     def update_grub(self):
         proj = self.project

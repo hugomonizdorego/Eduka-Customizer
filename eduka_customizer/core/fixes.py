@@ -128,8 +128,24 @@ def _timezone(project):
     Calamares(project).set_locale(tz)
 
 
+def _boot_loader_again(project):
+    from eduka_customizer.core.bootchoice import BootChoice
+    b = BootChoice(project)
+    b.use(b.current())
+
+
+def _install_loader_tools(loader_id):
+    def fix(project):
+        from eduka_customizer.core.bootchoice import BootChoice
+        BootChoice(project).install(loader_id)
+    return fix
+
+
 # (message pattern, what the fix does, function(match) -> fix(project))
 RULES = [
+    (r"choose the boot loader again|is chosen but not installed in the image",
+     "Set up the chosen boot loader again", lambda m: _boot_loader_again),
+    (r"(efistub|syslinux) needs /", "Install the {1} packages", lambda m: _install_loader_tools(m.group(1))),
     (r"(?:grub|sb-shim) needs /usr/sbin/grub-install", "Install GRUB (grub2-common, grub-efi-amd64-bin, grub-pc-bin, "
      "efibootmgr)", lambda m: _install("grub2-common", "grub-efi-amd64-bin", "grub-pc-bin", "efibootmgr")),
     (r"systemd-boot needs", "Install systemd-boot", lambda m: _install("systemd-boot")),

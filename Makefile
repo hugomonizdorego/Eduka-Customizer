@@ -50,13 +50,14 @@ install:
 	$(INSTALL) -m644 data/icons/menu/*.svg data/icons/menu/README.md $(DESTDIR)$(DATADIR)/icons/menu/
 	$(INSTALL) -d $(DESTDIR)$(DATADIR)/welcome
 	$(INSTALL) -m755 data/welcome/eduka-welcome $(DESTDIR)$(DATADIR)/welcome/
+	$(INSTALL) -d $(DESTDIR)$(DATADIR)/bootloader
+	$(INSTALL) -m755 data/bootloader/distroforge-bootloader $(DESTDIR)$(DATADIR)/bootloader/
 	$(INSTALL) -m644 icons/distroforge.svg $(DESTDIR)$(DATADIR)/icons/
 	$(INSTALL) -m644 docs/distroforge.1 $(DESTDIR)$(PREFIX)/share/man/man1/
 	$(INSTALL) -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/distroforge/examples/
 	# The user guides live with the data: minimal systems drop /usr/share/doc.
 	$(INSTALL) -d $(DESTDIR)$(DATADIR)/guide
-	$(INSTALL) -m644 docs/DistroForge-Panduan.pdf docs/DistroForge-Guide.pdf $(DESTDIR)$(DATADIR)/guide/
-	ln -sf $(DATADIR)/guide/DistroForge-Panduan.pdf $(DESTDIR)$(PREFIX)/share/doc/distroforge/DistroForge-Panduan.pdf
+	$(INSTALL) -m644 docs/DistroForge-Guide.pdf $(DESTDIR)$(DATADIR)/guide/
 	ln -sf $(DATADIR)/guide/DistroForge-Guide.pdf $(DESTDIR)$(PREFIX)/share/doc/distroforge/DistroForge-Guide.pdf
 
 uninstall:

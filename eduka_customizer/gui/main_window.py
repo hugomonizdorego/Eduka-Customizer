@@ -27,7 +27,7 @@ MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "
               "AppearancePage": "wallpaper", "PlymouthPage": "plymouth", "BrandingPage": "branding",
               "CalamaresPage": "calamares", "BootMenuPage": "bootmenu", "WorkshopPage": "workshop",
               "TerminalPage": "terminal", "BuildPage": "build", "SettingsPage": "settings", "SoundsPage": "sounds",
-              "WelcomePage": "welcome", "GrubDesignPage": "bootmenu", "AboutPage": "about", "ReviewPage": "review"}
+              "WelcomePage": "welcome", "BootLoaderPage": "bootloader", "AboutPage": "about", "ReviewPage": "review"}
 
 # The sidebar, in the order of the work. Pages that are used together share one
 # menu (as tabs). (key, menu title, icon, page classes, is a numbered step)
@@ -41,18 +41,15 @@ SECTIONS = [
     ("desktop", "Desktop", "desktop", ["desktop.DesktopPage"], True),
     ("software", "Software", "packages", ["packages.PackagesPage", "flatpak.FlatpakPage",
                                           "replace_apps.ReplaceAppsPage"], True),
-    ("boot", "Kernel & Boot", "kernel", ["kernel.KernelPage", "bootmenu.BootMenuPage", "grubdesign.GrubDesignPage"],
+    ("boot", "Kernel & Boot", "kernel", ["kernel.KernelPage", "bootloader.BootLoaderPage", "bootmenu.BootMenuPage"],
      True),
-    ("look", "Look & Feel", "themes", ["themes.ThemesPage", "appearance.AppearancePage",
-                                       "plymouth.PlymouthPage"], True),
-    ("sounds", "System Sounds", "sounds", ["sounds.SoundsPage"], True),
-    ("welcome", "Welcome Screen", "welcome", ["welcome.WelcomePage"], True),
+    ("look", "Look & Feel", "themes", ["themes.ThemesPage", "appearance.AppearancePage", "plymouth.PlymouthPage",
+                                       "sounds.SoundsPage", "welcome.WelcomePage"], True),
     ("installer", "Installer", "calamares", ["calamares.CalamaresPage"], True),
     ("advanced", "Advanced", "terminal", ["terminal.TerminalPage", "workshop.WorkshopPage"], True),
     ("review", "Review & Apply", "review", ["review.ReviewPage"], True),
     ("build", "Check & Build", "build", ["build.BuildPage"], True),
-    ("settings", "Settings", "settings", ["settings_page.SettingsPage"], False),
-    ("about", "About", "about", ["about.AboutPage"], False),
+    ("settings", "Settings & About", "settings", ["settings_page.SettingsPage", "about.AboutPage"], False),
 ]
 
 
@@ -542,15 +539,18 @@ class MainWindow(QMainWindow):
 
     def queue_change(self, name, func, done=None, page=None):
         sec = getattr(page, "section", None)
+        where = sec.title if sec else ""
+        if sec and len(sec.pages) > 1:
+            where = "{} → {}".format(sec.title, getattr(page, "nav_title", page.title))
         self.pending.append({"name": name, "func": func, "done": done, "page": page.__class__.__name__ if page
-                             else "", "section": sec.title if sec else "", "step": getattr(sec, "step", 0),
+                             else "", "section": where, "step": getattr(sec, "step", 0),
                              "checked": False})
         self.stage_label.setText("Added to Review & Apply: {} ({} waiting)".format(name, len(self.pending)))
         if not getattr(self, "_told_review", False):
             self._told_review = True
             # Not modal: it explains once and never blocks the work.
             box = QMessageBox(QMessageBox.Icon.Information, "Review & Apply",
-                              "'{}' was added to Review & Apply (step 14).\n\nNothing in the image changes yet: "
+                              "'{}' was added to Review & Apply (step 12).\n\nNothing in the image changes yet: "
                               "choose everything you want in the steps, then check the list in Review & Apply "
                               "and apply it all at once.".format(name), QMessageBox.StandardButton.Ok, self)
             box.setModal(False)

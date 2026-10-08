@@ -209,6 +209,8 @@ def check(project):
         out.extend(_check_unpackfs(r))
     if "bootloader" in modules:
         out.extend(_check_bootloader(r, version, getattr(project, "isodir", None)))
+    if "shellprocess@distroforge-bootloader" in used:
+        out.extend(_check_own_bootloader(r))
     if "displaymanager" in modules:
         out.extend(_check_dm(r))
     if "packages" in modules:
@@ -318,6 +320,24 @@ def _check_bootloader(r, version, isodir=None):
         out.append(("warn", rel, "Debian's signed GRUB looks for EFI/debian: efiBootloaderId '{}' needs a copy "
                                  "in EFI/debian (Distro Branding keeps it in sync)".format(efi_id)))
     return out or [("ok", rel, "boot loader {}".format(loader))]
+
+
+def _check_own_bootloader(r):
+    """The installer step of DistroForge's boot loaders (EFISTUB, Syslinux, settings of
+    systemd-boot and rEFInd)."""
+    conf = Path(r, "etc/distroforge-bootloader.conf")
+    rel = "/etc/distroforge-bootloader.conf"
+    if not conf.exists():
+        return [("fail", rel, "missing: choose the boot loader again (Kernel & Boot → Boot Loader)")]
+    m = re.search(r"(?m)^LOADER=(\S+)", conf.read_text(errors="replace"))
+    lid = m.group(1).strip("'\"") if m else ""
+    tools = {"efistub": ["usr/bin/efibootmgr"], "syslinux": ["usr/bin/extlinux", "usr/lib/syslinux/mbr/mbr.bin"],
+             "systemd-boot": ["usr/bin/bootctl"], "refind": ["usr/sbin/refind-install"]}
+    if lid not in tools and lid not in ("grub", "grub-secureboot"):
+        return [("fail", rel, "unknown boot loader '{}'".format(lid))]
+    out = [("fail", rel, "{} needs /{} in the image".format(lid, t)) for t in tools.get(lid, [])
+           if not _exists_in_image(r, t)]
+    return out or [("ok", rel, "boot loader {} is set up by the installer".format(lid))]
 
 
 def _check_dm(r):

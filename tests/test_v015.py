@@ -243,12 +243,12 @@ from eduka_customizer.gui.main_window import MainWindow, SECTIONS
 w = MainWindow()
 keys = [s.key for s in w.sections]
 assert keys == [s[0] for s in SECTIONS]
-assert [s.step for s in w.steps] == list(range(1, 16))
+assert [s.step for s in w.steps] == list(range(1, 14))
 assert not w.section_open(w.sections[keys.index("sources")])
 w.project = Project.open(sys.argv[1])
 w.update_state()
 open_ = [s.key for s in w.sections if w.section_open(s)]
-assert open_ == ["start", "wizard", "sources", "settings", "about"], open_
+assert open_ == ["start", "wizard", "sources", "settings"], open_
 w.next_step(w.steps[1], w.steps[2])
 assert w.section_open(w.sections[keys.index("identity")])
 assert not w.section_open(w.sections[keys.index("users")])
@@ -274,7 +274,7 @@ def test_gui_steps_and_merged_menus(tmp_path):
     res = subprocess.run([sys.executable, "-c", GUI_STEPS, str(p.path)], capture_output=True, text=True,
                          env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
-    assert res.stdout.startswith("ok 26 18")
+    assert res.stdout.startswith("ok 26 15")
 
 
 def test_cli_check_and_apps(project):

@@ -629,17 +629,46 @@ def cmd_grub_theme(args):
 
 def cmd_boot_loader(args):
     from eduka_customizer.core import bootchoice
-    p = _project(args) if args.action == "list" else _locked(args)
+    p = _project(args) if args.action in ("list", "show") else _locked(args)
     b = bootchoice.BootChoice(p)
+    cur = b.current()
     if args.action == "list":
-        cur = b.current()
-        for lid, name, desc, usable, reason in b.options():
-            print("{} {:16} {}".format("*" if lid == cur else (" " if usable else "-"), lid,
-                                       desc if usable else "not available: " + reason))
-    else:
-        if not args.item:
-            raise SystemExit("Use: boot-loader use grub|grub-secureboot|systemd-boot|refind")
-        b.apply(args.item)
+        for lid, name, fw, desc, usable, reason, inimg in b.options():
+            print("{} {:16} {:9} {:28} {}".format("*" if lid == cur else (" " if usable else "-"), lid,
+                                                 "installed" if inimg else "", fw,
+                                                 desc if usable else "not available: " + reason))
+        print("\n* = used by the installer. Settings: boot-loader show ID; boot-loader set ID KEY=VALUE ...")
+        return 0
+    lid = args.item or (cur if args.action in ("show", "set") else None)
+    if not lid:
+        raise SystemExit("Use: boot-loader {} {}".format(args.action, "|".join(bootchoice.BY_ID)))
+    try:
+        if args.action == "show":
+            lo = bootchoice.loader("grub" if lid == "grub-secureboot" else lid)
+            values = b.settings(lo.id)
+            print("{} ({}){}".format(lo.name, lo.firmware, " — used by the installer" if lid == cur else ""))
+            for key, text, kind, _d, choices in lo.fields:
+                extra = " [{}]".format("|".join(c for c, _t in choices)) if choices else ""
+                print("  {:20} {!s:24} {}{}".format(key, values.get(key), text, extra))
+            for level, text in b.check() if lid == cur else []:
+                print("  {:5} {}".format(level, text))
+        elif args.action == "set":
+            values = b.settings(lid)
+            for item in args.values:
+                k, sep, v = item.partition("=")
+                if not sep:
+                    raise SystemExit("Use KEY=VALUE, for example TIMEOUT=3")
+                values[k.upper()] = v
+            b.configure(lid, values)
+            print("Saved.")
+        elif args.action == "install":
+            b.install(lid)
+        elif args.action == "remove":
+            print("Removed:", " ".join(b.remove(lid)) or "nothing")
+        else:
+            b.use(lid)
+    except (ValueError, KeyError, RuntimeError) as e:
+        raise SystemExit(str(e).strip("'\""))
     return 0
 
 
@@ -908,13 +937,12 @@ def build_parser():
   5  Language         language
   6  Desktop          desktop, eduka-desktop, purpose
   7  Software         apt, flatpak, apps
-  8  Kernel & Boot    kernel, bootmenu, grub-theme, boot-loader
-  9  Look & Feel      themes, assets, wallpapers, plymouth
- 10  System Sounds    sounds
- 11  Welcome Screen   welcome
- 12  Installer        calamares
- 13  Advanced         shell, run, hook, live, workshop, recipe
- 15  Check & Build    check [--fix], build [--target-size 500], test
+  8  Kernel & Boot    kernel, boot-loader, bootmenu, grub-theme
+  9  Look & Feel      themes, assets, wallpapers, plymouth, sounds, welcome
+ 10  Installer        calamares
+ 11  Advanced         shell, run, hook, live, workshop, recipe
+ 12  Review & Apply   (only in the window: the commands apply at once)
+ 13  Check & Build    check [--fix], build [--target-size 500], test, clean --keep-iso
 
 Other: gui (the window), doctor (tools of this computer), clean, about.
 Help for one command: distroforge COMMAND --help""")
@@ -1099,9 +1127,11 @@ Help for one command: distroforge COMMAND --help""")
     s.add_argument("--installed", action="store_true", help="also for installed systems")
     s.set_defaults(func=cmd_grub_theme)
 
-    s = sub.add_parser("boot-loader", help="boot loader Calamares installs: grub, systemd-boot, refind")
-    s.add_argument("action", choices=["list", "use"])
-    s.add_argument("item", nargs="?")
+    s = sub.add_parser("boot-loader", help="boot loaders of installed systems: GRUB, systemd-boot, rEFInd, EFISTUB, "
+                                           "Syslinux (install, remove, use, settings)")
+    s.add_argument("action", choices=["list", "show", "set", "install", "remove", "use"])
+    s.add_argument("item", nargs="?", help="grub, grub-secureboot, systemd-boot, refind, efistub or syslinux")
+    s.add_argument("values", nargs="*", help="for set: KEY=VALUE, for example TIMEOUT=3 CMDLINE='quiet splash'")
     s.set_defaults(func=cmd_boot_loader)
 
     s = sub.add_parser("apps", help="replace the default applications (browser, mail, editor, terminal, ...)")

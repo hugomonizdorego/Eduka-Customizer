@@ -37,7 +37,7 @@ def summary(project):
 class ReviewPage(Page):
     title = "Review & Apply"
     nav_title = "Review & Apply"
-    subtitle = ("Step 14 · Everything you chose waits here. Tick each change when you are sure, or go back and "
+    subtitle = ("Step 12 · Everything you chose waits here. Tick each change when you are sure, or go back and "
                 "change it. Then apply them all at once.")
     icon_names = ("checkbox", "dialog-ok")
 
@@ -82,7 +82,7 @@ class ReviewPage(Page):
                 ch["checked"] = it.checkState() == Qt.CheckState.Checked
         n, ticked = len(self.main.pending), sum(1 for c in self.main.pending if c["checked"])
         if not n:
-            self.state.setText("Nothing is waiting. The changes you choose in steps 2 to 13 are collected here.")
+            self.state.setText("Nothing is waiting. The changes you choose in steps 2 to 11 are collected here.")
         else:
             self.state.setText("{} of {} change(s) checked{}".format(
                 ticked, n, "" if ticked == n else " — tick every change you are sure about to apply them"))

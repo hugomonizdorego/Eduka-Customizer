@@ -1,25 +1,20 @@
-"""GRUB Design page: third-party GRUB themes (checked, refused when GRUB could not
-show them), the menu designer, and the boot loader of installed systems."""
+"""GRUB theme and menu designer of the ISO's boot menu, shown on the Boot Menu tab:
+third-party GRUB themes (checked, refused when GRUB could not show them) and the
+entries, default, timeout and colors of the menu."""
 
 import copy
 
 from eduka_customizer.qt.core import Qt
-from eduka_customizer.qt.widgets import (QButtonGroup, QCheckBox, QGridLayout, QListWidget,
-                                          QListWidgetItem, QMessageBox, QRadioButton, QSpinBox)
+from eduka_customizer.qt.widgets import QCheckBox, QListWidget, QListWidgetItem, QMessageBox, QSpinBox
 
-from eduka_customizer.core import bootchoice, grubmenu, grubtheme
-from eduka_customizer.gui.widgets import DropZone, Page, button, combo, hbox, label
+from eduka_customizer.core import grubmenu, grubtheme
+from eduka_customizer.gui.widgets import DropZone, button, combo, hbox, label
 
 
-class GrubDesignPage(Page):
-    title = "GRUB Design"
-    nav_title = "GRUB Design"
-    subtitle = ("Step 8 · A GRUB theme for the boot menu (checked first), the menu entries, and the boot loader "
-                "the installer puts on computers. Your changes wait in Review & Apply (step 14).")
-    icon_names = ("grub-customizer", "preferences-desktop-theme")
-    CHANGES = ('Boot loader ',)
+class GrubDesignCards:
+    """The GRUB theme and menu designer cards (a part of the Boot Menu page)."""
 
-    def build(self):
+    def build_grub_design(self):
         c = self.card("GRUB theme",
                       "A theme folder or archive with theme.txt (for example from gnome-look.org or a theme's "
                       "GitHub page). It is used by the GRUB menu of the ISO (UEFI) and, if you like, of installed "
@@ -51,12 +46,12 @@ class GrubDesignPage(Page):
                    button("Remove", self.remove_entry, "danger"), None, self.preset,
                    button("Add entry", self.add_entry)))
         f = c.form()
-        self.default = combo([])
-        f.addRow("Default entry:", self.default)
-        self.timeout = QSpinBox()
-        self.timeout.setRange(0, 120)
-        self.timeout.setSuffix(" s")
-        f.addRow("Timeout:", self.timeout)
+        self.menu_default = combo([])
+        f.addRow("Default entry:", self.menu_default)
+        self.menu_timeout = QSpinBox()
+        self.menu_timeout.setRange(0, 120)
+        self.menu_timeout.setSuffix(" s")
+        f.addRow("Timeout:", self.menu_timeout)
         self.colors = {}
         for key, text, dfg, dbg in (("normal", "Menu text", "white", "black"),
                                     ("highlight", "Selected entry", "black", "light-gray")):
@@ -70,22 +65,8 @@ class GrubDesignPage(Page):
         c.add(hbox(button("Reload from the ISO", self.load_menu), None,
                    button("Save the menu", self.save_menu, "primary")))
 
-        c = self.card("Boot loader of installed systems",
-                      "What Calamares installs on the computer. Packages come from the Debian archive of the image. "
-                      "BIOS computers always get GRUB.")
-        grid = QGridLayout()
-        self.loader_group = QButtonGroup(self)
-        self.loader_buttons = {}
-        self.loader_grid = grid
-        c.add(grid)
-        self.loader_state = label("", "muted")
-        c.add(self.loader_state)
-        c.add(hbox(None, button("Use this boot loader", self.apply_loader, "primary")))
-
     # Refresh ------------------------------------------------------------------------
-    def refresh(self):
-        if not self.project:
-            return
+    def refresh_grub_design(self):
         g = grubtheme.GrubThemes(self.project)
         self.themes.clear()
         self.themes.addItems(g.installed())
@@ -94,26 +75,6 @@ class GrubDesignPage(Page):
             self.themes.setCurrentText(cur)
         self.theme_state.setText("In use: <b>{}</b>".format(cur) if cur else "The ISO's own GRUB look is in use.")
         self.load_menu()
-        self._loaders()
-
-    def _loaders(self):
-        while self.loader_grid.count():
-            w = self.loader_grid.takeAt(0).widget()
-            if w:
-                w.deleteLater()
-        self.loader_buttons = {}
-        b = bootchoice.BootChoice(self.project)
-        current = b.current()
-        for i, (lid, name, desc, usable, reason) in enumerate(b.options()):
-            rb = QRadioButton("{} — {}".format(name, desc if usable else "not available: " + reason))
-            rb.setEnabled(usable)
-            rb.setChecked(lid == current)
-            self.loader_group.addButton(rb)
-            self.loader_buttons[lid] = rb
-            self.loader_grid.addWidget(rb, i, 0)
-        v = b.calamares_version()
-        self.loader_state.setText("Calamares {} in the image. Chosen: {}.".format(
-            "{}.{}".format(*v) if v else "(not installed yet)", current))
 
     # Themes ---------------------------------------------------------------------------
     def add_themes(self, paths):
@@ -149,7 +110,7 @@ class GrubDesignPage(Page):
         if name:
             grubtheme.GrubThemes(self.project).use(name, self.theme_installed.isChecked())
             self.refresh()
-            self.main.stage_label.setText("GRUB theme {} in use: 'Apply to the ISO now' on the Boot Menu tab, or "
+            self.main.stage_label.setText("GRUB theme {} in use: 'Save and apply to the ISO now' below, or "
                                           "build".format(name))
 
     def remove_theme(self):
@@ -167,9 +128,9 @@ class GrubDesignPage(Page):
         self.entries.blockSignals(False)
         self._defaults(d["default"])
         try:
-            self.timeout.setValue(int(d["timeout"] or 5))
+            self.menu_timeout.setValue(int(d["timeout"] or 5))
         except ValueError:
-            self.timeout.setValue(5)
+            self.menu_timeout.setValue(5)
         for key, value in (("normal", d["normal"]), ("highlight", d["highlight"])):
             if "/" in value:
                 fg, bg = value.split("/", 1)
@@ -196,12 +157,12 @@ class GrubDesignPage(Page):
         return out
 
     def _defaults(self, current=None):
-        current = current if current is not None else self.default.currentText()
-        self.default.clear()
+        current = current if current is not None else self.menu_default.currentText()
+        self.menu_default.clear()
         titles = [e["title"] for e in self._current_entries()]
-        self.default.addItems(titles)
+        self.menu_default.addItems(titles)
         if current in titles:
-            self.default.setCurrentText(current)
+            self.menu_default.setCurrentText(current)
 
     def _renamed(self, _item):
         self._defaults()
@@ -233,21 +194,13 @@ class GrubDesignPage(Page):
         if self.use_colors.isChecked():
             colors = {k: "{}/{}".format(fg.currentText(), bg.currentText()) for k, (fg, bg) in self.colors.items()}
         try:
-            grubmenu.GrubMenu(self.project).save(self._current_entries(), default=self.default.currentText() or None,
-                                                 timeout=self.timeout.value(), normal=colors.get("normal"),
+            grubmenu.GrubMenu(self.project).save(self._current_entries(), default=self.menu_default.currentText() or None,
+                                                 timeout=self.menu_timeout.value(), normal=colors.get("normal"),
                                                  highlight=colors.get("highlight"))
         except ValueError as e:
             QMessageBox.warning(self, "GRUB menu", str(e))
             return
         self.load_menu()
         self.main.stage_label.setText("GRUB menu saved; it is kept for every build")
-
-    # Boot loader -------------------------------------------------------------------------
-    def apply_loader(self):
-        lid = next((k for k, b in self.loader_buttons.items() if b.isChecked()), None)
-        if not lid:
-            return
-        proj = self.project
-        self.task("Boot loader " + lid, lambda t: bootchoice.BootChoice(proj).apply(lid), lambda _r: self._loaders())
 
     _text = ""

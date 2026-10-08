@@ -59,7 +59,7 @@ SETTINGS_APPS = [
 class TerminalPage(Page):
     title = "Terminal & Live"
     nav_title = "Terminal & Live"
-    subtitle = ("Step 13 · For experts: start the system's desktop in a window and change things by hand, use a "
+    subtitle = ("Step 11 · For experts: start the system's desktop in a window and change things by hand, use a "
                 "root terminal, or run scripts. Everything ends up in the ISO.")
     icon_names = ("utilities-terminal", "terminal")
 
@@ -258,10 +258,8 @@ class TerminalPage(Page):
         subprocess.Popen(cmd, start_new_session=True)
 
     def open_folder(self, path):
-        opener = shutil.which("xdg-open")
-        if opener:
-            subprocess.Popen([opener, str(path)], start_new_session=True,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        from eduka_customizer.gui.opener import open_url
+        open_url(path)
 
     def unmount(self):
         if self.main.live and self.main.live.running:

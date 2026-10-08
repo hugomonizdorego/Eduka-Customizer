@@ -1,8 +1,6 @@
 """Settings, host check (doctor) and the error log."""
 
 import os
-import shutil
-import subprocess
 import tarfile
 import time
 
@@ -114,10 +112,8 @@ class SettingsPage(Page):
         self.errors.verticalScrollBar().setValue(self.errors.verticalScrollBar().maximum())
 
     def open_logs(self):
-        opener = shutil.which("xdg-open")
-        if opener:
-            subprocess.Popen([opener, logmod.DEBUG_DIR], start_new_session=True,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        from eduka_customizer.gui.opener import open_url
+        open_url(logmod.DEBUG_DIR)
 
     def bug_report(self):
         """Pack logs and project state into /tmp/distroforge/bug-report-*.tar.gz."""

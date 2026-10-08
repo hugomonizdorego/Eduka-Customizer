@@ -12,7 +12,7 @@ class PackagesPage(Page):
     title = "Packages and Applications"
     nav_title = "Packages"
     subtitle = ("Step 7 · Every Debian package of the image: search, tick to add, untick to remove. You can also "
-                "remove the applications that came with the ISO. Your changes wait in Review & Apply (step 14).")
+                "remove the applications that came with the ISO. Your changes wait in Review & Apply (step 12).")
     icon_names = ("system-software-install", "package-x-generic")
     CHANGES = ('Apply package changes', 'Autoremove', 'Install .deb files', 'Remove applications', 'Upgrade all packages')
 

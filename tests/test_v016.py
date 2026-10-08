@@ -628,18 +628,18 @@ def test_boot_loader_choice(cal, nochroot):
     r = cal.rootfs
     b = bootchoice.BootChoice(cal)
     opts = {o[0]: o for o in b.options()}
-    assert opts["refind"][3] and not opts["lilo"][3] and not opts["burg"][3]
+    assert opts["refind"][4] and not opts["lilo"][4] and not opts["burg"][4]
     for f in ("usr/bin/bootctl", "usr/bin/kernel-install"):
         (r / f).write_text("")
     b.apply("systemd-boot", timeout=4)
     conf = (r / "etc/calamares/modules/bootloader.conf").read_text()
     assert 'efiBootLoader: "systemd-boot"' in conf or "efiBootLoader: systemd-boot" in conf
     assert b.current() == "systemd-boot"
-    assert any(c[:1] == ["install"] and "systemd-boot" in c for c in nochroot)
+    assert b.settings("systemd-boot")["TIMEOUT"] == 4
     with pytest.raises(RuntimeError):
         b.apply("refind")  # refind-install is not in the image (nothing was really installed)
     st = r / "var/lib/dpkg/status"
     st.write_text(st.read_text().replace("Version: 3.3.14-1", "Version: 3.2.61-1"))
-    assert not {o[0]: o for o in b.options()}["refind"][3]
+    assert not {o[0]: o for o in b.options()}["refind"][4]
     with pytest.raises(ValueError):
         b.apply("refind")

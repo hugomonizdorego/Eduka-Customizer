@@ -1,10 +1,6 @@
 """About page: version, license, credits, the licenses of every component,
 trademarks, the user guide and ways to support the project."""
 
-import os
-import pwd
-import shutil
-import subprocess
 from pathlib import Path
 
 from eduka_customizer import (APP_NAME, AUTHOR, DONATE_URL, FACEBOOK_URL, HOMEPAGE, LICENSE, OLD_NAME,
@@ -12,6 +8,7 @@ from eduka_customizer import (APP_NAME, AUTHOR, DONATE_URL, FACEBOOK_URL, HOMEPA
 from eduka_customizer.qt.core import Qt
 from eduka_customizer.qt.widgets import QDialog, QLabel, QPlainTextEdit, QVBoxLayout
 
+from eduka_customizer.gui.opener import open_url
 from eduka_customizer.gui.widgets import Page, button, fill, hbox, label, table
 
 # (component, what DistroForge uses it for, license, home page)
@@ -57,39 +54,9 @@ TRADEMARKS = (
     "Debian logo must follow the Debian trademark policy (debian.org/trademark).").format(APP_NAME)
 
 
-def real_user():
-    """The person who started the program (pkexec or sudo), or None."""
-    uid = os.environ.get("PKEXEC_UID") or os.environ.get("SUDO_UID")
-    if uid and uid.isdigit():
-        try:
-            return pwd.getpwuid(int(uid)).pw_name
-        except KeyError:
-            return None
-    return None
-
-
-def open_url(url):
-    """Open a web page or file in the user's browser, not as root."""
-    user = real_user()
-    if os.geteuid() == 0 and user and shutil.which("runuser") and shutil.which("xdg-open"):
-        env = {k: v for k, v in os.environ.items() if k in ("DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR",
-                                                            "XAUTHORITY", "LANG", "DBUS_SESSION_BUS_ADDRESS")}
-        uid = pwd.getpwnam(user).pw_uid
-        env.setdefault("XDG_RUNTIME_DIR", "/run/user/{}".format(uid))
-        env.setdefault("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/{}/bus".format(uid))
-        env["HOME"] = pwd.getpwnam(user).pw_dir
-        env["PATH"] = "/usr/local/bin:/usr/bin:/bin"
-        subprocess.Popen(["runuser", "-u", user, "--", "xdg-open", url], env=env, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, start_new_session=True)
-        return True
-    from eduka_customizer.qt.core import QUrl
-    from eduka_customizer.qt.gui import QDesktopServices
-    return QDesktopServices.openUrl(QUrl(url if "://" in url else "file://" + url))
-
-
-def guide_path(lang="id"):
+def guide_path():
     """The PDF user guide (installed, or in the source tree)."""
-    name = "DistroForge-Panduan.pdf" if lang == "id" else "DistroForge-Guide.pdf"
+    name = "DistroForge-Guide.pdf"
     from eduka_customizer.core.config import DATA_DIR
     for base in (DATA_DIR / "guide", Path("/usr/share/doc/distroforge"), Path(__file__).resolve().parents[3] / "docs"):
         if (base / name).exists():
@@ -134,8 +101,7 @@ class AboutPage(Page):
                           tooltip=DONATE_URL),
                    button("Follow on Facebook", lambda: open_url(FACEBOOK_URL), tooltip=FACEBOOK_URL),
                    button("Project page", lambda: open_url(HOMEPAGE), tooltip=HOMEPAGE), None,
-                   button("User guide (PDF, Indonesia)", lambda: self.open_guide("id")),
-                   button("User guide (PDF, English)", lambda: self.open_guide("en"))))
+                   button("User guide (PDF)", self.open_guide)))
         c.add(label("{} is free. If it helps you, a donation keeps the work going: {}".format(APP_NAME, DONATE_URL),
                     "muted"))
 
@@ -164,8 +130,8 @@ class AboutPage(Page):
         c = self.card("Trademarks")
         c.add(label(TRADEMARKS))
 
-    def open_guide(self, lang):
-        p = guide_path(lang)
+    def open_guide(self):
+        p = guide_path()
         if not p:
             self.main.stage_label.setText("The user guide is not installed")
             return

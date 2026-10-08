@@ -8,14 +8,16 @@ from eduka_customizer.qt.widgets import (QCheckBox, QLineEdit, QListWidget, QLis
 
 from eduka_customizer.core import bootedit, bootloader
 from eduka_customizer.core.language import Language
+from eduka_customizer.gui.pages.grubdesign import GrubDesignCards
 from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, label
 
 
-class BootMenuPage(Page):
+class BootMenuPage(GrubDesignCards, Page):
     title = "Boot Menu of the ISO"
     nav_title = "Boot Menu"
     subtitle = ("Step 8 · The menu shown when the ISO starts (GRUB for UEFI, ISOLINUX for BIOS): title, timeout, "
-                "kernel options and background. Experts can edit the boot files directly.")
+                "kernel options, background, a GRUB theme and the menu entries. Experts can edit the boot files "
+                "directly.")
     icon_names = ("grub-customizer", "system-reboot", "media-optical")
 
     def build(self):
@@ -42,7 +44,9 @@ class BootMenuPage(Page):
                    button("Kernels...", lambda: self.main.go("KernelPage")), None,
                    button("Apply menu settings", self.apply_settings, "primary")))
 
-        c = self.card("Edit boot files")
+        self.build_grub_design()
+
+        c = self.card("Edit boot files (experts)")
         split = QSplitter()
         self.files = QListWidget()
         self.files.setMinimumWidth(260)
@@ -91,6 +95,7 @@ class BootMenuPage(Page):
         entries = Language(p).boot_entries()
         self.lang_info.setText("Language submenu: " + ", ".join(t for t, _ in entries) if entries
                                else "No language submenu (choose more languages on the Language page).")
+        self.refresh_grub_design()
         keep = self._key()
         self.files.blockSignals(True)
         self.files.clear()

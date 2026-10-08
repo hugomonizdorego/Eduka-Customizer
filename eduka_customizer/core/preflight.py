@@ -193,6 +193,10 @@ def run(project, deep=False):
                 calamares_check._version(r) and "{}.{}".format(*calamares_check._version(r)) or ""))
     else:
         add("info", "Installer", "No installer: the ISO only runs live.", "CalamaresPage")
+    if p.state.get("boot", {}).get("installed_loader"):
+        from eduka_customizer.core.bootchoice import BootChoice
+        for level, text in BootChoice(p).check():
+            add(level, "Boot loader", text, "BootLoaderPage" if level != "ok" else "")
     # 7. Identity
     if not p.state.get("identity", {}).get("name"):
         add("warn", "Identity", "No name was given: the ISO is called '{}'.".format(p.display_name()),

@@ -1,7 +1,5 @@
 """Build page: compression, cleanup and boot options, then build and test."""
 
-import shutil
-import subprocess
 from pathlib import Path
 
 from eduka_customizer.qt.widgets import QCheckBox, QGridLayout, QLineEdit, QMessageBox, QSpinBox
@@ -345,10 +343,9 @@ class BuildPage(Page):
         self.task("Rebuild boot files", lambda t: quick_build(proj, opts, t.set_progress, t.set_stage), done)
 
     def open_output(self):
-        opener = shutil.which("xdg-open")
-        if opener and self.project:
-            subprocess.Popen([opener, str(self.project.output)], start_new_session=True,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if self.project:
+            from eduka_customizer.gui.opener import open_url
+            open_url(self.project.output)
 
     def test(self):
         iso = self.test_iso.text() or self.project.state.get("last_iso")

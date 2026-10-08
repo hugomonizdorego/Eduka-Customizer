@@ -16,7 +16,7 @@ class ThemesPage(Page):
     title = "Themes & Icons"
     nav_title = "Themes & Icons"
     subtitle = ("Step 9 · The default theme, icons, mouse cursor and font. Only what fits your desktop is "
-                "listed. Drop your own themes and fonts here. Your changes wait in Review & Apply (step 14).")
+                "listed. Drop your own themes and fonts here. Your changes wait in Review & Apply (step 12).")
     icon_names = ("preferences-desktop-icons", "preferences-desktop-theme")
     CHANGES = ('Apply look', 'Install theme packs')
 

@@ -12,7 +12,7 @@ class ReplaceAppsPage(Page):
     nav_title = "Replace apps"
     subtitle = ("Step 7 · Use another browser, mail program, office suite, editor, file manager, terminal or "
                 "player. The new one becomes the default for every user; the old one can be removed. Your "
-                "changes wait in Review & Apply (step 14).")
+                "changes wait in Review & Apply (step 12).")
     icon_names = ("preferences-desktop-default-applications", "applications-other")
     CHANGES = ('Replace ',)
 
