@@ -261,3 +261,32 @@ def test_flathub_appstream(tmp_path):
     import shutil
     shutil.copytree(tmp_path / "flathub", root / "var/lib/flatpak/appstream/flathub")
     assert flathub.appstream_file(root).name == "appstream.xml.gz"
+
+
+# Replace apps for everyone ---------------------------------------------------------------------
+
+def test_replace_terminal_for_everyone(project, nochroot):
+    from eduka_customizer.core import replace
+    from tests.test_v015 import _pkg
+    r = project.rootfs
+    _pkg(r, "tilix", ["/usr/bin/tilix", "/usr/share/applications/com.gexperts.Tilix.desktop"],
+         {"com.gexperts.Tilix.desktop": "[Desktop Entry]\nType=Application\nName=Tilix\nExec=tilix\n"})
+    helpers = r / "usr/share/xfce4/helpers"
+    helpers.mkdir(parents=True)
+    (helpers / "tilix.desktop").write_text("[Desktop Entry]\nX-XFCE-Category=TerminalEmulator\n"
+                                           "X-XFCE-Binaries=tilix;\n")
+    (r / "etc/xdg/xfce4").mkdir(parents=True)
+    (r / "etc/xdg/xfce4/helpers.rc").write_text("WebBrowser=firefox\nTerminalEmulator=xfce4-terminal\n")
+    skel = r / "etc/skel/.config"
+    skel.mkdir(parents=True)
+    (skel / "mimeapps.list").write_text("[Default Applications]\n")
+    schema(r, "org.gnome.desktop.default-applications.terminal", ["exec"])
+    replace.Replacer(project).replace("terminal", "tilix")
+    assert (r / "etc/xdg/xfce4/helpers.rc").read_text() == "WebBrowser=firefox\nTerminalEmulator=tilix\n"
+    assert "TerminalApplication=tilix" in (r / "etc/xdg/kdeglobals").read_text()
+    assert "TERM=tilix" in (r / "etc/xdg/lxqt/session.conf").read_text()
+    over = (r / gsettings.SCHEMAS / "93_eduka-default-apps.gschema.override").read_text()
+    assert "exec='tilix'" in over
+    replace.Replacer(project).replace("browser", "tilix")  # any package works the same way
+    assert "BrowserApplication=com.gexperts.Tilix.desktop" in (r / "etc/xdg/kdeglobals").read_text()
+    assert "x-scheme-handler/http=com.gexperts.Tilix.desktop;" in (skel / "mimeapps.list").read_text()

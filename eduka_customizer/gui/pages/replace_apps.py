@@ -10,9 +10,9 @@ from eduka_customizer.gui.widgets import Page, button, combo, fill, hbox, label,
 class ReplaceAppsPage(Page):
     title = "Replace default applications"
     nav_title = "Replace apps"
-    subtitle = ("Every desktop brings its own programs. Choose another one for each kind: it is installed, "
-                "opens the files of that kind by default, and the old program can be removed. The desktop "
-                "itself always stays installed.")
+    subtitle = ("Every desktop brings its own programs. Choose another one for each kind: it is installed and "
+                "becomes the default for everyone (applies to all users), and the old program can be removed. "
+                "The desktop itself always stays installed.")
     icon_names = ("preferences-desktop-default-applications", "applications-other")
 
     def build(self):
@@ -33,7 +33,10 @@ class ReplaceAppsPage(Page):
         f.addRow("", self.remove_old)
         self.note = label("", "muted")
         f.addRow("", self.note)
-        c.add(hbox(None, button("Replace", self.apply, "primary")))
+        f.addRow("", label("✔ <b>Applies to everyone</b>: the default for every user of the live session and of "
+                           "every computer installed from the ISO, in every desktop (file types, Debian "
+                           "alternatives, Xfce, KDE, LXQt, GNOME, Cinnamon and MATE settings).", "muted"))
+        c.add(hbox(None, button("Replace for everyone", self.apply, "primary")))
         self._status = []
         self._role_changed()
 
@@ -69,7 +72,7 @@ class ReplaceAppsPage(Page):
             return
         st = self._current()
         remove = [p for p in (st["installed"] if st else []) if p != new] if self.remove_old.isChecked() else []
-        msg = "Make {} the default {}?".format(new, replace.role(role_id)["name"].lower())
+        msg = "Make {} the default {} for everyone (all users)?".format(new, replace.role(role_id)["name"].lower())
         if remove:
             msg += "\n\nRemove: " + " ".join(remove)
         if QMessageBox.question(self, "Replace application", msg) != QMessageBox.StandardButton.Yes:

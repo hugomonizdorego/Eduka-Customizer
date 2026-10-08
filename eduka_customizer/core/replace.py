@@ -97,9 +97,12 @@ def status(rootfs):
 
 
 def write_defaults(rootfs, mimes, desktop_id):
-    """Make *desktop_id* the default for *mimes* in /etc/xdg/mimeapps.list (and in the
-    desktop-specific lists that already exist there, which would win otherwise)."""
-    files = [Path(rootfs, MIMEAPPS)] + sorted(Path(rootfs, "etc/xdg").glob("*-mimeapps.list"))
+    """Make *desktop_id* the default for *mimes* for everyone: /etc/xdg/mimeapps.list, the
+    desktop-specific lists there (they would win otherwise) and the lists new users get
+    from /etc/skel."""
+    files = [Path(rootfs, MIMEAPPS)] + sorted(Path(rootfs, "etc/xdg").glob("*-mimeapps.list")) + \
+        sorted(Path(rootfs, "etc/skel/.config").glob("*mimeapps.list")) + \
+        sorted(Path(rootfs, "etc/skel/.local/share/applications").glob("mimeapps.list"))
     for p in files:
         cp = configparser.ConfigParser(interpolation=None, strict=False, delimiters=("=",))
         cp.optionxform = str
@@ -138,6 +141,39 @@ def alternative_paths(rootfs, name):
         out.append(lines[i])
         i += 2 + slaves
     return out
+
+
+# Desktops that keep their own "preferred applications" outside mimeapps.list.
+XFCE_HELPERS = {"browser": "WebBrowser", "mail": "MailReader", "files": "FileManager",
+                "terminal": "TerminalEmulator"}
+GSETTINGS_TERMINAL = {"org.gnome.desktop.default-applications.terminal": "exec",
+                      "org.cinnamon.desktop.default-applications.terminal": "exec",
+                      "org.mate.applications-terminal": "exec"}
+OVERRIDE = "93_eduka-default-apps"
+
+
+def _desktop_exec(rootfs, desktop_id):
+    p = Path(rootfs, "usr/share/applications", desktop_id)
+    if not p.is_file():
+        return ""
+    m = re.search(r"(?m)^Exec=(\S+)", p.read_text(errors="replace"))
+    return Path(m.group(1)).name if m else ""
+
+
+def xfce_helper(rootfs, package, category):
+    """Name of the Xfce helper (/usr/share/xfce4/helpers/*.desktop) that runs a program of *package*."""
+    d = Path(rootfs, "usr/share/xfce4/helpers")
+    if not d.is_dir():
+        return ""
+    binaries = {Path(f).name for f in package_files(rootfs, package) if re.match(r"^/usr/(s?bin|games)/", f)}
+    for f in sorted(d.glob("*.desktop")):
+        text = f.read_text(errors="replace")
+        if not re.search(r"(?m)^X-XFCE-Category={}\s*$".format(category), text):
+            continue
+        m = re.search(r"(?m)^X-XFCE-Binaries=(.*)$", text)
+        if m and binaries & {b.strip() for b in m.group(1).split(";") if b.strip()}:
+            return f.stem
+    return ""
 
 
 class Replacer:
@@ -180,3 +216,31 @@ class Replacer:
                     self.pkgs.chroot.run(["update-alternatives", "--set", alt, path], check=False, quiet=True)
                     log.info("Alternative %s: %s", alt, path)
                     break
+        self._desktop_defaults(r["id"], package, ids[0] if ids else "")
+
+    def _desktop_defaults(self, role_id, package, desktop_id):
+        """The same choice in the settings of Xfce, KDE, LXQt, GNOME, Cinnamon and MATE (all users)."""
+        from eduka_customizer.core import gsettings
+        from eduka_customizer.core.themes import _ini
+        r = Path(self.rootfs)
+        exe = _desktop_exec(r, desktop_id) if desktop_id else ""
+        if role_id in XFCE_HELPERS and (r / "usr/share/xfce4/helpers").is_dir():
+            helper = xfce_helper(r, package, XFCE_HELPERS[role_id])
+            if helper:
+                p = r / "etc/xdg/xfce4/helpers.rc"
+                lines = [l for l in (p.read_text().splitlines() if p.exists() else [])
+                         if not l.startswith(XFCE_HELPERS[role_id] + "=")]
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text("\n".join(lines + ["{}={}".format(XFCE_HELPERS[role_id], helper)]) + "\n")
+        if role_id == "terminal" and exe:
+            _ini(r / "etc/xdg/kdeglobals", "General", {"TerminalApplication": exe, "TerminalService": desktop_id})
+            _ini(r / "etc/xdg/lxqt/session.conf", "Environment", {"TERM": exe})
+        if role_id == "browser" and desktop_id:
+            _ini(r / "etc/xdg/kdeglobals", "General", {"BrowserApplication": desktop_id})
+            if exe:
+                _ini(r / "etc/xdg/lxqt/session.conf", "Environment", {"BROWSER": exe})
+        if role_id == "terminal" and exe:
+            self.project.state.setdefault("default_apps_exec", {})["terminal"] = exe
+        term = self.project.state.get("default_apps_exec", {}).get("terminal")
+        if term:
+            gsettings.write_override(r, OVERRIDE, {s: {k: term} for s, k in GSETTINGS_TERMINAL.items()})
