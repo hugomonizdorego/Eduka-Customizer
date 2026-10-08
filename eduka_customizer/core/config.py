@@ -24,6 +24,8 @@ DEFAULTS = {
         "terminal": "",
         # yes: every menu can be opened at any time (expert mode); no: one step after the other.
         "free_navigation": "no",
+        # review: changes wait in Review & Apply (recommended); now: every change is applied at once.
+        "apply_mode": "review",
     },
     "debian": {
         # Codenames change with every Debian release; update them here.

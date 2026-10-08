@@ -11,6 +11,7 @@ class IdentityPage(Page):
     nav_title = "Identity"
     subtitle = "How the system names itself: os-release, computer name, boot menu and installer."
     icon_names = ("preferences-desktop-personal", "user-info")
+    CHANGES = ('Apply identity',)
 
     FIELDS = [("name", "System name"), ("version", "Version"), ("codename", "Codename"),
               ("id", "OS ID"), ("home_url", "Home page"), ("support_url", "Support URL"),

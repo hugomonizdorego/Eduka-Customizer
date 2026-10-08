@@ -31,6 +31,7 @@ class LanguagePage(Page):
                 "locale, keyboard, time zone, translations and spell checking, and a language choice "
                 "in the boot menu of the ISO.")
     icon_names = ("preferences-desktop-locale", "config-language", "preferences-desktop-keyboard")
+    CHANGES = ('Apply language ',)
 
     def build(self):
         c = self.card("Default language")

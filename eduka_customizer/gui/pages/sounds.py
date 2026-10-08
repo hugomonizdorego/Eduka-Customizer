@@ -31,6 +31,7 @@ class SoundsPage(Page):
                 "power. They become the sound theme of your distribution and the default of every desktop "
                 "(GNOME, KDE, Xfce, Cinnamon, MATE, Budgie, LXQt and GTK applications).")
     icon_names = ("preferences-desktop-sound", "audio-volume-high", "multimedia-volume-control")
+    CHANGES = ('Apply system sounds', 'Remove system sounds', 'Sound theme ')
 
     def build(self):
         c = self.card("Sound theme", "Your own theme inherits the freedesktop theme: events without a sound of "

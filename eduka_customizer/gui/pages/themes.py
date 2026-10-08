@@ -18,6 +18,7 @@ class ThemesPage(Page):
                 "manager of the image is listed. Add your own themes by drag and drop, or install theme packs "
                 "with one click.")
     icon_names = ("preferences-desktop-icons", "preferences-desktop-theme")
+    CHANGES = ('Apply look', 'Install theme packs')
 
     def build(self):
         c = self.card("Add your own themes, icons, cursors and fonts",

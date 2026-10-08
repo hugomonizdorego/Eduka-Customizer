@@ -17,6 +17,7 @@ class GrubDesignPage(Page):
     subtitle = ("Give the boot menu a GRUB theme of your choice, design its entries, and choose the boot loader "
                 "Calamares installs on computers. Themes are checked first: GRUB cannot show every theme.")
     icon_names = ("grub-customizer", "preferences-desktop-theme")
+    CHANGES = ('Boot loader ',)
 
     def build(self):
         c = self.card("GRUB theme",

@@ -54,6 +54,9 @@ class SettingsPage(Page):
         self.free_nav = QCheckBox("Free navigation (expert mode): open every menu at any time instead of "
                                   "one step after the other")
         f.addRow("", self.free_nav)
+        self.apply_now = QCheckBox("Apply every change at once (expert mode) instead of collecting the changes in "
+                                   "Review & Apply")
+        f.addRow("", self.apply_now)
         c.add(label("ISO name fields: {id} {name} {version} {codename} {suite} {debian} {arch} {date}", "muted"))
         c.add(hbox(None, button("Save settings", self.save, "primary")))
 
@@ -87,6 +90,7 @@ class SettingsPage(Page):
             e.setText(cfg.get(section, key))
         self.oldstable.setChecked(cfg.getbool("debian", "allow_oldstable"))
         self.free_nav.setChecked(cfg.getbool("general", "free_navigation"))
+        self.apply_now.setChecked(cfg.get("general", "apply_mode") == "now")
         host = doctor.host_info()
         text = "This computer: {}.".format(host["distro"].summary())
         if not host["supported"]:
@@ -144,6 +148,7 @@ class SettingsPage(Page):
             cfg.set(section, key, e.text().strip())
         cfg.set("debian", "allow_oldstable", "yes" if self.oldstable.isChecked() else "no")
         cfg.set("general", "free_navigation", "yes" if self.free_nav.isChecked() else "no")
+        cfg.set("general", "apply_mode", "now" if self.apply_now.isChecked() else "review")
         try:
             cfg.save()
         except OSError as e:

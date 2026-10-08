@@ -19,6 +19,7 @@ class KernelPage(Page):
                 "(Liquorix, XanMod, your own repository) or .deb files, remove old kernels, choose the "
                 "kernel of the ISO, update the initramfs and GRUB, add firmware.")
     icon_names = ("preferences-system", "cpu", "applications-system")
+    CHANGES = ('Install ', 'Remove kernel', 'Hold ', 'Unhold ', 'Update initramfs', 'Copy kernel', 'update-grub', 'Rebuild DKMS', 'Save GRUB', 'Use ')
 
     def build(self):
         c = self.card("Installed kernels")

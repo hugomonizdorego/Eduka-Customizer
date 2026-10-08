@@ -149,8 +149,15 @@ class Page(QWidget):
         self.layout_.addWidget(w)
         return cards
 
-    def task(self, name, func, done=None):
-        return self.main.run_task(name, func, done)
+    # Names of the tasks of this page that change the image: they wait in Review & Apply.
+    CHANGES = ()
+
+    def task(self, name, func, done=None, queue=None):
+        """Run *func* in the background. A change of the image (queue=True, or a task named in
+        CHANGES) waits in Review & Apply with the other choices, unless the user applies at once."""
+        if queue is None:
+            queue = any(name.startswith(prefix) for prefix in self.CHANGES)
+        return self.main.run_task(name, func, done, queue=queue, page=self)
 
     def build(self):
         pass

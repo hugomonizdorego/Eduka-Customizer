@@ -22,6 +22,7 @@ class UsersPage(Page):
     subtitle = ("The account that logs in when the ISO starts (live user) and accounts built into the "
                 "image. A user can have a password or no password at all.")
     icon_names = ("system-users", "user-identity", "preferences-system-users")
+    CHANGES = ('Change password of ', 'Create account ', 'Delete account ', 'Remove password of ', 'Save live user')
 
     def build(self):
         c = self.card("Live user", "Created every time the ISO boots. Debian's default is the user "

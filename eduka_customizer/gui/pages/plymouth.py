@@ -18,6 +18,7 @@ class PlymouthPage(Page):
                 ".deb, .zip, .tar.* archive, a folder or Debian's packages, preview them in a window, "
                 "apply or remove them. The initramfs is rebuilt during the next ISO build.")
     icon_names = ("preferences-desktop-screensaver", "plymouth", "video-display")
+    CHANGES = ('Apply Plymouth theme ', 'Create Plymouth theme', 'Install Plymouth', 'Plymouth settings', 'Remove Plymouth theme ')
 
     def build(self):
         c = self.card("Installed themes")

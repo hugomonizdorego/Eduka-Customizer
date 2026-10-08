@@ -15,6 +15,7 @@ class PackagesPage(Page):
                 "remove. Or remove the applications that came with the ISO. Changes go straight into "
                 "the image.")
     icon_names = ("system-software-install", "package-x-generic")
+    CHANGES = ('Apply package changes', 'Autoremove', 'Install .deb files', 'Remove applications', 'Upgrade all packages')
 
     def build(self):
         c = self.card("Maintenance")

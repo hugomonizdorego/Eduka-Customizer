@@ -14,6 +14,7 @@ class ReplaceAppsPage(Page):
                 "becomes the default for everyone (applies to all users), and the old program can be removed. "
                 "The desktop itself always stays installed.")
     icon_names = ("preferences-desktop-default-applications", "applications-other")
+    CHANGES = ('Replace ',)
 
     def build(self):
         c = self.card("Default applications of the image")

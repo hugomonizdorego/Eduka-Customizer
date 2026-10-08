@@ -20,6 +20,7 @@ class BrandingPage(Page):
                 "Calamares installer with dpkg diversions, plus an optional archive keyring. "
                 "No repository is needed and Debian updates keep your branding.")
     icon_names = ("preferences-desktop-theme-global", "applications-graphics", "emblem-favorite")
+    CHANGES = ('Apply distro branding', 'Build edited branding packages')
 
     def build(self):
         c = self.card("1. Identity and artwork")

@@ -22,6 +22,7 @@ class CalamaresPage(Page):
                 "shown while installing, user and password rules, partitioning, requirements, and every "
                 "configuration file. Test the result by booting the ISO in QEMU (Build & Test).")
     icon_names = ("calamares", "system-software-install", "drive-harddisk")
+    CHANGES = ('Calamares ', 'Use Calamares branding ')
 
     def build(self):
         c = self.card("Installer")

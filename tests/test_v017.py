@@ -52,3 +52,50 @@ def test_auto_fix_calamares(cal, nochroot):  # noqa: F811
     assert {"remove": ["live-boot"], "try_remove": ["not-there"]} in ops
     assert c.read("displaymanager")["displaymanagers"] == ["lightdm"]
     assert "ghost" not in str(c.read("settings")["sequence"])
+
+
+GUI_REVIEW = """
+import sys
+from eduka_customizer.qt.widgets import QApplication
+app = QApplication([])
+from eduka_customizer.core.project import Project
+from eduka_customizer.gui.main_window import MainWindow
+w = MainWindow()
+assert w.open_project(sys.argv[1])
+w.project.mark_all_steps(); w.update_state()
+page = next(p for p in w.pages if p.__class__.__name__ == "SoundsPage")
+ran = []
+page.task("Apply system sounds", lambda t: ran.append(1))
+page.task("List something", lambda t: ran.append(2))
+assert len(w.pending) == 1 and w.pending[0]["section"] == "System Sounds", w.pending
+assert w.pending_btn.text().startswith("Review & Apply: 1 change")
+w.go("ReviewPage")
+review = w.stack.currentWidget().current()
+assert review.items.count() == 1 and not review.apply_btn.isEnabled()
+review.tick_all()
+assert review.apply_btn.isEnabled()
+review.items.setCurrentRow(0); review.remove()
+assert w.pending == []
+import time
+t0 = time.time()
+while w.task and time.time() - t0 < 20:
+    app.processEvents(); time.sleep(0.02)
+print("ok", ran)
+"""
+
+
+def test_review_and_apply_collects_changes(tmp_path):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    from eduka_customizer.core.project import Project
+    from tests.conftest import make_rootfs_into
+    p = Project.create(tmp_path / "gui")
+    make_rootfs_into(p.rootfs)
+    p.save()
+    env = dict(os.environ, QT_QPA_PLATFORM="offscreen", PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    res = subprocess.run([sys.executable, "-c", GUI_REVIEW, str(p.path)], capture_output=True, text=True, env=env,
+                         timeout=120)
+    assert res.returncode == 0, res.stderr[-3000:]
+    assert res.stdout.strip().startswith("ok")

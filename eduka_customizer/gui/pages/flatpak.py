@@ -19,6 +19,7 @@ class FlatpakPage(Page):
                 "Internet, Education, Science, Games, Developer Tools, System and Utilities. Install them into the "
                 "ISO now, or only on the first boot of the installed system to keep the ISO small.")
     icon_names = ("flatpak-discover", "applications-other", "system-software-update")
+    CHANGES = ('Flatpak: ', 'Uninstall Flatpak apps')
 
     def build(self):
         c = self.card("Flathub")

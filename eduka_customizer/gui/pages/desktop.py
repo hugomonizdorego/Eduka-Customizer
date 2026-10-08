@@ -18,6 +18,7 @@ class DesktopPage(Page):
     subtitle = ("Build the desktop: GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, Eduka-Desktop, another desktop "
                 "environment or a window manager. Choose the login manager and default session.")
     icon_names = ("preferences-desktop", "user-desktop", "video-display")
+    CHANGES = ('Install ', 'Compositor', 'SDDM theme', 'Session type', 'Set default session', 'Set login screen', 'Build Eduka-Desktop', 'Set window manager')
 
     def build(self):
         c = self.card("Desktop environment or window manager")

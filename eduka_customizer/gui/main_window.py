@@ -27,7 +27,7 @@ MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "
               "AppearancePage": "wallpaper", "PlymouthPage": "plymouth", "BrandingPage": "branding",
               "CalamaresPage": "calamares", "BootMenuPage": "bootmenu", "WorkshopPage": "workshop",
               "TerminalPage": "terminal", "BuildPage": "build", "SettingsPage": "settings", "SoundsPage": "sounds",
-              "WelcomePage": "welcome", "GrubDesignPage": "bootmenu", "AboutPage": "about"}
+              "WelcomePage": "welcome", "GrubDesignPage": "bootmenu", "AboutPage": "about", "ReviewPage": "review"}
 
 # The sidebar, in the order of the work. Pages that are used together share one
 # menu (as tabs). (key, menu title, icon, page classes, is a numbered step)
@@ -49,6 +49,7 @@ SECTIONS = [
     ("welcome", "Welcome Screen", "welcome", ["welcome.WelcomePage"], True),
     ("installer", "Installer", "calamares", ["calamares.CalamaresPage"], True),
     ("advanced", "Advanced", "terminal", ["terminal.TerminalPage", "workshop.WorkshopPage"], True),
+    ("review", "Review & Apply", "review", ["review.ReviewPage"], True),
     ("build", "Check & Build", "build", ["build.BuildPage"], True),
     ("settings", "Settings", "settings", ["settings_page.SettingsPage"], False),
     ("about", "About", "about", ["about.AboutPage"], False),
@@ -149,6 +150,7 @@ class MainWindow(QMainWindow):
         self.dark = dark
         self.project = None
         self.task = None
+        self.pending = []  # changes waiting in Review & Apply
         self.live = None
         self._file_handler = None
         self._task_started = 0
@@ -263,6 +265,11 @@ class MainWindow(QMainWindow):
         self.step_progress.setFixedWidth(220)
         box.addWidget(self.step_progress)
         lay.addLayout(box)
+        self.pending_btn = QPushButton("")
+        self.pending_btn.setObjectName("primary")
+        self.pending_btn.setVisible(False)
+        self.pending_btn.clicked.connect(lambda: self.go("ReviewPage"))
+        lay.addWidget(self.pending_btn)
         self.mount_badge = QLabel("")
         self.mount_badge.setObjectName("badgeWarn")
         self.mount_badge.setVisible(False)
@@ -501,6 +508,10 @@ class MainWindow(QMainWindow):
         except (OSError, ValueError) as e:
             QMessageBox.critical(self, APP_NAME, "Could not open project:\n{}".format(e))
             return False
+        if self.pending:
+            get_logger().warning("%d change(s) of the previous project were not applied", len(self.pending))
+            self.pending = []
+            self._update_pending()
         self.close_project()
         self.project = proj
         self._file_handler = add_file_handler(proj.logs / "distroforge.log")
@@ -524,8 +535,31 @@ class MainWindow(QMainWindow):
         self.project = None
 
     # Tasks ----------------------------------------------------------------------
-    def run_task(self, name, func, done=None):
+    # Review & Apply -----------------------------------------------------------------
+    def collect_changes(self):
+        """True: changes wait in Review & Apply (the default); False: they are applied at once."""
+        return settings().get("general", "apply_mode") != "now"
+
+    def queue_change(self, name, func, done=None, page=None):
+        sec = getattr(page, "section", None)
+        self.pending.append({"name": name, "func": func, "done": done, "page": page.__class__.__name__ if page
+                             else "", "section": sec.title if sec else "", "step": getattr(sec, "step", 0),
+                             "checked": False})
+        self.stage_label.setText("Added to Review & Apply: {} ({} waiting)".format(name, len(self.pending)))
+        get_logger().info("Waiting in Review & Apply: %s", name)
+        self._update_pending()
+
+    def _update_pending(self):
+        if hasattr(self, "pending_btn"):
+            n = len(self.pending)
+            self.pending_btn.setText("Review & Apply: {} change{} waiting".format(n, "" if n == 1 else "s"))
+            self.pending_btn.setVisible(n > 0)
+
+    def run_task(self, name, func, done=None, queue=False, page=None):
         """Run func(task) in a thread. done(result) runs in the GUI on success."""
+        if queue and self.project and self.collect_changes():
+            self.queue_change(name, func, done, page)
+            return None
         if self.task:
             QMessageBox.information(self, APP_NAME, "'{}' is still running. Please wait or cancel it."
                                     .format(self.task.name))
@@ -623,6 +657,12 @@ class MainWindow(QMainWindow):
             self.splitter.setSizes([total - 130, 130])
 
     def closeEvent(self, event):
+        if self.pending:
+            r = QMessageBox.question(self, APP_NAME, "{} change(s) are still waiting in Review & Apply and will be "
+                                     "lost. Quit anyway?".format(len(self.pending)))
+            if r != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
         if self.task:
             r = QMessageBox.question(self, APP_NAME, "A task is running. Cancel it and quit?")
             if r != QMessageBox.StandardButton.Yes:

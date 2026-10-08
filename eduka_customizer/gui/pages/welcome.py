@@ -175,6 +175,7 @@ class WelcomePage(Page):
     subtitle = ("Four pages every user sees after logging in: your logo, titles, text, pictures and buttons that "
                 "open a website, start a program or the installer. Users can untick 'Show this at startup'.")
     icon_names = ("system-help", "help-about")
+    CHANGES = ('Welcome screen', 'Remove the welcome screen')
 
     def build(self):
         self._loading = False
