@@ -86,6 +86,34 @@ def editions():
     return catalog().get("editions", [])
 
 
+def edition_name(de_id, edition):
+    """(name, summary) of an edition in the desktop's own words (KDE Gear, Xfce Goodies, GNOME Core...)."""
+    d = desktop(de_id)
+    own = (d.get("edition_names") or {}).get(edition)
+    if own:
+        return own["name"], own["summary"]
+    generic = {e["id"]: e for e in editions()}.get(edition, {"name": edition, "description": ""})
+    return generic["name"], generic["description"]
+
+
+def package_descriptions(rootfs, names):
+    """{package: Debian description} read from the image's APT lists (the packages' own words)."""
+    from eduka_customizer.core.catalog import Catalog, _open, _stanzas
+    wanted, out = set(names), {}
+    for f in Catalog(rootfs).list_files():
+        try:
+            with _open(f) as fh:
+                for st in _stanzas(fh):
+                    n = st.get("Package")
+                    if n in wanted and n not in out:
+                        out[n] = st.get("Description", "")
+        except Exception:  # a damaged list must not hide the others
+            continue
+        if len(out) == len(wanted):
+            break
+    return out
+
+
 def edition_plan(de_id, edition="full"):
     """(packages, apps, no_recommends) to install *de_id* in the given edition."""
     d = desktop(de_id)

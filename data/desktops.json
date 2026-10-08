@@ -86,6 +86,24 @@
      ],
      "apps": "qt"
     }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "Eduka-Desktop core",
+     "summary": "LXQt core, Openbox, Eduka-Panel and Eduka-Menu"
+    },
+    "compact": {
+     "name": "Eduka-Desktop",
+     "summary": "Eduka-Panel, Eduka-Menu, file manager, editor, image viewer, network"
+    },
+    "full": {
+     "name": "Eduka-Desktop complete",
+     "summary": "Eduka-Desktop with Debian's standard desktop (task-desktop)"
+    },
+    "full_apps": {
+     "name": "Eduka-Desktop with applications",
+     "summary": "Eduka-Desktop plus Qt applications: browser, office, media"
+    }
    }
   },
   {
@@ -132,6 +150,24 @@
       "task-gnome-desktop"
      ],
      "apps": "gnome"
+    }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "GNOME Shell",
+     "summary": "GNOME Shell, Settings, Files and a terminal only"
+    },
+    "compact": {
+     "name": "GNOME Core",
+     "summary": "the essential GNOME components and core apps (Debian gnome-core)"
+    },
+    "full": {
+     "name": "GNOME desktop",
+     "summary": "Debian's GNOME desktop task (task-gnome-desktop)"
+    },
+    "full_apps": {
+     "name": "GNOME with apps",
+     "summary": "GNOME desktop plus GNOME apps: Totem, Rhythmbox, Software, office"
     }
    }
   },
@@ -182,6 +218,24 @@
      ],
      "apps": "kde"
     }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "Plasma Desktop",
+     "summary": "the Plasma Desktop shell with Dolphin and Konsole"
+    },
+    "compact": {
+     "name": "KDE Plasma Desktop (minimal)",
+     "summary": "Plasma Desktop and a minimal set of applications (kde-plasma-desktop)"
+    },
+    "full": {
+     "name": "KDE Plasma desktop",
+     "summary": "Debian's KDE Plasma desktop task (task-kde-desktop)"
+    },
+    "full_apps": {
+     "name": "KDE Plasma with KDE Gear",
+     "summary": "Plasma with the standard set of KDE Gear applications (kde-standard)"
+    }
    }
   },
   {
@@ -231,6 +285,24 @@
      ],
      "apps": "gtk"
     }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "Xfce core components",
+     "summary": "xfwm4, panel, desktop, session, settings and Thunar"
+    },
+    "compact": {
+     "name": "Xfce core + Whisker Menu",
+     "summary": "core components with Whisker Menu and network applet"
+    },
+    "full": {
+     "name": "Xfce desktop",
+     "summary": "Debian's Xfce desktop task (task-xfce-desktop)"
+    },
+    "full_apps": {
+     "name": "Xfce with Goodies",
+     "summary": "Xfce desktop plus the Xfce Goodies plugins and applications"
+    }
    }
   },
   {
@@ -276,6 +348,24 @@
      ],
      "apps": "gtk"
     }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "Cinnamon core",
+     "summary": "the Cinnamon desktop core components (cinnamon-core)"
+    },
+    "compact": {
+     "name": "Cinnamon core + network",
+     "summary": "Cinnamon core with the network applet"
+    },
+    "full": {
+     "name": "Cinnamon desktop",
+     "summary": "Debian's Cinnamon desktop task (task-cinnamon-desktop)"
+    },
+    "full_apps": {
+     "name": "Cinnamon desktop environment",
+     "summary": "Cinnamon with its full set of applications (cinnamon-desktop-environment)"
+    }
    }
   },
   {
@@ -320,6 +410,24 @@
       "mate-desktop-environment-extras"
      ],
      "apps": "gtk"
+    }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "MATE core",
+     "summary": "MATE Desktop Environment essential components (mate-desktop-environment-core)"
+    },
+    "compact": {
+     "name": "MATE Desktop Environment",
+     "summary": "MATE with its standard applications (mate-desktop-environment)"
+    },
+    "full": {
+     "name": "MATE desktop",
+     "summary": "Debian's MATE desktop task (task-mate-desktop)"
+    },
+    "full_apps": {
+     "name": "MATE with extras",
+     "summary": "MATE desktop plus MATE extras (mate-desktop-environment-extras)"
     }
    }
   },
@@ -370,6 +478,24 @@
      ],
      "apps": "qt"
     }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "LXQt core",
+     "summary": "LXQt core components (lxqt-core) and QTerminal"
+    },
+    "compact": {
+     "name": "LXQt",
+     "summary": "the LXQt metapackage with its standard applications"
+    },
+    "full": {
+     "name": "LXQt desktop",
+     "summary": "Debian's LXQt desktop task (task-lxqt-desktop)"
+    },
+    "full_apps": {
+     "name": "LXQt with applications",
+     "summary": "LXQt desktop plus Qt applications: browser, office, media"
+    }
    }
   },
   {
@@ -413,6 +539,24 @@
       "task-lxde-desktop"
      ],
      "apps": "light"
+    }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "LXDE core",
+     "summary": "LXDE core components (lxde-core) and LXTerminal"
+    },
+    "compact": {
+     "name": "LXDE",
+     "summary": "the LXDE metapackage with its standard applications"
+    },
+    "full": {
+     "name": "LXDE desktop",
+     "summary": "Debian's LXDE desktop task (task-lxde-desktop)"
+    },
+    "full_apps": {
+     "name": "LXDE with applications",
+     "summary": "LXDE desktop plus light applications"
     }
    }
   },
@@ -478,6 +622,24 @@
      ],
      "apps": "gtk"
     }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "Budgie Desktop",
+     "summary": "Budgie Desktop with a terminal and Files"
+    },
+    "compact": {
+     "name": "Budgie Desktop + network",
+     "summary": "Budgie Desktop with the network applet"
+    },
+    "full": {
+     "name": "Budgie desktop",
+     "summary": "Budgie with Debian's standard desktop (task-desktop) and Settings"
+    },
+    "full_apps": {
+     "name": "Budgie with applications",
+     "summary": "Budgie desktop plus GTK applications"
+    }
    }
   },
   {
@@ -527,6 +689,24 @@
       "task-gnome-flashback-desktop"
      ],
      "apps": "gnome"
+    }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "GNOME Flashback session",
+     "summary": "the Flashback session (Metacity and GNOME Panel)"
+    },
+    "compact": {
+     "name": "GNOME Flashback + Settings",
+     "summary": "Flashback session with Settings and the network applet"
+    },
+    "full": {
+     "name": "GNOME Flashback desktop",
+     "summary": "Debian's GNOME Flashback task (task-gnome-flashback-desktop)"
+    },
+    "full_apps": {
+     "name": "GNOME Flashback with apps",
+     "summary": "Flashback desktop plus GNOME applications"
     }
    }
   },
@@ -587,6 +767,24 @@
       "pcmanfm"
      ],
      "apps": "light"
+    }
+   },
+   "edition_names": {
+    "mini": {
+     "name": "Enlightenment",
+     "summary": "Enlightenment and the Terminology terminal"
+    },
+    "compact": {
+     "name": "Enlightenment + tools",
+     "summary": "Enlightenment with network applet and a file manager"
+    },
+    "full": {
+     "name": "Enlightenment desktop",
+     "summary": "Enlightenment with Debian's standard desktop (task-desktop)"
+    },
+    "full_apps": {
+     "name": "Enlightenment with applications",
+     "summary": "Enlightenment desktop plus light applications"
     }
    }
   },
@@ -672,7 +870,25 @@
     "dbus-x11",
     "task-desktop"
    ],
-   "recommended_compositor": "picom"
+   "recommended_compositor": "picom",
+   "edition_names": {
+    "mini": {
+     "name": "Openbox only",
+     "summary": "Openbox with a terminal"
+    },
+    "compact": {
+     "name": "Openbox + panel and launcher",
+     "summary": "Openbox with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "Openbox desktop",
+     "summary": "Openbox with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "Openbox with applications",
+     "summary": "Openbox desktop plus light applications"
+    }
+   }
   },
   {
    "id": "i3",
@@ -760,7 +976,25 @@
     "xdg-user-dirs",
     "dbus-x11",
     "task-desktop"
-   ]
+   ],
+   "edition_names": {
+    "mini": {
+     "name": "i3 only",
+     "summary": "i3 with a terminal"
+    },
+    "compact": {
+     "name": "i3 + panel and launcher",
+     "summary": "i3 with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "i3 desktop",
+     "summary": "i3 with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "i3 with applications",
+     "summary": "i3 desktop plus light applications"
+    }
+   }
   },
   {
    "id": "fluxbox",
@@ -835,7 +1069,25 @@
     "dbus-x11",
     "task-desktop"
    ],
-   "recommended_compositor": "picom"
+   "recommended_compositor": "picom",
+   "edition_names": {
+    "mini": {
+     "name": "Fluxbox only",
+     "summary": "Fluxbox with a terminal"
+    },
+    "compact": {
+     "name": "Fluxbox + panel and launcher",
+     "summary": "Fluxbox with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "Fluxbox desktop",
+     "summary": "Fluxbox with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "Fluxbox with applications",
+     "summary": "Fluxbox desktop plus light applications"
+    }
+   }
   },
   {
    "id": "icewm",
@@ -906,7 +1158,25 @@
     "dbus-x11",
     "task-desktop"
    ],
-   "recommended_compositor": "picom"
+   "recommended_compositor": "picom",
+   "edition_names": {
+    "mini": {
+     "name": "IceWM only",
+     "summary": "IceWM with a terminal"
+    },
+    "compact": {
+     "name": "IceWM + panel and launcher",
+     "summary": "IceWM with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "IceWM desktop",
+     "summary": "IceWM with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "IceWM with applications",
+     "summary": "IceWM desktop plus light applications"
+    }
+   }
   },
   {
    "id": "awesome",
@@ -980,7 +1250,25 @@
     "xdg-user-dirs",
     "dbus-x11",
     "task-desktop"
-   ]
+   ],
+   "edition_names": {
+    "mini": {
+     "name": "awesome only",
+     "summary": "awesome with a terminal"
+    },
+    "compact": {
+     "name": "awesome + panel and launcher",
+     "summary": "awesome with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "awesome desktop",
+     "summary": "awesome with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "awesome with applications",
+     "summary": "awesome desktop plus light applications"
+    }
+   }
   },
   {
    "id": "jwm",
@@ -1051,7 +1339,25 @@
     "dbus-x11",
     "task-desktop"
    ],
-   "recommended_compositor": "picom"
+   "recommended_compositor": "picom",
+   "edition_names": {
+    "mini": {
+     "name": "JWM only",
+     "summary": "JWM with a terminal"
+    },
+    "compact": {
+     "name": "JWM + panel and launcher",
+     "summary": "JWM with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "JWM desktop",
+     "summary": "JWM with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "JWM with applications",
+     "summary": "JWM desktop plus light applications"
+    }
+   }
   },
   {
    "id": "herbstluftwm",
@@ -1130,7 +1436,25 @@
     "xdg-user-dirs",
     "dbus-x11",
     "task-desktop"
-   ]
+   ],
+   "edition_names": {
+    "mini": {
+     "name": "herbstluftwm only",
+     "summary": "herbstluftwm with a terminal"
+    },
+    "compact": {
+     "name": "herbstluftwm + panel and launcher",
+     "summary": "herbstluftwm with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "herbstluftwm desktop",
+     "summary": "herbstluftwm with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "herbstluftwm with applications",
+     "summary": "herbstluftwm desktop plus light applications"
+    }
+   }
   },
   {
    "id": "bspwm",
@@ -1214,7 +1538,25 @@
     "dbus-x11",
     "task-desktop"
    ],
-   "recommended_compositor": "picom"
+   "recommended_compositor": "picom",
+   "edition_names": {
+    "mini": {
+     "name": "bspwm only",
+     "summary": "bspwm with a terminal"
+    },
+    "compact": {
+     "name": "bspwm + panel and launcher",
+     "summary": "bspwm with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "bspwm desktop",
+     "summary": "bspwm with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "bspwm with applications",
+     "summary": "bspwm desktop plus light applications"
+    }
+   }
   },
   {
    "id": "dwm",
@@ -1289,7 +1631,25 @@
     "xdg-user-dirs",
     "dbus-x11",
     "task-desktop"
-   ]
+   ],
+   "edition_names": {
+    "mini": {
+     "name": "dwm only",
+     "summary": "dwm with a terminal"
+    },
+    "compact": {
+     "name": "dwm + panel and launcher",
+     "summary": "dwm with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "dwm desktop",
+     "summary": "dwm with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "dwm with applications",
+     "summary": "dwm desktop plus light applications"
+    }
+   }
   },
   {
    "id": "spectrwm",
@@ -1363,7 +1723,25 @@
     "xdg-user-dirs",
     "dbus-x11",
     "task-desktop"
-   ]
+   ],
+   "edition_names": {
+    "mini": {
+     "name": "spectrwm only",
+     "summary": "spectrwm with a terminal"
+    },
+    "compact": {
+     "name": "spectrwm + panel and launcher",
+     "summary": "spectrwm with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "spectrwm desktop",
+     "summary": "spectrwm with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "spectrwm with applications",
+     "summary": "spectrwm desktop plus light applications"
+    }
+   }
   },
   {
    "id": "sway",
@@ -1443,7 +1821,25 @@
     "thunar",
     "xdg-user-dirs",
     "task-desktop"
-   ]
+   ],
+   "edition_names": {
+    "mini": {
+     "name": "Sway only",
+     "summary": "Sway with a terminal"
+    },
+    "compact": {
+     "name": "Sway + panel and launcher",
+     "summary": "Sway with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "Sway desktop",
+     "summary": "Sway with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "Sway with applications",
+     "summary": "Sway desktop plus light applications"
+    }
+   }
   },
   {
    "id": "labwc",
@@ -1514,7 +1910,25 @@
     "thunar",
     "xdg-user-dirs",
     "task-desktop"
-   ]
+   ],
+   "edition_names": {
+    "mini": {
+     "name": "labwc only",
+     "summary": "labwc with a terminal"
+    },
+    "compact": {
+     "name": "labwc + panel and launcher",
+     "summary": "labwc with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "labwc desktop",
+     "summary": "labwc with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "labwc with applications",
+     "summary": "labwc desktop plus light applications"
+    }
+   }
   },
   {
    "id": "wayfire",
@@ -1581,7 +1995,25 @@
     "thunar",
     "xdg-user-dirs",
     "task-desktop"
-   ]
+   ],
+   "edition_names": {
+    "mini": {
+     "name": "Wayfire only",
+     "summary": "Wayfire with a terminal"
+    },
+    "compact": {
+     "name": "Wayfire + panel and launcher",
+     "summary": "Wayfire with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "Wayfire desktop",
+     "summary": "Wayfire with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "Wayfire with applications",
+     "summary": "Wayfire desktop plus light applications"
+    }
+   }
   },
   {
    "id": "hyprland",
@@ -1653,7 +2085,25 @@
     "task-desktop",
     "swaybg"
    ],
-   "note": "Debian 13 (trixie), testing and sid only."
+   "note": "Debian 13 (trixie), testing and sid only.",
+   "edition_names": {
+    "mini": {
+     "name": "Hyprland only",
+     "summary": "Hyprland with a terminal"
+    },
+    "compact": {
+     "name": "Hyprland + panel and launcher",
+     "summary": "Hyprland with a panel, launcher and wallpaper tool"
+    },
+    "full": {
+     "name": "Hyprland desktop",
+     "summary": "Hyprland with network and sound tools, file manager and Debian's standard desktop"
+    },
+    "full_apps": {
+     "name": "Hyprland with applications",
+     "summary": "Hyprland desktop plus light applications"
+    }
+   }
   }
  ],
  "display_managers": [

@@ -157,3 +157,51 @@ def test_welcome_program_compiles():
     import py_compile
     from eduka_customizer.core import welcome
     py_compile.compile(str(welcome.app_source()), doraise=True)
+
+
+# Identity from the ISO -------------------------------------------------------------------------
+
+def test_identity_and_artwork_from_image(blank_project, tmp_path):
+    from eduka_customizer.core import imageinfo
+    from tests.test_v012 import png
+    p = blank_project
+    r = p.rootfs
+    rel = r / "usr/lib/os-release"
+    rel.write_text(rel.read_text() + 'HOME_URL="https://www.debian.org/"\nBUG_REPORT_URL="https://bugs.debian.org/"\n')
+    (r / "etc/hostname").write_text("debian\n")
+    p.state.setdefault("source", {})["volume_id"] = "d-live 13.1.0 xf amd64"
+    (r / "etc/live/config.conf.d").mkdir(parents=True)
+    (r / "etc/live/config.conf.d/10-user.conf").write_text('LIVE_USERNAME="user"\n')
+    ident = imageinfo.identity(p)
+    assert ident["name"] == "Debian GNU/Linux" and ident["id"] == "debian" and ident["version"] == "13"
+    assert ident["codename"] == "trixie" and ident["home_url"] == "https://www.debian.org/"
+    assert ident["hostname"] == "debian" and ident["volume_label"] == "d-live 13.1.0 xf amd64"
+    assert ident["live_user"] == "user"
+    images = r / "usr/share/images/desktop-base"
+    images.mkdir(parents=True)
+    png(images / "real-wall.png", "#123456")
+    (images / "default").symlink_to("real-wall.png")
+    (r / "usr/share/pixmaps").mkdir(parents=True)
+    png(r / "usr/share/pixmaps/debian-logo.png")
+    art = imageinfo.copy_artwork(p)
+    assert Path(art["logo"]).parent == p.path / "from-iso" and Path(art["wallpaper"]).is_file()
+    assert Path(art["wallpaper"]).name == "wallpaper.png"
+
+
+# Editions in each desktop's own words ----------------------------------------------------------
+
+def test_edition_names_per_desktop(project):
+    from eduka_customizer.core import desktop as dsk
+    assert dsk.edition_name("kde", "full_apps")[0] == "KDE Plasma with KDE Gear"
+    assert dsk.edition_name("xfce", "full_apps")[0] == "Xfce with Goodies"
+    assert dsk.edition_name("gnome", "compact")[0] == "GNOME Core"
+    assert dsk.edition_name("i3", "mini")[0] == "i3 only"
+    for d in dsk.catalog()["desktops"]:
+        assert set(d["edition_names"]) == set(dsk.EDITIONS), d["id"]
+    lists = project.rootfs / "var/lib/apt/lists"
+    lists.mkdir(parents=True, exist_ok=True)
+    (lists / "deb.debian.org_debian_dists_trixie_main_binary-amd64_Packages").write_text(
+        "Package: kde-standard\nVersion: 5:150\nDescription: KDE Plasma Desktop and standard set of applications\n\n"
+        "Package: other\nVersion: 1\nDescription: x\n")
+    assert dsk.package_descriptions(project.rootfs, ["kde-standard", "nope"]) == {
+        "kde-standard": "KDE Plasma Desktop and standard set of applications"}

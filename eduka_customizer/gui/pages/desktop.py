@@ -34,7 +34,7 @@ class DesktopPage(Page):
             grid.addWidget(b, i // 4, i % 4)
         c.add(grid)
         self.desc = label("", "muted")
-        self.group.buttonToggled.connect(lambda *_: self._describe())
+        self.group.buttonToggled.connect(lambda *_: (self._edition_names(), self._describe()))
         c.add(self.desc)
         f = c.form()
         self.dm_for_install = combo([("", "Keep current / recommended")] +
@@ -116,17 +116,47 @@ class DesktopPage(Page):
         c.add(hbox(None, button("Save defaults", self.save_defaults, "primary")))
         self._describe()
 
+    def _edition_names(self):
+        """Edition names in the selected desktop's own words."""
+        de_id = self._selected()
+        current = self.edition.currentData() or "full"
+        self.edition.blockSignals(True)
+        self.edition.clear()
+        for e in dsk.editions():
+            name = dsk.edition_name(de_id, e["id"])[0] if de_id else e["name"]
+            self.edition.addItem("{} — {}".format(e["name"], name) if de_id else name, e["id"])
+        self.edition.setCurrentIndex(max(0, self.edition.findData(current)))
+        self.edition.blockSignals(False)
+
+    def _debian_text(self, packages):
+        """Description of the edition's main package from the image's APT lists (cached)."""
+        if not self.project or not packages:
+            return ""
+        cache = getattr(self, "_desc_cache", {})
+        missing = [p for p in packages[:1] if p not in cache]
+        if missing:
+            cache.update(dsk.package_descriptions(self.project.rootfs, missing))
+            for p in missing:
+                cache.setdefault(p, "")
+            self._desc_cache = cache
+        return cache.get(packages[0], "")
+
     def _describe(self):
         ed = self.edition.currentData()
-        self.edition_desc.setText({e["id"]: e["description"] for e in dsk.editions()}.get(ed, ""))
         de_id = self._selected()
         if not de_id:
+            self.edition_desc.setText({e["id"]: e["description"] for e in dsk.editions()}.get(ed, ""))
             self.desc.setText("Choose a desktop or window manager.")
             return
+        name, summary = dsk.edition_name(de_id, ed)
+        self.edition_desc.setText("<b>{}</b>: {}".format(name, summary))
         d = dsk.desktop(de_id)
         pkgs, apps, norec = dsk.edition_plan(de_id, ed)
         text = "<b>{}</b>: {}<br>Packages: {}{}".format(d["name"], d["description"], " ".join(pkgs),
                                                      " (without recommended packages)" if norec else "")
+        debian = self._debian_text(pkgs)
+        if debian:
+            text += "<br>Debian: <i>{} — {}</i>".format(pkgs[0], debian)
         if apps:
             text += "<br>Applications: " + " ".join(apps)
         if d.get("note"):

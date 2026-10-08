@@ -42,7 +42,7 @@ def recommendations(profile_id, edition="full"):
         de = dsk.desktop(p["desktop"])
         dm = dsk.display_manager(p["dm"]) if p.get("dm") else None
         de_ed = ed["desktop_edition"]
-        ed_name = {e["id"]: e["name"] for e in dsk.editions()}.get(de_ed, de_ed)
+        ed_name = dsk.edition_name(de["id"], de_ed)[0]
         out.append(("desktop", "Desktop: {} ({}){}".format(de["name"], ed_name,
                                                           " with the login screen " + dm["name"] if dm else ""),
                     {"action": "desktop", "id": de["id"], "dm": p.get("dm"), "edition": de_ed}))
