@@ -159,6 +159,36 @@ def compositors_for(de_id, kind="x11"):
     return out, best
 
 
+# Login screens that fit a desktop best (its own, or the one its makers ship).
+RECOMMENDED_DM = {"gnome": "gdm3", "kde": "sddm", "lxqt": "sddm", "cinnamon": "lightdm-slick",
+                  "budgie": "lightdm-slick", "mate": "lightdm-arctica", "eduka": "lightdm"}
+# Desktops whose makers start them on Wayland by default (Debian 13: GNOME 48, Plasma 6).
+WAYLAND_FIRST = {"gnome", "kde"}
+
+
+def recommend(de_id, project=None):
+    """What fits *de_id*: {dm, session_type, session, compositor, why}. The user may change all of it."""
+    d = desktop(de_id)
+    sess = {k: v for k, v in d.get("sessions", {}).items() if k in ("x11", "wayland")}
+    if "x11" not in sess:
+        kind = "wayland"
+    elif "wayland" in sess and de_id in WAYLAND_FIRST:
+        kind = "wayland"
+    else:
+        kind = "x11"
+    dm = RECOMMENDED_DM.get(de_id) or d.get("dm") or "lightdm"
+    if kind == "wayland" and d["kind"] == "wm":
+        dm = "greetd"  # a small login screen that starts Wayland compositors well
+    why = []
+    if project is not None:
+        from eduka_customizer.core import initsystem
+        if initsystem.current(project.rootfs) != "systemd" and dm == "gdm3":
+            dm, why = "lightdm", why + ["GDM needs systemd"]
+    _choices, comp = compositors_for(de_id, kind)
+    return {"dm": dm, "session_type": kind, "session": sess.get(kind) or d.get("session"), "compositor": comp,
+            "why": why}
+
+
 class DesktopManager:
     def __init__(self, project):
         self.project = project
@@ -166,7 +196,8 @@ class DesktopManager:
         self.pkgs = Packages(project)
         self.chroot = Chroot(project.rootfs)
 
-    def install(self, de_id, dm_id=None, remove_others=False, no_recommends=False, edition="full"):
+    def install(self, de_id, dm_id=None, remove_others=False, no_recommends=False, edition="full",
+                eduka_src=None):
         d = desktop(de_id)
         packages, apps, ed_norec = edition_plan(de_id, edition)
         log.info("Installing desktop: %s (%s)", d["name"], edition)
@@ -184,7 +215,7 @@ class DesktopManager:
                     self.pkgs.install([a for a in apps if a in have], update=False)
             if d.get("eduka_desktop"):
                 from eduka_customizer.core.eduka_desktop import EdukaDesktop
-                EdukaDesktop(self.project).fetch_build_install()
+                EdukaDesktop(self.project).fetch_build_install(*(eduka_src or ()))
             dm_id = dm_id or (detect_display_manager(self.rootfs) or d.get("dm"))
             if dm_id:
                 self.set_display_manager(dm_id)

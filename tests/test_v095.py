@@ -149,3 +149,52 @@ def test_switch_to_sysvinit(cal, monkeypatch):  # noqa: F811
     assert exec_[exec_.index("displaymanager") + 1] == "services-openrc"
     assert (r / "etc/calamares/modules/services-openrc.conf").exists()
     assert initsystem.current(r) == "openrc"
+
+
+def test_recommendations_follow_the_desktop():
+    from eduka_customizer.core import desktop as dsk
+    assert dsk.recommend("xfce")["dm"] == "lightdm" and dsk.recommend("xfce")["session_type"] == "x11"
+    kde = dsk.recommend("kde")
+    assert kde["dm"] == "sddm" and kde["session_type"] == "wayland" and kde["compositor"] == "kwin"
+    sway = dsk.recommend("sway")
+    assert sway["session_type"] == "wayland" and sway["dm"] == "greetd"
+    assert dsk.recommend("cinnamon")["dm"] == "lightdm-slick"
+    assert dsk.recommend("eduka")["session_type"] == "x11"
+
+
+GUI_DESKTOP = """
+import sys
+from eduka_customizer.qt.widgets import QApplication
+app = QApplication([])
+from eduka_customizer.gui.main_window import MainWindow
+w = MainWindow()
+assert w.open_project(sys.argv[1])
+w.project.mark_all_steps(); w.update_state()
+w.go("DesktopPage")
+page = w.stack.currentWidget().current()
+page.tiles["kde"].setChecked(True)
+assert page._dm_selected() == "sddm" and page.st_type.currentData() == "wayland", page._dm_selected()
+assert page.comp.currentData() == "kwin" and not page.eduka_card.isVisibleTo(page)
+page.tiles["xfce"].setChecked(True)
+assert page._dm_selected() == "lightdm" and page.st_type.currentData() == "x11"
+page.dm_tiles["lightdm-slick"].setChecked(True)   # the user may choose another one
+page.tiles["eduka"].setChecked(True)
+assert page.eduka_card.isVisibleTo(page) and page.wm.isVisibleTo(page)
+page.tiles["xfce"].setChecked(True)
+w._told_review = True
+page.add_change()
+assert len(w.pending) == 1 and w.pending[0]["name"].startswith("Set up desktop: Xfce"), w.pending
+print("ok")
+"""
+
+
+def test_gui_desktop_follows_choice(project):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    project.save()
+    env = dict(os.environ, QT_QPA_PLATFORM="offscreen", PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    res = subprocess.run([sys.executable, "-c", GUI_DESKTOP, str(project.path)], capture_output=True, text=True,
+                         env=env, timeout=120)
+    assert res.returncode == 0, res.stderr[-3000:]

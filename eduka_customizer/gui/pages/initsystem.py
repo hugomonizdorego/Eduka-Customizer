@@ -1,5 +1,7 @@
 """Init System page: systemd or an alternative (SysVinit, OpenRC, runit)."""
 
+import re
+
 from eduka_customizer.qt.widgets import QMessageBox
 
 from eduka_customizer.core import initsystem
@@ -41,7 +43,7 @@ class InitSystemPage(Page):
             return
         self._rows = initsystem.options(self.project)
         self.list.blockSignals(True)
-        fill(self.list, [(name, "✔ in use" if cur else ("not available" if not ok else ""), desc.split(".")[0])
+        fill(self.list, [(name, "✔ in use" if cur else ("not available" if not ok else ""), re.split(r"\.(\s|$)", desc)[0])
                          for _i, name, desc, ok, _w, cur in self._rows], sort=False)
         self.list.resizeColumnToContents(0)
         self.list.blockSignals(False)
