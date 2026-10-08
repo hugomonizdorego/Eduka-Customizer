@@ -4,7 +4,7 @@
    "id": "eduka",
    "name": "Eduka-Desktop",
    "kind": "de",
-   "description": "Edukasaun OS desktop: Eduka-Panel and Eduka-Menu on top of LXQt. Light, accessible and made for schools.",
+   "description": "Eduka-Desktop: Eduka-Panel and Eduka-Menu on top of LXQt, built from its source (github.com/hugomonizdorego/Eduka-Desktop). Light and accessible.",
    "packages": [
     "lxqt-core",
     "lxqt-session",
@@ -25,45 +25,115 @@
    "sessions": {
     "x11": "edukasaun-desktop"
    },
-   "recommended_compositor": "picom"
+   "recommended_compositor": "picom",
+   "editions": {
+    "mini": {
+     "packages": [
+      "lxqt-core",
+      "lxqt-session",
+      "openbox",
+      "pcmanfm-qt",
+      "qterminal",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "lxqt-core",
+      "lxqt-session",
+      "openbox",
+      "pcmanfm-qt",
+      "qterminal",
+      "featherpad",
+      "lximage-qt",
+      "network-manager-gnome",
+      "papirus-icon-theme",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "lxqt-core",
+      "lxqt-session",
+      "openbox",
+      "pcmanfm-qt",
+      "qterminal",
+      "featherpad",
+      "lximage-qt",
+      "pavucontrol-qt",
+      "network-manager-gnome",
+      "papirus-icon-theme",
+      "xorg",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "lxqt-core",
+      "lxqt-session",
+      "openbox",
+      "pcmanfm-qt",
+      "qterminal",
+      "featherpad",
+      "lximage-qt",
+      "pavucontrol-qt",
+      "network-manager-gnome",
+      "papirus-icon-theme",
+      "xorg",
+      "task-desktop"
+     ],
+     "apps": "qt"
+    }
+   }
   },
   {
-   "id": "lxqt",
-   "name": "LXQt",
+   "id": "gnome",
+   "name": "GNOME",
    "kind": "de",
-   "description": "Lightweight Qt desktop (base of Eduka-Desktop).",
+   "description": "Debian's default desktop. Needs more RAM.",
    "packages": [
-    "task-lxqt-desktop"
+    "task-gnome-desktop"
    ],
-   "session": "lxqt",
-   "dm": "sddm",
-   "task": "task-lxqt-desktop",
+   "session": "gnome",
+   "dm": "gdm3",
+   "task": "task-gnome-desktop",
    "sessions": {
-    "x11": "lxqt",
-    "wayland": "lxqt-wayland",
-    "wayland_packages": [
-     "lxqt-wayland-session",
-     "labwc"
-    ]
+    "x11": "gnome-xorg",
+    "wayland": "gnome"
    },
-   "recommended_compositor": "picom"
-  },
-  {
-   "id": "xfce",
-   "name": "Xfce",
-   "kind": "de",
-   "description": "Fast, traditional GTK desktop.",
-   "packages": [
-    "task-xfce-desktop"
-   ],
-   "session": "xfce",
-   "dm": "lightdm",
-   "task": "task-xfce-desktop",
-   "sessions": {
-    "x11": "xfce"
-   },
-   "native_compositor": "xfwm4",
-   "always_composited": false
+   "native_compositor": "mutter",
+   "always_composited": true,
+   "editions": {
+    "mini": {
+     "packages": [
+      "gnome-session",
+      "gnome-shell",
+      "gnome-terminal",
+      "nautilus",
+      "gnome-control-center"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "gnome-core"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "task-gnome-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "task-gnome-desktop"
+     ],
+     "apps": "gnome"
+    }
+   }
   },
   {
    "id": "kde",
@@ -84,42 +154,84 @@
     ]
    },
    "native_compositor": "kwin",
-   "always_composited": true
+   "always_composited": true,
+   "editions": {
+    "mini": {
+     "packages": [
+      "plasma-desktop",
+      "konsole",
+      "dolphin"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "kde-plasma-desktop"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "task-kde-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "task-kde-desktop",
+      "kde-standard"
+     ],
+     "apps": "kde"
+    }
+   }
   },
   {
-   "id": "gnome",
-   "name": "GNOME",
+   "id": "xfce",
+   "name": "Xfce",
    "kind": "de",
-   "description": "Debian's default desktop. Needs more RAM.",
+   "description": "Fast, traditional GTK desktop.",
    "packages": [
-    "task-gnome-desktop"
+    "task-xfce-desktop"
    ],
-   "session": "gnome",
-   "dm": "gdm3",
-   "task": "task-gnome-desktop",
-   "sessions": {
-    "x11": "gnome-xorg",
-    "wayland": "gnome"
-   },
-   "native_compositor": "mutter",
-   "always_composited": true
-  },
-  {
-   "id": "mate",
-   "name": "MATE",
-   "kind": "de",
-   "description": "Classic GNOME 2 style desktop.",
-   "packages": [
-    "task-mate-desktop"
-   ],
-   "session": "mate",
+   "session": "xfce",
    "dm": "lightdm",
-   "task": "task-mate-desktop",
+   "task": "task-xfce-desktop",
    "sessions": {
-    "x11": "mate"
+    "x11": "xfce"
    },
-   "native_compositor": "marco",
-   "always_composited": false
+   "native_compositor": "xfwm4",
+   "always_composited": false,
+   "editions": {
+    "mini": {
+     "packages": [
+      "xfce4",
+      "xfce4-terminal",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "xfce4",
+      "xfce4-terminal",
+      "xfce4-whiskermenu-plugin",
+      "network-manager-gnome",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "task-xfce-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "task-xfce-desktop",
+      "xfce4-goodies"
+     ],
+     "apps": "gtk"
+    }
+   }
   },
   {
    "id": "cinnamon",
@@ -137,7 +249,128 @@
     "wayland": "cinnamon-wayland"
    },
    "native_compositor": "muffin",
-   "always_composited": true
+   "always_composited": true,
+   "editions": {
+    "mini": {
+     "packages": [
+      "cinnamon-core"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "cinnamon-core",
+      "network-manager-gnome"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "task-cinnamon-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "task-cinnamon-desktop",
+      "cinnamon-desktop-environment"
+     ],
+     "apps": "gtk"
+    }
+   }
+  },
+  {
+   "id": "mate",
+   "name": "MATE",
+   "kind": "de",
+   "description": "Classic GNOME 2 style desktop.",
+   "packages": [
+    "task-mate-desktop"
+   ],
+   "session": "mate",
+   "dm": "lightdm",
+   "task": "task-mate-desktop",
+   "sessions": {
+    "x11": "mate"
+   },
+   "native_compositor": "marco",
+   "always_composited": false,
+   "editions": {
+    "mini": {
+     "packages": [
+      "mate-desktop-environment-core",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "mate-desktop-environment",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "task-mate-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "task-mate-desktop",
+      "mate-desktop-environment-extras"
+     ],
+     "apps": "gtk"
+    }
+   }
+  },
+  {
+   "id": "lxqt",
+   "name": "LXQt",
+   "kind": "de",
+   "description": "Lightweight Qt desktop (Eduka-Desktop is built on it).",
+   "packages": [
+    "task-lxqt-desktop"
+   ],
+   "session": "lxqt",
+   "dm": "sddm",
+   "task": "task-lxqt-desktop",
+   "sessions": {
+    "x11": "lxqt",
+    "wayland": "lxqt-wayland",
+    "wayland_packages": [
+     "lxqt-wayland-session",
+     "labwc"
+    ]
+   },
+   "recommended_compositor": "picom",
+   "editions": {
+    "mini": {
+     "packages": [
+      "lxqt-core",
+      "qterminal",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "lxqt",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "task-lxqt-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "task-lxqt-desktop"
+     ],
+     "apps": "qt"
+    }
+   }
   },
   {
    "id": "lxde",
@@ -153,7 +386,35 @@
    "sessions": {
     "x11": "LXDE"
    },
-   "recommended_compositor": "picom"
+   "recommended_compositor": "picom",
+   "editions": {
+    "mini": {
+     "packages": [
+      "lxde-core",
+      "lxterminal",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "lxde",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "task-lxde-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "task-lxde-desktop"
+     ],
+     "apps": "light"
+    }
+   }
   },
   {
    "id": "budgie",
@@ -162,7 +423,11 @@
    "description": "Simple and elegant desktop.",
    "packages": [
     "budgie-desktop",
-    "xorg"
+    "task-desktop",
+    "gnome-terminal",
+    "nautilus",
+    "network-manager-gnome",
+    "gnome-control-center"
    ],
    "session": "budgie-desktop",
    "dm": "lightdm",
@@ -171,24 +436,242 @@
     "x11": "budgie-desktop"
    },
    "native_compositor": "budgie-wm",
-   "always_composited": true
+   "always_composited": true,
+   "editions": {
+    "mini": {
+     "packages": [
+      "budgie-desktop",
+      "gnome-terminal",
+      "nautilus",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "budgie-desktop",
+      "gnome-terminal",
+      "nautilus",
+      "network-manager-gnome",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "budgie-desktop",
+      "task-desktop",
+      "gnome-terminal",
+      "nautilus",
+      "network-manager-gnome",
+      "gnome-control-center"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "budgie-desktop",
+      "task-desktop",
+      "gnome-terminal",
+      "nautilus",
+      "network-manager-gnome",
+      "gnome-control-center"
+     ],
+     "apps": "gtk"
+    }
+   }
+  },
+  {
+   "id": "gnome-flashback",
+   "name": "GNOME Flashback",
+   "kind": "de",
+   "description": "Classic GNOME panels with Metacity: GNOME applications without GNOME Shell.",
+   "packages": [
+    "task-gnome-flashback-desktop"
+   ],
+   "session": "gnome-flashback-metacity",
+   "dm": "lightdm",
+   "task": "task-gnome-flashback-desktop",
+   "sessions": {
+    "x11": "gnome-flashback-metacity"
+   },
+   "native_compositor": "metacity",
+   "always_composited": false,
+   "editions": {
+    "mini": {
+     "packages": [
+      "gnome-session-flashback",
+      "gnome-terminal",
+      "nautilus",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "gnome-session-flashback",
+      "gnome-terminal",
+      "nautilus",
+      "gnome-control-center",
+      "network-manager-gnome",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "task-gnome-flashback-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "task-gnome-flashback-desktop"
+     ],
+     "apps": "gnome"
+    }
+   }
+  },
+  {
+   "id": "enlightenment",
+   "name": "Enlightenment",
+   "kind": "de",
+   "description": "Beautiful, very light desktop with its own effects (EFL).",
+   "packages": [
+    "enlightenment",
+    "terminology",
+    "task-desktop",
+    "network-manager-gnome",
+    "pcmanfm"
+   ],
+   "session": "enlightenment",
+   "dm": "lightdm",
+   "task": "",
+   "sessions": {
+    "x11": "enlightenment"
+   },
+   "native_compositor": "enlightenment-comp",
+   "always_composited": true,
+   "editions": {
+    "mini": {
+     "packages": [
+      "enlightenment",
+      "terminology",
+      "xorg"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "enlightenment",
+      "terminology",
+      "xorg",
+      "network-manager-gnome",
+      "pcmanfm"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "enlightenment",
+      "terminology",
+      "task-desktop",
+      "network-manager-gnome",
+      "pcmanfm"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "enlightenment",
+      "terminology",
+      "task-desktop",
+      "network-manager-gnome",
+      "pcmanfm"
+     ],
+     "apps": "light"
+    }
+   }
   },
   {
    "id": "openbox",
    "name": "Openbox",
    "kind": "wm",
    "description": "Minimal stacking window manager.",
-   "packages": [
-    "openbox",
-    "obconf",
-    "tint2",
-    "xorg"
-   ],
    "session": "openbox",
    "dm": "lightdm",
    "sessions": {
     "x11": "openbox"
    },
+   "editions": {
+    "mini": {
+     "packages": [
+      "openbox",
+      "obconf",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "openbox",
+      "obconf",
+      "xorg",
+      "tint2",
+      "lxterminal",
+      "jgmenu"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "openbox",
+      "obconf",
+      "xorg",
+      "tint2",
+      "lxterminal",
+      "jgmenu",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "openbox",
+      "obconf",
+      "xorg",
+      "tint2",
+      "lxterminal",
+      "jgmenu",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "openbox",
+    "obconf",
+    "xorg",
+    "tint2",
+    "lxterminal",
+    "jgmenu",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ],
    "recommended_compositor": "picom"
   },
   {
@@ -196,32 +679,162 @@
    "name": "i3",
    "kind": "wm",
    "description": "Tiling window manager.",
-   "packages": [
-    "i3",
-    "i3status",
-    "dmenu",
-    "xorg"
-   ],
    "session": "i3",
    "dm": "lightdm",
    "sessions": {
     "x11": "i3"
-   }
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "i3",
+      "i3status",
+      "dmenu",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "i3",
+      "i3status",
+      "dmenu",
+      "xorg",
+      "i3lock",
+      "rxvt-unicode",
+      "feh"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "i3",
+      "i3status",
+      "dmenu",
+      "xorg",
+      "i3lock",
+      "rxvt-unicode",
+      "feh",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "i3",
+      "i3status",
+      "dmenu",
+      "xorg",
+      "i3lock",
+      "rxvt-unicode",
+      "feh",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "i3",
+    "i3status",
+    "dmenu",
+    "xorg",
+    "i3lock",
+    "rxvt-unicode",
+    "feh",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ]
   },
   {
    "id": "fluxbox",
    "name": "Fluxbox",
    "kind": "wm",
    "description": "Light stacking window manager.",
-   "packages": [
-    "fluxbox",
-    "xorg"
-   ],
    "session": "fluxbox",
    "dm": "lightdm",
    "sessions": {
     "x11": "fluxbox"
    },
+   "editions": {
+    "mini": {
+     "packages": [
+      "fluxbox",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "fluxbox",
+      "xorg",
+      "lxterminal",
+      "feh"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "fluxbox",
+      "xorg",
+      "lxterminal",
+      "feh",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "fluxbox",
+      "xorg",
+      "lxterminal",
+      "feh",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "fluxbox",
+    "xorg",
+    "lxterminal",
+    "feh",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ],
    "recommended_compositor": "picom"
   },
   {
@@ -229,15 +842,70 @@
    "name": "IceWM",
    "kind": "wm",
    "description": "Windows-like window manager with taskbar.",
-   "packages": [
-    "icewm",
-    "xorg"
-   ],
    "session": "icewm-session",
    "dm": "lightdm",
    "sessions": {
     "x11": "icewm-session"
    },
+   "editions": {
+    "mini": {
+     "packages": [
+      "icewm",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "icewm",
+      "xorg",
+      "lxterminal"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "icewm",
+      "xorg",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "icewm",
+      "xorg",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "icewm",
+    "xorg",
+    "lxterminal",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ],
    "recommended_compositor": "picom"
   },
   {
@@ -245,48 +913,747 @@
    "name": "awesome",
    "kind": "wm",
    "description": "Configurable tiling window manager.",
-   "packages": [
-    "awesome",
-    "xorg"
-   ],
    "session": "awesome",
    "dm": "lightdm",
    "sessions": {
     "x11": "awesome"
-   }
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "awesome",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "awesome",
+      "xorg",
+      "awesome-extra",
+      "lxterminal"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "awesome",
+      "xorg",
+      "awesome-extra",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "awesome",
+      "xorg",
+      "awesome-extra",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "awesome",
+    "xorg",
+    "awesome-extra",
+    "lxterminal",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ]
+  },
+  {
+   "id": "jwm",
+   "name": "JWM",
+   "kind": "wm",
+   "description": "Joe's Window Manager: tiny, with a taskbar and menu.",
+   "session": "jwm",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "jwm"
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "jwm",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "jwm",
+      "xorg",
+      "lxterminal"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "jwm",
+      "xorg",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "jwm",
+      "xorg",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "jwm",
+    "xorg",
+    "lxterminal",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ],
+   "recommended_compositor": "picom"
+  },
+  {
+   "id": "herbstluftwm",
+   "name": "herbstluftwm",
+   "kind": "wm",
+   "description": "Manual tiling window manager.",
+   "session": "herbstluftwm",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "herbstluftwm"
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "herbstluftwm",
+      "dzen2",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "herbstluftwm",
+      "dzen2",
+      "xorg",
+      "dmenu",
+      "lxterminal"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "herbstluftwm",
+      "dzen2",
+      "xorg",
+      "dmenu",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "herbstluftwm",
+      "dzen2",
+      "xorg",
+      "dmenu",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "herbstluftwm",
+    "dzen2",
+    "xorg",
+    "dmenu",
+    "lxterminal",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ]
+  },
+  {
+   "id": "bspwm",
+   "name": "bspwm",
+   "kind": "wm",
+   "description": "Binary space partitioning tiling window manager.",
+   "session": "bspwm",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "bspwm"
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "bspwm",
+      "sxhkd",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "bspwm",
+      "sxhkd",
+      "xorg",
+      "polybar",
+      "rofi",
+      "lxterminal"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "bspwm",
+      "sxhkd",
+      "xorg",
+      "polybar",
+      "rofi",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "bspwm",
+      "sxhkd",
+      "xorg",
+      "polybar",
+      "rofi",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "bspwm",
+    "sxhkd",
+    "xorg",
+    "polybar",
+    "rofi",
+    "lxterminal",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ],
+   "recommended_compositor": "picom"
+  },
+  {
+   "id": "dwm",
+   "name": "dwm",
+   "kind": "wm",
+   "description": "Dynamic tiling window manager from suckless.",
+   "session": "dwm",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "dwm"
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "dwm",
+      "suckless-tools",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "dwm",
+      "suckless-tools",
+      "xorg",
+      "stterm"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "dwm",
+      "suckless-tools",
+      "xorg",
+      "stterm",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "dwm",
+      "suckless-tools",
+      "xorg",
+      "stterm",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "dwm",
+    "suckless-tools",
+    "xorg",
+    "stterm",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ]
+  },
+  {
+   "id": "spectrwm",
+   "name": "spectrwm",
+   "kind": "wm",
+   "description": "Small tiling window manager.",
+   "session": "spectrwm",
+   "dm": "lightdm",
+   "sessions": {
+    "x11": "spectrwm"
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "spectrwm",
+      "xorg",
+      "xterm"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "spectrwm",
+      "xorg",
+      "dmenu",
+      "lxterminal"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "spectrwm",
+      "xorg",
+      "dmenu",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "spectrwm",
+      "xorg",
+      "dmenu",
+      "lxterminal",
+      "network-manager-gnome",
+      "pavucontrol",
+      "pcmanfm",
+      "lxappearance",
+      "xdg-user-dirs",
+      "dbus-x11",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "spectrwm",
+    "xorg",
+    "dmenu",
+    "lxterminal",
+    "network-manager-gnome",
+    "pavucontrol",
+    "pcmanfm",
+    "lxappearance",
+    "xdg-user-dirs",
+    "dbus-x11",
+    "task-desktop"
+   ]
   },
   {
    "id": "sway",
    "name": "Sway (Wayland)",
    "kind": "wm",
    "description": "i3-compatible Wayland compositor.",
+   "session": "sway",
+   "dm": "lightdm",
+   "sessions": {
+    "wayland": "sway"
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "sway",
+      "swaybg",
+      "foot"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "sway",
+      "swaybg",
+      "swayidle",
+      "swaylock",
+      "foot",
+      "waybar",
+      "wofi"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "sway",
+      "swaybg",
+      "swayidle",
+      "swaylock",
+      "foot",
+      "waybar",
+      "wofi",
+      "network-manager-gnome",
+      "pavucontrol",
+      "thunar",
+      "xdg-user-dirs",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "sway",
+      "swaybg",
+      "swayidle",
+      "swaylock",
+      "foot",
+      "waybar",
+      "wofi",
+      "network-manager-gnome",
+      "pavucontrol",
+      "thunar",
+      "xdg-user-dirs",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
    "packages": [
     "sway",
     "swaybg",
     "swayidle",
     "swaylock",
-    "foot"
-   ],
-   "session": "sway",
-   "dm": "lightdm",
-   "sessions": {
-    "wayland": "sway"
-   }
+    "foot",
+    "waybar",
+    "wofi",
+    "network-manager-gnome",
+    "pavucontrol",
+    "thunar",
+    "xdg-user-dirs",
+    "task-desktop"
+   ]
   },
   {
    "id": "labwc",
    "name": "labwc (Wayland)",
    "kind": "wm",
    "description": "Openbox-like Wayland compositor.",
-   "packages": [
-    "labwc",
-    "foot"
-   ],
    "session": "labwc",
    "dm": "lightdm",
    "sessions": {
     "wayland": "labwc"
-   }
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "labwc",
+      "foot"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "labwc",
+      "foot",
+      "waybar",
+      "swaybg",
+      "wofi"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "labwc",
+      "foot",
+      "waybar",
+      "swaybg",
+      "wofi",
+      "network-manager-gnome",
+      "pavucontrol",
+      "thunar",
+      "xdg-user-dirs",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "labwc",
+      "foot",
+      "waybar",
+      "swaybg",
+      "wofi",
+      "network-manager-gnome",
+      "pavucontrol",
+      "thunar",
+      "xdg-user-dirs",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "labwc",
+    "foot",
+    "waybar",
+    "swaybg",
+    "wofi",
+    "network-manager-gnome",
+    "pavucontrol",
+    "thunar",
+    "xdg-user-dirs",
+    "task-desktop"
+   ]
+  },
+  {
+   "id": "wayfire",
+   "name": "Wayfire (Wayland)",
+   "kind": "wm",
+   "description": "3D effects Wayland compositor.",
+   "session": "wayfire",
+   "dm": "lightdm",
+   "sessions": {
+    "wayland": "wayfire"
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "wayfire",
+      "foot"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "wayfire",
+      "foot",
+      "waybar",
+      "wofi"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "wayfire",
+      "foot",
+      "waybar",
+      "wofi",
+      "network-manager-gnome",
+      "pavucontrol",
+      "thunar",
+      "xdg-user-dirs",
+      "task-desktop"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "wayfire",
+      "foot",
+      "waybar",
+      "wofi",
+      "network-manager-gnome",
+      "pavucontrol",
+      "thunar",
+      "xdg-user-dirs",
+      "task-desktop"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "wayfire",
+    "foot",
+    "waybar",
+    "wofi",
+    "network-manager-gnome",
+    "pavucontrol",
+    "thunar",
+    "xdg-user-dirs",
+    "task-desktop"
+   ]
+  },
+  {
+   "id": "hyprland",
+   "name": "Hyprland (Wayland)",
+   "kind": "wm",
+   "description": "Dynamic tiling Wayland compositor with animations.",
+   "session": "hyprland",
+   "dm": "lightdm",
+   "sessions": {
+    "wayland": "hyprland"
+   },
+   "editions": {
+    "mini": {
+     "packages": [
+      "hyprland",
+      "foot"
+     ],
+     "no_recommends": true
+    },
+    "compact": {
+     "packages": [
+      "hyprland",
+      "kitty",
+      "waybar",
+      "wofi",
+      "swaybg"
+     ],
+     "no_recommends": true
+    },
+    "full": {
+     "packages": [
+      "hyprland",
+      "kitty",
+      "waybar",
+      "wofi",
+      "network-manager-gnome",
+      "pavucontrol",
+      "thunar",
+      "xdg-user-dirs",
+      "task-desktop",
+      "swaybg"
+     ]
+    },
+    "full_apps": {
+     "packages": [
+      "hyprland",
+      "kitty",
+      "waybar",
+      "wofi",
+      "network-manager-gnome",
+      "pavucontrol",
+      "thunar",
+      "xdg-user-dirs",
+      "task-desktop",
+      "swaybg"
+     ],
+     "apps": "light"
+    }
+   },
+   "packages": [
+    "hyprland",
+    "kitty",
+    "waybar",
+    "wofi",
+    "network-manager-gnome",
+    "pavucontrol",
+    "thunar",
+    "xdg-user-dirs",
+    "task-desktop",
+    "swaybg"
+   ],
+   "note": "Debian 13 (trixie), testing and sid only."
   }
  ],
  "display_managers": [
@@ -442,7 +1809,7 @@
    "packages": [
     "picom"
    ],
-   "description": "Shadows, fading, transparency and blur for any X11 desktop (needed by Eduka-Desktop Liquid Glass blur)."
+   "description": "Shadows, fading, transparency and blur for any X11 desktop or window manager."
   },
   {
    "id": "xcompmgr",
@@ -457,7 +1824,7 @@
    "id": "builtin",
    "name": "Built-in of the desktop (automatic)",
    "kind": "x11",
-   "description": "The desktop's own compositor: xfwm4, KWin, Mutter, Marco, Muffin or Budgie's."
+   "description": "The desktop's own compositor: xfwm4, KWin, Mutter, Marco, Muffin, Metacity, Budgie's or Enlightenment's."
   },
   {
    "id": "labwc",
@@ -476,15 +1843,6 @@
     "kwin-wayland"
    ],
    "description": "KDE's compositor, rich effects."
-  },
-  {
-   "id": "wayfire",
-   "name": "Wayfire",
-   "kind": "wayland",
-   "packages": [
-    "wayfire"
-   ],
-   "description": "3D effects Wayland compositor."
   },
   {
    "id": "sway",
@@ -536,6 +1894,29 @@
    "kind": "native",
    "desktop": "budgie",
    "description": "Budgie always composites with its own window manager."
+  },
+  {
+   "id": "wayfire",
+   "name": "Wayfire",
+   "kind": "wayland",
+   "packages": [
+    "wayfire"
+   ],
+   "description": "3D effects Wayland compositor."
+  },
+  {
+   "id": "metacity",
+   "name": "Metacity (GNOME Flashback built-in)",
+   "kind": "native",
+   "desktop": "gnome-flashback",
+   "description": "Metacity composites itself (shadows); picom is not needed."
+  },
+  {
+   "id": "enlightenment-comp",
+   "name": "Enlightenment built-in",
+   "kind": "native",
+   "desktop": "enlightenment",
+   "description": "Enlightenment always composites with its own engine. picom must not run next to it."
   }
  ],
  "picom_presets": [
@@ -543,5 +1924,96 @@
   "shadows",
   "glass",
   "off"
- ]
+ ],
+ "editions": [
+  {
+   "id": "mini",
+   "name": "Mini",
+   "description": "Only the desktop or window manager, a terminal and a file manager (no recommended packages)."
+  },
+  {
+   "id": "compact",
+   "name": "Compact",
+   "description": "The desktop with its core tools, network and settings, still without recommended packages."
+  },
+  {
+   "id": "full",
+   "name": "Full",
+   "description": "The complete desktop as Debian ships it (Debian task with recommended packages)."
+  },
+  {
+   "id": "full_apps",
+   "name": "Full with apps",
+   "description": "Full, plus the recommended applications for this desktop: browser, office, mail, media, graphics."
+  }
+ ],
+ "app_sets": {
+  "gtk": [
+   "firefox-esr",
+   "thunderbird",
+   "libreoffice",
+   "libreoffice-gtk3",
+   "vlc",
+   "gimp",
+   "evince",
+   "ristretto",
+   "file-roller",
+   "gnome-calculator",
+   "transmission-gtk",
+   "synaptic"
+  ],
+  "gnome": [
+   "firefox-esr",
+   "thunderbird",
+   "libreoffice",
+   "libreoffice-gnome",
+   "totem",
+   "gimp",
+   "evince",
+   "eog",
+   "file-roller",
+   "gnome-calculator",
+   "gnome-software",
+   "rhythmbox"
+  ],
+  "kde": [
+   "firefox-esr",
+   "thunderbird",
+   "libreoffice",
+   "vlc",
+   "krita",
+   "okular",
+   "gwenview",
+   "ark",
+   "kcalc",
+   "elisa",
+   "plasma-discover",
+   "ktorrent"
+  ],
+  "qt": [
+   "firefox-esr",
+   "thunderbird",
+   "libreoffice",
+   "vlc",
+   "qpdfview",
+   "lximage-qt",
+   "lxqt-archiver",
+   "qalculate-gtk",
+   "transmission-qt",
+   "featherpad"
+  ],
+  "light": [
+   "firefox-esr",
+   "libreoffice-writer",
+   "libreoffice-calc",
+   "libreoffice-gtk3",
+   "mpv",
+   "mupdf",
+   "viewnior",
+   "xarchiver",
+   "galculator",
+   "mousepad",
+   "synaptic"
+  ]
+ }
 }

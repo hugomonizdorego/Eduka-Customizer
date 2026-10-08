@@ -213,8 +213,8 @@ def test_profiles():
     keys = [k for k, _l, _s in profiles.recommendations("education")]
     assert keys[:4] == ["desktop", "session", "compositor", "look"] and "apps" in keys
     edu = dict((k, s) for k, _l, s in profiles.recommendations("education"))
-    assert edu["desktop"] == {"action": "desktop", "id": "eduka", "dm": "lightdm"}
-    assert edu["compositor"]["id"] == "picom"
+    assert edu["desktop"] == {"action": "desktop", "id": "xfce", "dm": "lightdm", "edition": "full"}
+    assert edu["compositor"]["id"] == "xfwm4"
     home = dict((k, s) for k, _l, s in profiles.recommendations("home"))
     assert home["compositor"]["id"] == "muffin"  # Cinnamon's own, never picom
     server = [k for k, _l, _s in profiles.recommendations("server")]

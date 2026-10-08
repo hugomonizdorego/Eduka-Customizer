@@ -78,6 +78,26 @@ def detect_display_manager(rootfs):
     return ""
 
 
+EDITIONS = ("mini", "compact", "full", "full_apps")
+
+
+def editions():
+    """[{id, name, description}] of the install editions (Mini, Compact, Full, Full with apps)."""
+    return catalog().get("editions", [])
+
+
+def edition_plan(de_id, edition="full"):
+    """(packages, apps, no_recommends) to install *de_id* in the given edition."""
+    d = desktop(de_id)
+    if edition not in EDITIONS:
+        raise ValueError("Unknown edition: {} (use {})".format(edition, ", ".join(EDITIONS)))
+    e = (d.get("editions") or {}).get(edition)
+    if not e:
+        return list(d["packages"]), [], False
+    apps = catalog().get("app_sets", {}).get(e.get("apps"), []) if e.get("apps") else []
+    return list(e["packages"]), list(apps), bool(e.get("no_recommends"))
+
+
 def installed_desktops(rootfs):
     have = {s["id"] for s in sessions(rootfs)}
     return [d["id"] for d in catalog()["desktops"] if d["session"] in have]
@@ -118,13 +138,22 @@ class DesktopManager:
         self.pkgs = Packages(project)
         self.chroot = Chroot(project.rootfs)
 
-    def install(self, de_id, dm_id=None, remove_others=False, no_recommends=False):
+    def install(self, de_id, dm_id=None, remove_others=False, no_recommends=False, edition="full"):
         d = desktop(de_id)
-        log.info("Installing desktop: %s", d["name"])
+        packages, apps, ed_norec = edition_plan(de_id, edition)
+        log.info("Installing desktop: %s (%s)", d["name"], edition)
         with self.chroot:
             if remove_others:
                 self.remove_other_desktops(keep=de_id)
-            self.pkgs.install(d["packages"], no_recommends=no_recommends)
+            self.pkgs.install(packages, no_recommends=no_recommends or ed_norec)
+            if apps:
+                # Applications that this Debian suite does not have are skipped, not fatal.
+                have = self.pkgs.available(apps)
+                skipped = [a for a in apps if a not in have]
+                if skipped:
+                    log.warning("Not in this Debian suite, skipped: %s", " ".join(skipped))
+                if have:
+                    self.pkgs.install([a for a in apps if a in have], update=False)
             if d.get("eduka_desktop"):
                 from eduka_customizer.core.eduka_desktop import EdukaDesktop
                 EdukaDesktop(self.project).fetch_build_install()
@@ -132,10 +161,10 @@ class DesktopManager:
             if dm_id:
                 self.set_display_manager(dm_id)
             self.set_default_session(d["session"])
-        self.project.state.setdefault("desktop", {})["id"] = de_id
+        self.project.state.setdefault("desktop", {}).update({"id": de_id, "edition": edition})
         self.project.save()
         self.guard_compositors()
-        self.project.record("desktop-install", de_id)
+        self.project.record("desktop-install", "{} ({})".format(de_id, edition))
 
     def remove_other_desktops(self, keep):
         tasks = [d["task"] for d in catalog()["desktops"]

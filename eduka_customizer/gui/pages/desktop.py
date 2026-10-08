@@ -28,11 +28,10 @@ class DesktopPage(Page):
         self.tiles = {}
         for i, d in enumerate(dsk.catalog()["desktops"]):
             b = tile("{}\n{}".format(d["name"], "Window manager" if d["kind"] == "wm" else "Desktop"),
-                     d["description"] + "\n\nPackages: " + " ".join(d["packages"]))
+                     d["description"] + ("\n\n" + d["note"] if d.get("note") else ""))
             self.group.addButton(b)
             self.tiles[d["id"]] = b
             grid.addWidget(b, i // 4, i % 4)
-        self.tiles["eduka"].setChecked(True)
         c.add(grid)
         self.desc = label("", "muted")
         self.group.buttonToggled.connect(lambda *_: self._describe())
@@ -43,8 +42,11 @@ class DesktopPage(Page):
         f.addRow("Login manager:", self.dm_for_install)
         self.remove_others = QCheckBox("Remove other Debian desktop tasks (task-*-desktop)")
         f.addRow("", self.remove_others)
-        self.no_rec = QCheckBox("Minimal install (no recommended packages)")
-        f.addRow("", self.no_rec)
+        self.edition = combo([(e["id"], e["name"]) for e in dsk.editions()], "full")
+        self.edition.currentIndexChanged.connect(lambda _i: self._describe())
+        f.addRow("Edition:", self.edition)
+        self.edition_desc = label("", "muted")
+        f.addRow("", self.edition_desc)
         c.add(hbox(None, button("Install selected desktop", self.install, "primary")))
 
         c = self.card("Login screen", "Pick the login screen (display manager and greeter).")
@@ -115,16 +117,27 @@ class DesktopPage(Page):
         self._describe()
 
     def _describe(self):
-        for de_id, b in self.tiles.items():
-            if b.isChecked():
-                d = dsk.desktop(de_id)
-                self.desc.setText("<b>{}</b>: {}".format(d["name"], d["description"]))
+        ed = self.edition.currentData()
+        self.edition_desc.setText({e["id"]: e["description"] for e in dsk.editions()}.get(ed, ""))
+        de_id = self._selected()
+        if not de_id:
+            self.desc.setText("Choose a desktop or window manager.")
+            return
+        d = dsk.desktop(de_id)
+        pkgs, apps, norec = dsk.edition_plan(de_id, ed)
+        text = "<b>{}</b>: {}<br>Packages: {}{}".format(d["name"], d["description"], " ".join(pkgs),
+                                                     " (without recommended packages)" if norec else "")
+        if apps:
+            text += "<br>Applications: " + " ".join(apps)
+        if d.get("note"):
+            text += "<br><i>{}</i>".format(d["note"])
+        self.desc.setText(text)
 
     def _selected(self):
         for de_id, b in self.tiles.items():
             if b.isChecked():
                 return de_id
-        return "eduka"
+        return None
 
     def refresh(self):
         if not self.project:
@@ -203,15 +216,20 @@ class DesktopPage(Page):
     # Actions -------------------------------------------------------------------
     def install(self):
         de_id = self._selected()
+        if not de_id:
+            QMessageBox.information(self, "Install desktop", "Choose a desktop or window manager first.")
+            return
         d = dsk.desktop(de_id)
-        if QMessageBox.question(self, "Install desktop", "Install {} into the image?\n\nPackages: {}"
-                                .format(d["name"], " ".join(d["packages"]))) != QMessageBox.StandardButton.Yes:
+        ed = self.edition.currentData()
+        pkgs, apps, _norec = dsk.edition_plan(de_id, ed)
+        if QMessageBox.question(self, "Install desktop", "Install {} ({}) into the image?\n\nPackages: {}"
+                                .format(d["name"], self.edition.currentText(), " ".join(pkgs + apps))) != \
+                QMessageBox.StandardButton.Yes:
             return
         proj = self.project
-        dm, rem, no_rec = self.dm_for_install.currentData() or None, self.remove_others.isChecked(), self.no_rec.isChecked()
+        dm, rem = self.dm_for_install.currentData() or None, self.remove_others.isChecked()
         self.task("Install " + d["name"],
-                  lambda t: dsk.DesktopManager(proj).install(de_id, dm_id=dm, remove_others=rem,
-                                                             no_recommends=no_rec))
+                  lambda t: dsk.DesktopManager(proj).install(de_id, dm_id=dm, remove_others=rem, edition=ed))
 
     def set_session(self):
         sid = self.session.currentData()

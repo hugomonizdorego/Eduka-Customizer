@@ -74,7 +74,8 @@ def run_step(project, step, base, build=True):
             fp.install(step.get("apps", []))
     elif action == "desktop":
         DesktopManager(project).install(step["id"], dm_id=step.get("dm"),
-                                        remove_others=step.get("remove_others", False))
+                                        remove_others=step.get("remove_others", False),
+                                        edition=step.get("edition", "full"))
     elif action == "branding":
         from eduka_customizer.core.distrobrand import BrandingSpec, DistroBranding
         spec = BrandingSpec.from_project(project)

@@ -101,6 +101,11 @@ class WizardPage(Page):
                                 for p in profiles.catalog()], "other")
         self.w_purpose.currentIndexChanged.connect(lambda _i: self._apply_purpose())
         c.add(self.w_purpose)
+        self.w_isoed = combo([(e["id"], "{} — {}".format(e["name"], e["description"]))
+                              for e in profiles.iso_editions()], "full_apps")
+        self.w_isoed.currentIndexChanged.connect(lambda _i: self._apply_purpose())
+        c.add(label("ISO edition", "cardTitle"))
+        c.add(self.w_isoed)
 
     def _identity(self, lay):
         c = self._card(lay, "Name your distribution")
@@ -174,9 +179,12 @@ class WizardPage(Page):
         f = c.form()
         self.w_de = combo([("", "No desktop — keep what the ISO has (or a server)")] +
                           [(d["id"], "{} — {}".format(d["name"], d["description"]))
-                           for d in dsk.catalog()["desktops"]], "eduka")
+                           for d in dsk.catalog()["desktops"]], "")
         self.w_de.currentIndexChanged.connect(self._de_changed)
         f.addRow("Desktop:", self.w_de)
+        self.w_deed = combo([(e["id"], "{} — {}".format(e["name"], e["description"])) for e in dsk.editions()],
+                            "full")
+        f.addRow("Edition:", self.w_deed)
         self.w_type = combo([])
         f.addRow("Session:", self.w_type)
         self.w_comp = combo([])
@@ -284,6 +292,8 @@ class WizardPage(Page):
         """Pre-fill desktop, login screen, look and applications from the chosen purpose."""
         from eduka_customizer.core import profiles
         p = profiles.get(self.w_purpose.currentData())
+        ed = profiles.iso_edition(self.w_isoed.currentData())
+        self.w_deed.setCurrentIndex(max(0, self.w_deed.findData(ed["desktop_edition"])))
         if p["id"] == "other":
             return
         self.w_de.setCurrentIndex(max(0, self.w_de.findData(p.get("desktop") or "")))
@@ -301,12 +311,15 @@ class WizardPage(Page):
         self.w_darkmode.setChecked(bool(p.get("dark")))
         for cb, _pkgs in self.w_groups:
             cb.setChecked(False)
-        self.w_more.setText(" ".join(p.get("packages", [])))
+        minimal = ed["id"] == "minimal"
+        self.w_more.setText(" ".join(p.get("minimal_packages", []) if minimal else p.get("packages", [])))
+        flats = p.get("flatpaks", []) if ed["id"] == "full_apps" else []
         for i in range(self.w_flat.count()):
             it = self.w_flat.item(i)
-            it.setCheckState(Qt.CheckState.Checked if it.data(Qt.ItemDataRole.UserRole) in p.get("flatpaks", [])
+            it.setCheckState(Qt.CheckState.Checked if it.data(Qt.ItemDataRole.UserRole) in flats
                              else Qt.CheckState.Unchecked)
-        self.w_ply.setCurrentIndex(max(0, self.w_ply.findData("generate" if p.get("plymouth") else "keep")))
+        self.w_ply.setCurrentIndex(max(0, self.w_ply.findData("generate" if p.get("plymouth") and not minimal
+                                                              else "keep")))
 
     def _need_system(self):
         if self.project and self.project.has_rootfs():
@@ -492,7 +505,7 @@ class WizardPage(Page):
             steps.append({"action": "apt-remove", "packages": list(self.w_remove_apps)})
         if de:
             steps.append({"action": "desktop", "id": de, "dm": self.w_dm.currentData(),
-                          "remove_others": self.w_remove.isChecked()})
+                          "remove_others": self.w_remove.isChecked(), "edition": self.w_deed.currentData()})
             if self.w_type.currentData():
                 steps.append({"action": "session-type", "desktop": de, "type": self.w_type.currentData()})
             if self.w_comp.currentData():

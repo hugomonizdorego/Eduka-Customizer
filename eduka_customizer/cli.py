@@ -179,12 +179,15 @@ def cmd_desktop(args):
     from eduka_customizer.core import desktop
     if args.action == "catalog":
         for d in desktop.catalog()["desktops"]:
-            print("{:10} {:4} {:22} {}".format(d["id"], d["kind"], d["name"], d["description"]))
+            print("{:15} {:4} {:22} {}".format(d["id"], d["kind"], d["name"], d["description"]))
+        print("\nEditions (--edition):")
+        for e in desktop.editions():
+            print("  {:10} {}".format(e["id"], e["description"]))
         return 0
     p = _locked(args)
     dm = desktop.DesktopManager(p)
     if args.action == "install":
-        dm.install(args.name, dm_id=args.dm, remove_others=args.remove_others)
+        dm.install(args.name, dm_id=args.dm, remove_others=args.remove_others, edition=args.edition)
     elif args.action == "session":
         dm.set_default_session(args.name)
     elif args.action == "dm":
@@ -501,12 +504,12 @@ def cmd_purpose(args):
     if not args.id:
         raise SystemExit("Name a purpose: " + ", ".join(pr["id"] for pr in profiles.catalog()))
     if args.action == "show":
-        for key, text, _step in profiles.recommendations(args.id):
+        for key, text, _step in profiles.recommendations(args.id, args.edition):
             print("{:12} {}".format(key, text))
         return 0
     p = _locked(args)
     keys = set(args.only.split(",")) if args.only else None
-    print("Applied:", ", ".join(profiles.apply(p, args.id, keys)))
+    print("Applied:", ", ".join(profiles.apply(p, args.id, keys, edition=args.edition)))
     return 0
 
 
@@ -754,6 +757,8 @@ def build_parser():
     s.add_argument("--preset", choices=["light", "shadows", "glass", "off"], default="shadows",
                    help="picom effects for compositor")
     s.add_argument("--remove-others", action="store_true")
+    s.add_argument("--edition", choices=["mini", "compact", "full", "full_apps"], default="full",
+                   help="install: Mini, Compact, Full or Full with apps")
     s.set_defaults(func=cmd_desktop)
 
     s = sub.add_parser("eduka-desktop", help="build and install Eduka-Desktop")
@@ -843,6 +848,8 @@ def build_parser():
     s.add_argument("action", choices=["list", "show", "apply"])
     s.add_argument("id", nargs="?", help="education, server, professional, home or other")
     s.add_argument("--only", help="apply only these recommendations, e.g. desktop,apps")
+    s.add_argument("--edition", choices=["minimal", "full", "full_apps"], default="full",
+                   help="ISO edition: minimal, full or full with recommended apps")
     s.set_defaults(func=cmd_purpose)
 
     s = sub.add_parser("users", help="live user and accounts in the image (with or without password)")
