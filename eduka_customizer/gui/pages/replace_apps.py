@@ -44,6 +44,8 @@ class ReplaceAppsPage(Page):
     def reload(self):
         self._status = replace.status(self.project.rootfs)
         fill(self.table, [(r["name"], " ".join(r["installed"]) or "—", r["default"] or "—") for r in self._status])
+        self.table.sortItems(0)
+        self.table.resizeColumnToContents(1)
         self._role_changed()
 
     def _current(self):

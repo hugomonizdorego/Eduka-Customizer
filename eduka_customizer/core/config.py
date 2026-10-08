@@ -67,6 +67,12 @@ class Settings:
         self.parser.read_dict(DEFAULTS)
         if self.path.is_file():
             self.parser.read(self.path, encoding="utf-8")
+        # Settings of versions before 0.15 called the Eduka-Desktop section [edukasaun].
+        if self.parser.has_section("edukasaun"):
+            for key in ("repo", "ref"):
+                old = self.parser.get("edukasaun", key, fallback="")
+                if old and self.parser.get("eduka_desktop", key) == DEFAULTS["eduka_desktop"][key]:
+                    self.parser.set("eduka_desktop", key, old)
 
     def get(self, section, key):
         return self.parser.get(section, key, fallback=DEFAULTS.get(section, {}).get(key, ""))

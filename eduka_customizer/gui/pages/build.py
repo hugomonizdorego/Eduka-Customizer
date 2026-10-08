@@ -25,7 +25,7 @@ class BuildPage(Page):
         self.checks.setMinimumHeight(260)
         self.checks.cellDoubleClicked.connect(self._open_fix)
         c.add(self.checks)
-        self.check_state = label("Not checked yet.", "muted")
+        self.check_state = label("Not checked yet.", "muted", wrap=False)
         c.add(hbox(self.check_state, None, button("Deep check (apt-get check)", lambda: self.run_checks(True)),
                    button("Check now", self.run_checks, "primary")))
         self._results = []
@@ -229,6 +229,8 @@ class BuildPage(Page):
                                                                       x.level in ("warn", "fail") else ""))
                            for x in results])
         self.checks.setSortingEnabled(False)
+        self.checks.resizeColumnToContents(0)
+        self.checks.resizeColumnToContents(1)
         fails, warns = preflight.summary(results)
         self.check_state.setText("{} problem(s), {} warning(s){}".format(
             fails, warns, " — ready to build" if not fails else " — fix the problems before building"))

@@ -68,7 +68,8 @@ class Section(QWidget):
             self.tabs.setDocumentMode(True)
             for page in pages:
                 name = page.nav_title if hasattr(page, "nav_title") else page.title
-                self.tabs.addTab(page, menu_icon(MENU_ICONS.get(page.__class__.__name__), *page.icon_names), name)
+                self.tabs.addTab(page, menu_icon(MENU_ICONS.get(page.__class__.__name__), *page.icon_names),
+                                 name.replace("&", "&&"))
             self.tabs.currentChanged.connect(lambda _i: self.refresh())
             lay.addWidget(self.tabs, 1)
         else:
@@ -98,13 +99,14 @@ class Section(QWidget):
         h = QHBoxLayout(bar)
         h.setContentsMargins(28, 8, 28, 10)
         if prev:
-            h.addWidget(button("◀  Back: {}. {}".format(prev.step, prev.title), lambda: self.main.go_section(prev)))
+            h.addWidget(button("◀  Back: {}. {}".format(prev.step, prev.title.replace("&", "&&")),
+                               lambda: self.main.go_section(prev)))
         self.state = QLabel("")
         self.state.setObjectName("muted")
         h.addStretch(1)
         h.addWidget(self.state)
         if nxt:
-            self.next_btn = button("Done — next step: {}. {}  ▶".format(nxt.step, nxt.title),
+            self.next_btn = button("Done — next step: {}. {}  ▶".format(nxt.step, nxt.title.replace("&", "&&")),
                                    lambda: self.main.next_step(self, nxt), "primary")
             h.addWidget(self.next_btn)
         else:

@@ -289,3 +289,13 @@ def test_cli_check_and_apps(project):
     res = subprocess.run([sys.executable, "-m", "eduka_customizer", "desktop", "catalog"], capture_output=True,
                          text=True, env=env, timeout=60)
     assert "full_apps" in res.stdout and "hyprland" in res.stdout
+
+
+def test_old_edukasaun_settings_section(tmp_path):
+    from eduka_customizer.core.config import Settings
+    conf = tmp_path / "old.conf"
+    conf.write_text("[edukasaun]\nrepo = /srv/eduka-desktop\nref = v2\n")
+    s = Settings(conf)
+    assert s.get("eduka_desktop", "repo") == "/srv/eduka-desktop" and s.get("eduka_desktop", "ref") == "v2"
+    conf.write_text("[edukasaun]\nrepo = /old\n[eduka_desktop]\nrepo = /new\n")
+    assert Settings(conf).get("eduka_desktop", "repo") == "/new"

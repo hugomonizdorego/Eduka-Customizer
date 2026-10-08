@@ -15,7 +15,7 @@ source). The recommended start is the **Debian live standard ISO**: no
 desktop, small and clean. Eduka-Customizer itself can be installed on Debian,
 Debian derivatives, **Ubuntu and Ubuntu-based** computers.
 
-![Step by step: Desktop with its editions](docs/screenshots/09-desktop.png)
+![Step by step: only the next step opens](docs/screenshots/01-start-step-by-step.png)
 
 > Eduka-Customizer is a complete rewrite of *Customizer* (Ivailo Monev,
 > Mubiin Kimura, Graham Cantin and contributors). It takes ideas from
@@ -90,16 +90,14 @@ Debian derivatives, **Ubuntu and Ubuntu-based** computers.
 
 | | |
 |---|---|
-| ![What is your distribution for?](docs/screenshots/01b-purpose.png) | ![Package browser](docs/screenshots/06-packages.png) |
-| ![Drag and drop themes, icons, fonts](docs/screenshots/10-themes-icons.png) | ![Wallpaper gallery](docs/screenshots/11-wallpaper-login.png) |
-| ![Users: live user with or without a password](docs/screenshots/04-users.png) | ![Native compositors](docs/screenshots/09b-desktop-login-session.png) |
-| ![Language](docs/screenshots/05-language.png) | ![Calamares: users and partitions](docs/screenshots/14c-calamares.png) |
-| ![Plymouth](docs/screenshots/12-plymouth.png) | ![Plymouth preview in a window](docs/screenshots/plymouth-preview-window.png) |
-| ![Boot menu editor](docs/screenshots/15b-boot-menu-editor.png) | ![Kernel](docs/screenshots/08-kernel.png) |
-| ![Start](docs/screenshots/01-start.png) | ![Distro Branding](docs/screenshots/13-distro-branding.png) |
-| ![Package Workshop](docs/screenshots/16-package-workshop.png) | ![Login screen, X11/Wayland, compositor](docs/screenshots/09b-desktop-login-session.png) |
-| ![Terminal & Live](docs/screenshots/17-terminal-live.png) | ![Build & Test](docs/screenshots/18-build-test.png) |
-| ![Dark mode](docs/screenshots/21-dark-users.png) | ![Settings and logs](docs/screenshots/19-settings.png) |
+| ![Step by step](docs/screenshots/01-start-step-by-step.png) | ![What is your distribution for? ISO edition](docs/screenshots/01b-purpose.png) |
+| ![Desktop and window managers](docs/screenshots/06-desktop-editions.png) | ![Edition, login screen](docs/screenshots/06b-desktop-login-session.png) |
+| ![Software: Replace apps](docs/screenshots/07c-software-replace-apps.png) | ![Software: Packages](docs/screenshots/07-software-packages.png) |
+| ![Check & Build](docs/screenshots/12-check-build.png) | ![Identity & Branding](docs/screenshots/03b-identity-branding.png) |
+| ![Users](docs/screenshots/04-users.png) | ![Language](docs/screenshots/05-language.png) |
+| ![Kernel & Boot](docs/screenshots/08c-boot-menu-editor.png) | ![Look & Feel: Plymouth](docs/screenshots/09c-look-plymouth.png) |
+| ![Installer](docs/screenshots/10b-installer-partitions.png) | ![Advanced: Package Workshop](docs/screenshots/11b-advanced-package-workshop.png) |
+| ![Dark mode](docs/screenshots/20-dark-desktop.png) | ![Settings](docs/screenshots/13-settings.png) |
 
 All screenshots, including every Quick Wizard step: [docs/screenshots](docs/screenshots).
 
