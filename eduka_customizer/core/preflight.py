@@ -32,6 +32,21 @@ class Result:
     def as_row(self):
         return (self.level, self.title, self.detail)
 
+    @property
+    def fix(self):
+        """Label of the automatic fix, or '' when it must be fixed by hand."""
+        if self.level not in ("fail", "warn"):
+            return ""
+        from eduka_customizer.core import fixes
+        found = fixes.find(self.detail)
+        return found[0] if found else ""
+
+
+def auto_fix(project, results, progress=None):
+    """Run the automatic fixes of *results*; returns (done, failed)."""
+    from eduka_customizer.core import fixes
+    return fixes.run(project, [r.detail for r in results if r.level in ("fail", "warn") and r.fix], progress)
+
 
 def tree_size(path):
     """Bytes used by a directory tree (one file system, hard links once)."""

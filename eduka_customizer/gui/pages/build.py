@@ -21,13 +21,17 @@ class BuildPage(Page):
     def build(self):
         c = self.card("Check before building",
                       "Finds what would make the build fail, the ISO not boot, or private data leak into it.")
-        self.checks = table(["Result", "Check", "Details"])
+        self.checks = table(["Result", "Check", "Details", "How to fix"])
+        from eduka_customizer.qt.widgets import QHeaderView
+        self.checks.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        self.checks.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.checks.setMinimumHeight(260)
         self.checks.cellDoubleClicked.connect(self._open_fix)
         c.add(self.checks)
         self.check_state = label("Not checked yet.", "muted", wrap=False)
+        self.fix_btn = button("Fix automatically", lambda: self.fix_automatically(None))
         c.add(hbox(self.check_state, None, button("Deep check (apt-get check)", lambda: self.run_checks(True)),
-                   button("Check now", self.run_checks, "primary")))
+                   self.fix_btn, button("Check now", self.run_checks, "primary")))
         self._results = []
 
         c = self.card("Image")
@@ -206,32 +210,76 @@ class BuildPage(Page):
             self._show_checks(results)
             if then_build is None:
                 return
-            fails, warns = preflight.summary(results)
-            if fails:
-                text = "\n".join("• {}: {}".format(x.title, x.detail) for x in results if x.level == "fail")
-                box = QMessageBox(QMessageBox.Icon.Warning, "Check & Build",
-                                  "The checks found {} problem(s). Fix them first (double-click a row to open "
-                                  "the page that fixes it):\n\n{}".format(fails, text), parent=self)
-                box.addButton("Fix first", QMessageBox.ButtonRole.RejectRole)
-                anyway = box.addButton("Build anyway", QMessageBox.ButtonRole.DestructiveRole)
-                box.exec()
-                if box.clickedButton() is not anyway:
-                    return
-            self._build(then_build)
+            if not preflight.summary(results)[0]:
+                self._build(then_build)
+                return
+            self._ask_fix(results, then_build)
         self.task("Check the image", lambda t: preflight.run(proj, deep=deep), done)
+
+    def _ask_fix(self, results, then_build=None):
+        """Problems found: fix them automatically, by hand, or build anyway."""
+        problems = [x for x in results if x.level == "fail"]
+        auto = [x for x in problems if x.fix]
+        lines = []
+        for x in problems:
+            how = "automatic fix: " + x.fix if x.fix else "fix by hand on the page '{}'".format(x.title)
+            lines.append("• {} — {}\n    → {}".format(x.title, x.detail, how))
+        box = QMessageBox(QMessageBox.Icon.Warning, "Before building",
+                          "{} problem(s) would break the ISO. {} of them can be fixed automatically.\n\n{}".format(
+                              len(problems), len(auto), "\n\n".join(lines)), parent=self)
+        fix_btn = box.addButton("Fix automatically", QMessageBox.ButtonRole.AcceptRole) if auto else None
+        box.addButton("I will fix it myself", QMessageBox.ButtonRole.RejectRole)
+        anyway = box.addButton("Build anyway", QMessageBox.ButtonRole.DestructiveRole) if then_build else None
+        box.exec()
+        clicked = box.clickedButton()
+        if fix_btn is not None and clicked is fix_btn:
+            self.fix_automatically(then_build)
+        elif anyway is not None and clicked is anyway:
+            self._build(then_build)
+
+    def fix_automatically(self, then_build=None):
+        proj = self.project
+        results = [x for x in self._results if x.level in ("fail", "warn") and x.fix]
+        if not results:
+            QMessageBox.information(self, "Fix automatically", "Nothing here can be fixed automatically. "
+                                    "Double-click a problem to open the page that fixes it.")
+            return
+
+        def work(t):
+            done, failed = preflight.auto_fix(proj, results, t.set_stage)
+            return done, failed, preflight.run(proj)
+
+        def done(out):
+            fixed, failed, again = out
+            self._show_checks(again)
+            msg = "Fixed:\n• " + "\n• ".join(fixed) if fixed else "Nothing was fixed."
+            if failed:
+                msg += "\n\nCould not fix:\n• " + "\n• ".join("{}: {}".format(l, e) for l, e in failed)
+            left = preflight.summary(again)[0]
+            if not left and then_build is not None:
+                if QMessageBox.question(self, "Fix automatically", msg + "\n\nNo problems left. Build the ISO now?") \
+                        == QMessageBox.StandardButton.Yes:
+                    self._build(then_build)
+                return
+            if left:
+                msg += "\n\n{} problem(s) left: double-click them to open the page that fixes them.".format(left)
+            QMessageBox.information(self, "Fix automatically", msg)
+        self.task("Fix the problems", work, done)
 
     def _show_checks(self, results):
         self._results = results
         order = {lvl: i for i, lvl in enumerate(reversed(preflight.LEVELS))}
         results = sorted(results, key=lambda x: order[x.level])
         self._results = results
-        fill(self.checks, [(self.MARKS[x.level], x.title, x.detail + ("  (double-click to fix)" if x.page and
-                                                                      x.level in ("warn", "fail") else ""))
+        fill(self.checks, [(self.MARKS[x.level], x.title, x.detail,
+                            ("Automatic: " + x.fix) if x.fix else ("By hand (double-click)" if x.page and
+                                                                  x.level in ("warn", "fail") else ""))
                            for x in results])
         self.checks.setSortingEnabled(False)
         self.checks.resizeColumnToContents(0)
         self.checks.resizeColumnToContents(1)
         fails, warns = preflight.summary(results)
+        self.fix_btn.setEnabled(any(x.fix for x in results))
         self.check_state.setText("{} problem(s), {} warning(s){}".format(
             fails, warns, " — ready to build" if not fails else " — fix the problems before building"))
 

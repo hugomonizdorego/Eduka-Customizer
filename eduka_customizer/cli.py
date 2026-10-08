@@ -739,13 +739,21 @@ def cmd_bootmenu(args):
 def _print_checks(results):
     marks = {"ok": "  ok ", "info": " info", "warn": " WARN", "fail": " FAIL"}
     for x in results:
-        print("{}  {:28} {}".format(marks[x.level], x.title, x.detail))
+        print("{}  {:28} {}{}".format(marks[x.level], x.title, x.detail,
+                                     "  [--fix: {}]".format(x.fix) if x.fix else ""))
 
 
 def cmd_check(args):
     from eduka_customizer.core import preflight
     p = _project(args)
     results = preflight.run(p, deep=args.deep)
+    if args.fix:
+        done, failed = preflight.auto_fix(p, results, print)
+        for label in done:
+            print("fixed  ", label)
+        for label, err in failed:
+            print("FAILED ", label, "-", err)
+        results = preflight.run(p, deep=args.deep)
     _print_checks(results)
     fails, warns = preflight.summary(results)
     print("\n{} problem(s), {} warning(s){}".format(fails, warns, ": ready to build" if not fails else ""))
@@ -760,7 +768,8 @@ def cmd_build(args):
         results = preflight.run(p)
         if preflight.summary(results)[0]:
             _print_checks([x for x in results if x.level in ("fail", "warn")])
-            raise SystemExit("Fix the problems above first (or use --skip-checks).")
+            raise SystemExit("Fix the problems above first: 'check --fix' fixes what it can (or build with "
+                             "--skip-checks).")
     opts = BuildOptions.from_project(p)
     for name in ("compression", "level", "volume_label", "iso_name", "boot_mode", "initramfs"):
         v = getattr(args, name, None)
@@ -1109,6 +1118,7 @@ def build_parser():
 
     s = sub.add_parser("check", help="check the image before building (what would break the ISO)")
     s.add_argument("--deep", action="store_true", help="also run apt-get check inside the image")
+    s.add_argument("--fix", action="store_true", help="fix automatically what can be fixed, then check again")
     s.set_defaults(func=cmd_check)
 
     s = sub.add_parser("test", help="boot the ISO in QEMU")

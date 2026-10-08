@@ -208,7 +208,7 @@ def check(project):
     if "unpackfs" in modules:
         out.extend(_check_unpackfs(r))
     if "bootloader" in modules:
-        out.extend(_check_bootloader(r, version))
+        out.extend(_check_bootloader(r, version, getattr(project, "isodir", None)))
     if "displaymanager" in modules:
         out.extend(_check_dm(r))
     if "packages" in modules:
@@ -268,7 +268,25 @@ def _check_unpackfs(r):
     return out or [("ok", rel, "copies the live system")]
 
 
-def _check_bootloader(r, version):
+def grub_at_install(r, isodir=None):
+    """How GRUB gets onto the computer when it is not in the image: Debian's live ISOs keep the
+    GRUB packages in the ISO's pool and calamares-settings-debian's bootloader-config installs
+    them. Returns a short description, or '' when nothing installs GRUB."""
+    r = Path(r)
+    if (r / "usr/sbin/bootloader-config").exists():
+        return "bootloader-config"
+    mods = r / ETC / "modules"
+    if mods.is_dir():
+        for conf in mods.glob("*.conf"):
+            text = conf.read_text(errors="replace")
+            if "bootloader-config" in text or re.search(r"apt(-get)?\s+(-\S+\s+)*install[^\n]*grub-", text):
+                return "a command in modules/{}".format(conf.name)
+    if isodir and list(Path(isodir).glob("pool/**/grub-efi-amd64*.deb")) + list(Path(isodir).glob("pool/**/grub-pc*.deb")):
+        return "GRUB packages in the ISO's pool"
+    return ""
+
+
+def _check_bootloader(r, version, isodir=None):
     p = _conf(r, "bootloader.conf")
     if not p:
         return [("warn", "bootloader", "modules/bootloader.conf is missing: Calamares defaults are used")]
@@ -281,10 +299,15 @@ def _check_bootloader(r, version):
     if loader not in loaders_for(version):
         out.append(("fail", rel, "efiBootLoader '{}' is not supported by this Calamares (use {})".format(
             loader, ", ".join(loaders_for(version)))))
+    at_install = grub_at_install(r, isodir)
     for tool in LOADER_TOOLS.get(loader, []):
+        if loader in ("grub", "sb-shim") and at_install:
+            continue  # Debian live: bootloader-config installs GRUB from the ISO's pool
         if not _exists_in_image(r, tool):
             out.append(("fail", rel, "{} needs /{} in the image".format(loader, tool)))
-    if loader not in ("grub", "sb-shim") and not _exists_in_image(r, "usr/sbin/grub-install"):
+    if loader in ("grub", "sb-shim") and at_install and not _exists_in_image(r, "usr/sbin/grub-install"):
+        out.append(("ok", rel, "GRUB is installed during the installation ({})".format(at_install)))
+    if loader not in ("grub", "sb-shim") and not _exists_in_image(r, "usr/sbin/grub-install") and not at_install:
         out.append(("warn", rel, "BIOS computers always get GRUB: install grub-pc-bin in the image"))
     if not _exists_in_image(r, "usr/bin/efibootmgr") and not _exists_in_image(r, "bin/efibootmgr"):
         out.append(("warn", rel, "efibootmgr is not installed: UEFI boot entries cannot be written"))

@@ -103,11 +103,12 @@ class CalamaresPage(Page):
         c = self.card("Check the installer",
                       "A careful check of settings.conf, the branding, every module of the sequence and their "
                       "configuration against the image: what would stop Calamares or make the installation fail.")
-        self.check_table = table(["Result", "File", "Details"])
+        self.check_table = table(["Result", "File", "Details", "How to fix"])
         self.check_table.setMinimumHeight(200)
         c.add(self.check_table)
         self.check_state = label("", "muted", wrap=False)
-        c.add(hbox(self.check_state, None, button("Check the installer", self.run_check, "primary")))
+        self.cal_fix = button("Fix automatically", self.fix_installer)
+        c.add(hbox(self.check_state, None, self.cal_fix, button("Check the installer", self.run_check, "primary")))
 
         # Users ---------------------------------------------------------------------------
         a, b = self.row(self.card("Users and passwords"), self.card("Live user"))
@@ -384,12 +385,32 @@ class CalamaresPage(Page):
         self._run("Calamares slideshow", lambda t: cal.Calamares(proj).set_branding(slides=slides,
                                                                                     slide_seconds=seconds))
 
+    def fix_installer(self):
+        from eduka_customizer.core import fixes
+        proj, msgs = self.project, list(getattr(self, "_fixable", []))
+
+        def done(out):
+            fixed, failed = out
+            self.refresh()
+            QMessageBox.information(self, "Fix automatically", ("Fixed:\n• " + "\n• ".join(fixed) if fixed else
+                                                                "Nothing was fixed.") +
+                                    ("\n\nCould not fix:\n• " + "\n• ".join("{}: {}".format(a, b) for a, b in failed)
+                                     if failed else ""))
+        self.task("Fix the installer", lambda t: fixes.run(proj, msgs, t.set_stage), done)
+
     def run_check(self):
         from eduka_customizer.core import calamares_check as cc
         res = cc.check(self.project)
         marks = {"ok": "✔ OK", "warn": "⚠ Warning", "fail": "✘ Problem"}
         order = {"fail": 0, "warn": 1, "ok": 2}
-        fill(self.check_table, [(marks[l], w, m) for l, w, m in sorted(res, key=lambda x: order[x[0]])])
+        from eduka_customizer.core import fixes
+        rows = []
+        for l, w, m in sorted(res, key=lambda x: order[x[0]]):
+            found = fixes.find(m) if l != "ok" else None
+            rows.append((marks[l], w, m, ("Automatic: " + found[0]) if found else ("By hand" if l != "ok" else "")))
+        fill(self.check_table, rows)
+        self._fixable = [m for l, _w, m in res if l != "ok" and fixes.find(m)]
+        self.cal_fix.setEnabled(bool(self._fixable))
         self.check_table.setSortingEnabled(False)
         self.check_table.resizeColumnToContents(1)
         fails, warns = cc.summary(res)
