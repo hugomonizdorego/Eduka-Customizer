@@ -429,14 +429,19 @@ class BootChoice:
         out = []
         cur = self.current()
         lo = loader(cur)
+        at_install = calamares_check.grub_at_install(self.rootfs, getattr(self.project, "isodir", None))
         if not self.in_image(cur):
-            out.append(("warn", "{} is chosen but not installed in the image: press 'Use for installed "
-                                "systems' again".format(lo.name)))
+            if cur in ("grub", "grub-secureboot") and at_install:
+                out.append(("ok", "GRUB is installed on the computer during the installation ({})".format(
+                    at_install)))
+            else:
+                out.append(("warn", "{} is chosen but not installed in the image: press 'Use for installed "
+                                    "systems' again".format(lo.name)))
         if cur not in ("grub", "grub-secureboot") and not (self.rootfs / SCRIPT).exists():
             out.append(("fail", "/{} is missing: choose {} again".format(SCRIPT, lo.name)))
         if cur not in ("grub", "grub-secureboot", "syslinux") and not self.in_image("syslinux") \
                 and not (self.rootfs / "usr/sbin/grub-install").exists() \
-                and not calamares_check.grub_at_install(self.rootfs, getattr(self.project, "isodir", None)):
+                and not at_install:
             out.append(("warn", "{} works on UEFI computers only and neither GRUB nor Syslinux is in the image: "
                                 "BIOS computers cannot be installed".format(lo.name)))
         if cur in ("efistub", "syslinux") and not (self.rootfs / "usr/bin/efibootmgr").exists():

@@ -103,7 +103,10 @@ def run_step(project, step, base, build=True):
         g.use(name, step.get("installed", False))
     elif action == "boot-loader":
         from eduka_customizer.core.bootchoice import BootChoice
-        BootChoice(project).apply(step["id"], timeout=step.get("timeout"))
+        b = BootChoice(project)
+        if step.get("settings"):
+            b.configure(step["id"], dict(b.settings(step["id"]), **step["settings"]), write=False)
+        b.use(step["id"], timeout=step.get("timeout"))
     elif action == "replace-app":
         from eduka_customizer.core.replace import Replacer
         Replacer(project).replace(step["role"], step["package"], step.get("remove", []))

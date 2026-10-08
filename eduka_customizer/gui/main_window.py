@@ -226,6 +226,11 @@ class MainWindow(QMainWindow):
         donate.setToolTip("Donate with PayPal: a gift keeps the project going")
         donate.clicked.connect(self._donate)
         v.addWidget(donate)
+        report = QPushButton("✉  Send feedback")
+        report.setObjectName("sideButton")
+        report.setToolTip("Report a bug or an error, suggest something or ask the developers")
+        report.clicked.connect(lambda: self.send_feedback())
+        v.addWidget(report)
         self.theme_btn = QPushButton("Dark mode")
         self.theme_btn.setObjectName("sideButton")
         self.theme_btn.clicked.connect(self.toggle_theme)
@@ -656,14 +661,32 @@ class MainWindow(QMainWindow):
 
     def _show_crash(self, text):
         from eduka_customizer.core import log as logmod
-        QMessageBox.critical(self, "Unexpected error",
-                             "{}\n\nThe details were written to {}.\nPlease send that file to the "
-                             "developers (Settings → Create bug report).".format(text, logmod.ERROR_LOG))
+        box = QMessageBox(QMessageBox.Icon.Critical, "Unexpected error",
+                          "{}\n\nThis is a mistake in {}, not yours. The details were written to {}.\n"
+                          "Sending a report helps to fix it.".format(text, APP_NAME, logmod.ERROR_LOG), parent=self)
+        send = box.addButton("Send a report...", QMessageBox.ButtonRole.AcceptRole)
+        box.addButton("Close", QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        if box.clickedButton() is send:
+            self.send_feedback("error", "Unexpected error: " + text.splitlines()[0][:120] if text else "",
+                               "The error happened while I was ...\n\n" + text)
+
+    def send_feedback(self, kind="bug", subject="", message=""):
+        from eduka_customizer.gui.feedback import FeedbackDialog
+        FeedbackDialog(self, kind, subject, message).exec()
+
+    def _send_waiting_reports(self):
+        """Reports that could not be sent before go out now, quietly, in the background."""
+        import threading
+        from eduka_customizer.core import feedback
+        if feedback.waiting():
+            threading.Thread(target=feedback.send_waiting, daemon=True).start()
 
     def showEvent(self, event):
         super().showEvent(event)
         if not self._sized:
             self._sized = True
+            QTimer.singleShot(3000, self._send_waiting_reports)
             total = self.splitter.height() or 800
             self.splitter.setSizes([total - 130, 130])
 

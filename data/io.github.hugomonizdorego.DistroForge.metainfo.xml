@@ -21,6 +21,7 @@
   <url type="donation">https://paypal.me/hugocenturion0311</url>
   <url type="homepage">https://github.com/hugomonizdorego/Eduka-Customizer</url>
   <releases>
+    <release version="0.9.0~beta" date="2026-10-08" type="development"/>
     <release version="0.17.0~alpha" date="2026-10-08"/>
     <release version="0.16.0~alpha" date="2026-10-08"/>
     <release version="0.15.0~alpha" date="2026-10-08"/>

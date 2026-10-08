@@ -184,3 +184,54 @@ def test_keep_only_iso(tmp_path, monkeypatch):
     assert own == ["notes.txt"] and [x.name for x in isos] == ["my-1.0.iso", "my-1.0.iso.sha256"]
     with pytest.raises(RuntimeError):
         projectfiles.keep_only_iso(p)  # not a project folder any more
+
+
+def test_feedback_report_and_sending(tmp_path, monkeypatch):
+    import http.server
+    import tarfile
+    import threading
+    from eduka_customizer.core import feedback, log as logmod
+    monkeypatch.setattr(logmod, "DEBUG_DIR", str(tmp_path / "logs"))
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs/distroforge.log").write_text("line\n" * 10)
+    shot = tmp_path / "shot.png"
+    shot.write_bytes(b"\x89PNG....")
+    with pytest.raises(ValueError):
+        feedback.make_report("bug", "", "")
+    with pytest.raises(ValueError):
+        feedback.make_report("nonsense", "x", "y")
+    report = feedback.make_report("idea", "Dark blue theme", "Please add one.", "me@example.org", [shot], True)
+    with tarfile.open(report) as tf:
+        names = tf.getnames()
+    assert {"report.json", "files/shot.png", "logs/distroforge.log"} <= set(names)
+    assert feedback.waiting() == [report]
+    # The e-mail address never appears as text in the program.
+    src = (feedback.__file__)
+    assert "@gmail" not in open(src).read() and feedback.endpoint().startswith("https://formsubmit.co/")
+    got = {}
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            got["body"] = self.rfile.read(int(self.headers["Content-Length"]))
+            got["type"] = self.headers["Content-Type"]
+            self.send_response(200 if not got.get("fail") else 500)
+            self.end_headers()
+            self.wfile.write(b"ok")
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = "http://127.0.0.1:{}/".format(srv.server_port)
+    try:
+        assert feedback.send(report, url=url)
+        assert b'name="_subject"' in got["body"] and b"Dark blue theme" in got["body"]
+        assert b'name="email"' in got["body"] and b'filename="' + report.name.encode() in got["body"]
+        assert got["type"].startswith("multipart/form-data")
+        assert feedback.waiting() == [] and (feedback.outbox() / "sent" / report.name).exists()
+        r2 = feedback.make_report("bug", "x", "y", files=[], include_logs=False)
+        got["fail"] = True
+        assert not feedback.send(r2, url=url) and feedback.waiting() == [r2]
+        assert not feedback.send(r2, url="http://127.0.0.1:9/")  # nothing listens: kept for later
+    finally:
+        srv.shutdown()

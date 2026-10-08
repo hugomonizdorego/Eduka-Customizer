@@ -1,13 +1,12 @@
-# Panduan singkat DistroForge 0.17 Alpha
+# Panduan singkat DistroForge 0.9 Beta
 
-> Panduan lengkap bergambar (PDF): [DistroForge-Panduan.pdf](DistroForge-Panduan.pdf)
-> (English: [DistroForge-Guide.pdf](DistroForge-Guide.pdf)). Setelah dipasang:
-> `/usr/share/distroforge/guide/` atau tombol *User guide* di halaman **About**.
+> Panduan lengkap bergambar (PDF, bahasa Inggris): [DistroForge-Guide.pdf](DistroForge-Guide.pdf).
+> Setelah dipasang: `/usr/share/distroforge/guide/` atau tombol *User guide* di **Settings & About → About**.
 
 DistroForge adalah pembangun ISO untuk **semua distribusi berbasis
 Debian**: Debian stable, testing, sid dan turunan Debian seperti **LMDE**
 , MX Linux, antiX, Kali Linux, Deepin (ISO Ubuntu dan turunannya ditolak).
-Sebelum versi 0.17 namanya **Eduka-Customizer**; perintah lama
+Sampai versi 0.17 Alpha namanya **Eduka-Customizer**; perintah lama
 `eduka-customizer` tetap bekerja. Tidak ada pengaturan bawaan untuk distribusi
 tertentu — nama, ID, host name dan homepage kosong sampai Anda mengisinya
 (selama kosong, nama dari `os-release` image yang dipakai). **Eduka-Desktop**
@@ -27,7 +26,7 @@ langsung dibangun, dan semua langkah di sidebar terbuka untuk penyesuaian.
 Paket siap pakai untuk dicoba (Debian 13, Ubuntu 24.04 dan turunannya):
 
 ```sh
-sudo apt install ./release/distroforge_0.17.0~alpha_all.deb
+sudo apt install ./release/distroforge_0.9.0~beta_all.deb
 ```
 
 Atau build sendiri:
@@ -35,9 +34,36 @@ Atau build sendiri:
 ```sh
 sudo apt install debhelper python3-pytest dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../distroforge_0.17.0~alpha_all.deb
+sudo apt install ../distroforge_0.9.0~beta_all.deb
 distroforge doctor        # cek alat yang dibutuhkan
 ```
+
+## Baru di 0.9 Beta
+
+Beta pertama menuju 1.0. Nomor versi mulai lagi dari 0.9; paket Debian memakai *epoch*
+(`1:0.9.0~beta`) sehingga tetap meng-upgrade 0.17 Alpha seperti biasa.
+
+* **Bootloader untuk sistem terpasang** (Kernel & Boot → *Boot Loader*): pasang atau hapus
+  **GRUB 2**, **GRUB 2 Secure Boot**, **systemd-boot**, **rEFInd**, **EFISTUB** dan
+  **Syslinux/EXTLINUX** di image, pilih yang dipakai installer (*Use for installed systems*), dan atur
+  masing-masing (timeout, opsi kernel, menu, entri default, mode layar, ...). Semua kompatibel dengan
+  Calamares: GRUB, systemd-boot dan rEFInd lewat modul bootloader Calamares; EFISTUB dan Syslinux lewat
+  langkah installer sendiri (`shellprocess@distroforge-bootloader`). Bila sebuah bootloader tidak bisa
+  jalan di komputer tertentu (Syslinux di UEFI, EFISTUB di BIOS, /boot terenkripsi), dipakai yang bisa,
+  GRUB terakhir, sehingga instalasi tidak error. Diuji di QEMU: Syslinux (disk MBR dan GPT, BIOS) dan
+  EFISTUB (UEFI) berhasil menjalankan kernel.
+* **Menu digabung: 13 langkah.** Kernel & Boot berisi Kernel, Boot Loader, Boot Menu (dengan tema GRUB
+  dan desain menu); Look & Feel juga berisi System Sounds dan Welcome Screen; Settings dan About jadi
+  satu menu.
+* **Simpan hanya ISO**: setelah build, saat jendela ditutup (atau tombol *Keep only the ISO...*, atau
+  `distroforge clean --keep-iso`) semua folder build dihapus, hanya ISO (dan checksum-nya) yang tersisa.
+  Tidak ada yang dihapus selama masih ada mount; file milik Anda sendiri di folder tetap ada. Setiap
+  folder proyek punya README.txt yang menjelaskan sub-foldernya (boleh diedit manual).
+* **Kirim masukan** (*Send feedback*): laporan bug, error, ide atau pertanyaan dengan screenshot/file,
+  langsung ke developer. Tanpa internet, laporan disimpan dan dikirim saat DistroForge dibuka lagi.
+* **Warna baru**: slate dan biru; hijau/kuning/merah hanya untuk berhasil/perhatian/masalah.
+* **Perbaikan**: error *No such file or directory: 'runuser'* saat membuka link atau panduan.
+* Panduan PDF hanya bahasa Inggris.
 
 ## Baru di 0.17
 
@@ -125,7 +151,7 @@ distroforge doctor        # cek alat yang dibutuhkan
   ukuran ISO. Masalah serius menghentikan build; klik dua kali baris untuk
   membuka halaman perbaikannya.
 
-## Alur kerja di GUI (15 langkah)
+## Alur kerja di GUI (13 langkah)
 
 1. **Start** – buat project (folder kerja), lalu pilih sumber: ISO Debian live
    (disarankan *standard*) atau ISO turunan Debian, *Download Debian* (dicek
@@ -144,21 +170,20 @@ distroforge doctor        # cek alat yang dibutuhkan
    Full with apps), layar login, X11/Wayland, compositor, Eduka-Desktop.
 7. **Software** – tab *Packages* (semua paket Debian, centang/hapus centang,
    hapus aplikasi bawaan ISO), *Flatpak apps*, *Replace apps*.
-8. **Kernel & Boot** – tab *Kernel* (dengan terminal repositori), *Boot Menu* (edit
-   grub.cfg/isolinux) dan *GRUB Design* (tema, menu, bootloader).
-9. **Look & Feel** – tab *Themes & Icons*, *Wallpaper & Login*, *Plymouth*.
-10. **System Sounds** – suara sistem.
-11. **Welcome Screen** – layar sambutan 4 halaman.
-12. **Installer** – Calamares (slide, pemeriksaan).
-13. **Advanced** – tab *Terminal & Live* (desktop image di jendela, terminal
+8. **Kernel & Boot** – tab *Kernel* (dengan terminal repositori), *Boot Loader* (bootloader
+   sistem terpasang dan pengaturannya) dan *Boot Menu* (menu ISO, tema GRUB, desain menu, edit file).
+9. **Look & Feel** – tab *Themes & Icons*, *Wallpaper & Login*, *Plymouth*, *System Sounds*,
+   *Welcome Screen*.
+10. **Installer** – Calamares (slide, pemeriksaan).
+11. **Advanced** – tab *Terminal & Live* (desktop image di jendela, terminal
     root, Synaptic) dan *Package Workshop*.
-14. **Review & Apply** – daftar semua perubahan yang dipilih di langkah 2–13: centang,
+12. **Review & Apply** – daftar semua perubahan yang dipilih di langkah 2–11: centang,
     kembali dan ubah, hapus atau ubah urutan, lalu terapkan sekaligus.
-15. **Check & Build** – periksa (perbaiki otomatis), pilih ukuran ISO, build ISO, uji di
-    QEMU (BIOS/UEFI/Secure Boot).
+13. **Check & Build** – periksa (perbaiki otomatis), pilih ukuran ISO, build ISO, uji di
+    QEMU (BIOS/UEFI/Secure Boot), lalu *Keep only the ISO*.
 
-Halaman **About** berisi versi, lisensi, lisensi komponen, merek dagang, panduan PDF dan
-tombol donasi.
+**Settings & About** berisi pengaturan, versi, lisensi, lisensi komponen, merek dagang, panduan PDF
+dan tombol donasi.
 
 ## Baris perintah
 
@@ -174,12 +199,15 @@ sudo distroforge -p ~/mylinux shell          # terminal di dalam image
 sudo distroforge -p ~/mylinux sounds add ~/suara/ && sudo distroforge -p ~/mylinux sounds apply
 sudo distroforge -p ~/mylinux welcome apply
 sudo distroforge -p ~/mylinux grub-theme add ~/Unduhan/tema-grub.tar.xz --installed
-sudo distroforge -p ~/mylinux boot-loader use systemd-boot
+sudo distroforge -p ~/mylinux boot-loader list
+sudo distroforge -p ~/mylinux boot-loader set syslinux TIMEOUT=3
+sudo distroforge -p ~/mylinux boot-loader use syslinux     # grub, grub-secureboot, systemd-boot, refind, efistub
 sudo distroforge -p ~/mylinux calamares check
 sudo distroforge -p ~/mylinux check --deep --fix   # periksa, perbaiki otomatis, periksa lagi
 sudo distroforge -p ~/mylinux build --target-size 700   # smallest, 100, 300, 500, ..., none
 distroforge -p ~/mylinux test --firmware uefi
 distroforge about                            # versi, lisensi, donasi
+sudo distroforge -p ~/mylinux clean --keep-iso     # hanya ISO yang tersisa
 ```
 
 Baris perintah menerapkan setiap perubahan langsung (tanpa daftar Review & Apply).
@@ -194,8 +222,8 @@ Build yang bisa diulang (reproducible) memakai *recipe* JSON:
 * Saat Debian rilis versi baru, ubah codename di halaman **Settings**.
 * Log lengkap: `PROJECT/logs/distroforge.log`.
 * **Log untuk developer** (setiap kali jalan): `/tmp/distroforge/distroforge.log`
-  dan `/tmp/distroforge/errors.log` (error + traceback). Menu
-  **Settings → Create bug report** membuat arsip untuk dikirim ke developer.
+  dan `/tmp/distroforge/errors.log` (error + traceback). Tombol **Send feedback** (sidebar,
+  Settings, dan setiap pesan error) mengirim laporan beserta file dan log ke developer.
 * Screenshot semua halaman: `docs/screenshots/`.
 
 ## Lisensi dan dukungan

@@ -1,12 +1,11 @@
-# DistroForge 0.17 Alpha
+# DistroForge 0.9 Beta
 
 **DistroForge** (formerly *Eduka-Customizer*) builds live ISO images of **your
 own Debian-based distribution**. It takes a Debian live image (or a Debian
 derivative such as LMDE, MX Linux or Kali), a fresh Debian base or the running
 computer and guides you **step by step** to a new, bootable ISO: repositories,
-identity, users, language, desktop, software, kernel and boot menu, look and
-feel, sounds, welcome screen, installer, **Review & Apply** and **Check &
-Build**. Every name is yours: nothing is preset for a particular distribution.
+identity, users, language, desktop, software, kernel and **boot loader**,
+look and feel, installer, **Review & Apply** and **Check & Build** — 13 steps. Every name is yours: nothing is preset for a particular distribution.
 
 The images it builds are always **Debian-based**: Debian stable, testing, sid
 or a Debian derivative (Ubuntu-based images are refused as a source). The
@@ -14,18 +13,47 @@ recommended start is the **Debian live standard ISO**: no desktop, small and
 clean. DistroForge itself installs on Debian, Debian derivatives, **Ubuntu and
 Ubuntu-based** computers.
 
-![Review & Apply](docs/screenshots/19-review-apply.png)
+![Boot Loader](docs/screenshots/08b-boot-loader.png)
 
 > DistroForge is free and open source software (GPL-3.0-or-later). It is a
 > complete rewrite of *Customizer* (Ivailo Monev, Mubiin Kimura, Graham Cantin
 > and contributors) and takes ideas from *Cubic*, *remastersys* and
 > *penguins-eggs*. It is not affiliated with Debian.
 
-**User guides (PDF):** [Bahasa Indonesia](docs/DistroForge-Panduan.pdf) ·
-[English](docs/DistroForge-Guide.pdf)
+**User guide (PDF):** [DistroForge-Guide.pdf](docs/DistroForge-Guide.pdf)
 
 **Support the project:** [Donate with PayPal](https://paypal.me/hugocenturion0311) ·
 [Facebook](https://facebook.com/hugomonizdorego)
+
+## New in 0.9 Beta
+
+The first beta on the way to 1.0 (the version number starts again at 0.9; the
+Debian package uses an epoch, so it upgrades 0.17 Alpha as usual).
+
+* **Boot loaders for installed systems** (Kernel & Boot → Boot Loader): install or remove **GRUB 2**,
+  **GRUB 2 with Secure Boot**, **systemd-boot**, **rEFInd**, **EFISTUB** and **Syslinux/EXTLINUX** in
+  the image, choose the one the installer uses and set each one up (timeout, kernel options, menu,
+  default entry, screen mode, ...). All work with Calamares: GRUB, systemd-boot and rEFInd through its
+  bootloader module, EFISTUB and Syslinux through an own installer step
+  (`shellprocess@distroforge-bootloader`). When a boot loader cannot work on a computer (Syslinux on
+  UEFI, EFISTUB on BIOS, an encrypted /boot) the next one that works is used, GRUB last, so the
+  installation does not stop with an error; kernel updates keep EFISTUB and Syslinux working. Tested in
+  QEMU: Syslinux on MBR and GPT disks (BIOS) and EFISTUB (UEFI) start the kernel.
+* **Fewer menus: 13 steps.** Kernel & Boot holds Kernel, Boot Loader and Boot Menu (with the GRUB theme
+  and the menu designer); Look & Feel also holds System Sounds and Welcome Screen; the GRUB settings of
+  installed systems moved from the Kernel tab to Boot Loader; Settings and About share one menu.
+* **Keep only the ISO**: after a build, closing the window (or *Keep only the ISO...*, or
+  `distroforge clean --keep-iso`) deletes the build folders; the ISO and its checksums stay. Nothing is
+  deleted while anything is mounted, and your own files in the folder stay. Each project folder has a
+  README.txt about its sub-folders, which you may also change by hand.
+* **Send feedback**: a dialog for bugs, errors, ideas and questions with screenshots and files attached
+  (and, if you agree, the logs). It is sent to the developers; without internet it is sent later. Every
+  error message has a *Send a report...* button.
+* **New colors**: calm slate and blue in light and dark mode; green, amber and red only mean done, look
+  at it and problem.
+* **Fixed**: opening links, the user guide and folders failed with *No such file or directory:
+  'runuser'* when DistroForge was started through pkexec.
+* One user guide, in English.
 
 ## New in 0.17
 
@@ -130,13 +158,14 @@ Ubuntu-based** computers.
 | Calamares | Edit the installer directly: name, logo and images, colors, slideshow, launcher, user and password rules, live user password, partitions (file systems, swap, EFI size, encryption), requirements, removed packages, every configuration file |
 | Plymouth | Install boot splash themes from .deb, .zip, .tar.*, folders or Debian packages; preview them in a window; apply; remove; create one from a logo |
 | Boot Menu | Title, timeout, kernel options, background; edit `grub.cfg`, `isolinux.cfg` and the GRUB files inside `efi.img` directly; edits survive every build; apply to the ISO in seconds |
-| Kernel | Debian, backports, Liquorix, XanMod, your own repository or .deb kernels; remove, hold, initramfs, ISO kernel, GRUB defaults of the installed system, firmware, DKMS |
+| Kernel | Debian, backports, Liquorix, XanMod, your own repository or .deb kernels; remove, hold, initramfs, ISO kernel, firmware, DKMS |
+| Boot Loader | GRUB 2, GRUB with Secure Boot, systemd-boot, rEFInd, EFISTUB or Syslinux/EXTLINUX for installed computers: install, remove, choose and set up, all working with Calamares |
 | Quick Wizard | Build a whole distribution with Next, Next, Finish: source, identity, base, desktop, look, apps, branding, build |
 | Distro Branding | Your own `<id>-branding` package replacing the identity of base-files, lsb-release, distro-info-data, desktop-base, Debian logos, GRUB (live and installed) and the Calamares installer, plus an optional `<id>-archive-keyring` with your own signing key. Debian source trees are editable |
 | Package Workshop | Open any installed package (base-files, desktop-base, ...), edit files and control data directly, rebuild, install, hold, or restore Debian's version |
 | Themes & Icons | GTK, icon, cursor and LXQt themes, fonts, dark style, one-click theme packs, theme import, desktop icons |
 | Login & session | LightDM (GTK, Slick, Arctica, KDE greeters), SDDM with themes, GDM, LXDM, Ly, greetd; X11 or Wayland; compositor (picom presets, built-in, labwc, KWin, Wayfire, Sway) |
-| Developer logs | Every run writes `/tmp/distroforge/distroforge.log` and `errors.log`; Settings → Create bug report |
+| Developer logs | Every run writes `/tmp/distroforge/distroforge.log` and `errors.log`; *Send feedback* sends them with your report |
 | Source | Extract a Debian or Debian-based live ISO, download an official Debian live ISO (SHA256 and GPG checked), bootstrap a new Debian base with mmdebstrap, or snapshot the running system (remastersys style) |
 | Identity | os-release (`ID=yourdistro`, `ID_LIKE=debian`), version, codename, host name, live user, Calamares branding, protected from `base-files` upgrades |
 | Repositories | Switch between stable, testing and sid with a clean deb822 `debian.sources`, add third-party repositories with their own `Signed-By` key, edit every sources file |
@@ -160,13 +189,14 @@ Ubuntu-based** computers.
 | | |
 |---|---|
 | ![Step by step](docs/screenshots/01-start-step-by-step.png) | ![What is your distribution for? ISO edition](docs/screenshots/01b-purpose.png) |
-| ![System Sounds](docs/screenshots/13-system-sounds.png) | ![Welcome Screen](docs/screenshots/14-welcome-screen.png) |
-| ![The welcome screen in the ISO](docs/screenshots/welcome-screen-gtk.png) | ![GRUB Design](docs/screenshots/08d-grub-design.png) |
+| ![Boot Loader](docs/screenshots/08b-boot-loader.png) | ![Boot loader settings](docs/screenshots/08b2-boot-loader-settings.png) |
+| ![System Sounds](docs/screenshots/09d-look-system-sounds.png) | ![Welcome Screen](docs/screenshots/09e-look-welcome-screen.png) |
+| ![The welcome screen in the ISO](docs/screenshots/welcome-screen-gtk.png) | ![GRUB theme and menu](docs/screenshots/08d-boot-menu-grub-design.png) |
 | ![Desktops and editions](docs/screenshots/06b-desktop-login-session.png) | ![Flathub by category](docs/screenshots/07b-software-flatpak.png) |
-| ![Installer check](docs/screenshots/15b-installer-check.png) | ![Check & Build](docs/screenshots/18-check-build.png) |
-| ![Review & Apply](docs/screenshots/19-review-apply.png) | ![About](docs/screenshots/23-about.png) |
-| ![Identity & Branding from the ISO](docs/screenshots/03b-identity-branding.png) | ![Kernel terminal](docs/screenshots/08-kernel-boot.png) |
-| ![Look & Feel](docs/screenshots/09-look-themes-icons.png) | ![Dark mode](docs/screenshots/22-dark-welcome.png) |
+| ![Installer check](docs/screenshots/10b-installer-check.png) | ![Check & Build](docs/screenshots/13-check-build.png) |
+| ![Review & Apply](docs/screenshots/12-review-apply.png) | ![Send feedback](docs/screenshots/15-send-feedback.png) |
+| ![Identity & Branding from the ISO](docs/screenshots/03b-identity-branding.png) | ![Kernel](docs/screenshots/08-kernel.png) |
+| ![Look & Feel](docs/screenshots/09-look-themes-icons.png) | ![Dark mode](docs/screenshots/21-dark-boot-loader.png) |
 
 All screenshots, including every Quick Wizard step: [docs/screenshots](docs/screenshots).
 
@@ -175,11 +205,11 @@ All screenshots, including every Quick Wizard step: [docs/screenshots](docs/scre
 On Debian 12/13, a Debian derivative, Ubuntu 22.04/24.04 or an Ubuntu-based system:
 
 ```sh
-sudo apt install ./release/distroforge_0.17.0~alpha_all.deb   # ready-made package
+sudo apt install ./release/distroforge_0.9.0~beta_all.deb   # ready-made package
 # or build it yourself:
 sudo apt install debhelper python3-pytest python3-yaml dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../distroforge_0.17.0~alpha_all.deb
+sudo apt install ../distroforge_0.9.0~beta_all.deb
 ```
 
 Or run it from the source tree:
@@ -199,7 +229,9 @@ Every run writes logs for the developers:
 
 * `/tmp/distroforge/distroforge.log` — full debug log
 * `/tmp/distroforge/errors.log` — errors with tracebacks
-* Settings → **Create bug report** packs both with the project state.
+* **Send feedback** (sidebar, Settings, every error message) sends a report with screenshots, files
+  and, if you agree, these logs to the developers. *Save a bug report file* in Settings packs them
+  into a file instead.
 
 ## Quick start (GUI)
 
@@ -209,14 +241,15 @@ Every run writes logs for the developers:
    recommended), another Debian-based ISO, *Download Debian*, or *New Debian base*. Answer
    *What is your distribution for?* and pick the ISO edition, or close it to decide everything yourself.
 3. Press **Done — next step** at the bottom of every step: 2. Repositories, 3. Identity & Branding,
-   4. Users, 5. Language, 6. Desktop, 7. Software, 8. Kernel & Boot, 9. Look & Feel, 10. System Sounds,
-   11. Welcome Screen, 12. Installer, 13. Advanced. The next menu opens when the step before it is done.
-   Your choices are collected in **Review & Apply**.
-4. **14. Review & Apply**: tick every change you are sure about (or go back and change it), then
+   4. Users, 5. Language, 6. Desktop, 7. Software, 8. Kernel & Boot (kernel, boot loader, boot menu),
+   9. Look & Feel (themes, wallpaper, Plymouth, sounds, welcome screen), 10. Installer, 11. Advanced.
+   The next menu opens when the step before it is done. Your choices are collected in **Review & Apply**.
+4. **12. Review & Apply**: tick every change you are sure about (or go back and change it), then
    *Apply all changes*.
-5. **15. Check & Build**: check the image (*Fix automatically* fixes what it can), choose the ISO
+5. **13. Check & Build**: check the image (*Fix automatically* fixes what it can), choose the ISO
    size, build the ISO and boot it in QEMU.
 6. Write the ISO to a USB stick: `sudo dd if=mylinux.iso of=/dev/sdX bs=4M status=progress oflag=sync`.
+7. Happy with it? *Keep only the ISO* frees the disk space of the build folders.
 
 ## Quick start (command line)
 
@@ -239,11 +272,14 @@ sudo distroforge language set pt_PT.UTF-8 --extra en_US.UTF-8 --timezone Asia/Di
 sudo distroforge kernel third-party backports --headers
 sudo distroforge sounds add ~/sounds/ && sudo distroforge sounds apply   # boot.ogg, login.wav, ...
 sudo distroforge grub-theme add ~/Downloads/Vimix-grub.tar.xz --installed   # refused when incompatible
-sudo distroforge boot-loader use systemd-boot     # or grub, grub-secureboot, refind
+sudo distroforge boot-loader list                 # grub, grub-secureboot, systemd-boot, refind, efistub, syslinux
+sudo distroforge boot-loader set systemd-boot TIMEOUT=3 SDBOOT_DEFAULT=saved
+sudo distroforge boot-loader use systemd-boot     # installs it into the image and tells Calamares
 sudo distroforge check --fix                      # check, fix what can be fixed, check again
 sudo distroforge build --target-size 700          # smallest, 100, 300, 500, 700, 1000, ..., none
 distroforge test --firmware uefi
 distroforge about                                 # version, license, credits, donations
+sudo distroforge clean --keep-iso                 # when the ISO is finished: keep only the ISO
 ```
 
 `distroforge --help` lists the commands in the order of the steps. Eduka-Desktop is still one
@@ -253,8 +289,7 @@ command away: `sudo distroforge desktop install eduka`. Or apply a recipe:
 
 ## Documentation
 
-* User guide (PDF): [Bahasa Indonesia](docs/DistroForge-Panduan.pdf), [English](docs/DistroForge-Guide.pdf)
-  (made with `tools/make_guide.py`).
+* User guide (PDF): [DistroForge-Guide.pdf](docs/DistroForge-Guide.pdf) (made with `tools/make_guide.py`).
 * [Manual](docs/manual.md) — every page and command explained.
 * [Panduan singkat (Bahasa Indonesia)](docs/PANDUAN.md)
 * [Roadmap and recommendations](docs/ROADMAP.md)
@@ -264,19 +299,19 @@ command away: `sudo distroforge desktop install eduka`. Or apply a recipe:
 
 **DistroForge** (sebelumnya Eduka-Customizer) adalah pembangun ISO untuk **semua distribusi
 berbasis Debian** (Debian stable, testing, sid dan turunannya seperti LMDE, MX Linux, Kali —
-bukan berbasis Ubuntu). **Eduka-Desktop** tetap tersedia sebagai salah satu desktop. Versi 0.17:
+bukan berbasis Ubuntu). **Eduka-Desktop** tetap tersedia sebagai salah satu desktop. Versi 0.9 Beta:
 
-* **Perbaiki otomatis atau manual** — setiap masalah di *Check & Build* menunjukkan cara
-  memperbaikinya; peringatan palsu `grub-install` untuk ISO live Debian sudah hilang.
-* **Review & Apply (langkah 14)** — semua perubahan menunggu di satu daftar, dicentang satu per
-  satu (atau kembali dan diubah), lalu diterapkan bersama.
-* **Target ukuran ISO** — sekecil mungkin, 100 MB, 300 MB, 500 MB, ... 4,4 GB; kompresi lossless,
-  ISO tidak rusak.
-* **About** — lisensi semua komponen, merek dagang, kredit, panduan PDF dan tombol donasi.
-* Semua tulisan dirapikan; nama baru DistroForge (perintah lama tetap bekerja).
+* **Bootloader untuk sistem terpasang** — pasang/hapus GRUB 2, GRUB Secure Boot, systemd-boot,
+  rEFInd, EFISTUB dan Syslinux/EXTLINUX, pilih yang dipakai installer, dan atur masing-masing
+  (timeout, opsi kernel, menu, ...). Semua kompatibel dengan Calamares; bila sebuah bootloader tidak
+  bisa jalan di komputer tertentu, dipakai yang bisa (GRUB terakhir) sehingga instalasi tidak error.
+* **Menu digabung: 13 langkah.**
+* **Simpan hanya ISO** — setelah build, folder build bisa dihapus sampai hanya ISO yang tersisa.
+* **Kirim masukan** — laporan bug, error, ide atau pertanyaan dengan lampiran langsung ke developer.
+* **Warna baru** (slate dan biru), perbaikan error `runuser`.
 
-Paket siap pasang: `release/distroforge_0.17.0~alpha_all.deb`. Panduan PDF:
-[docs/DistroForge-Panduan.pdf](docs/DistroForge-Panduan.pdf). Log error: `/tmp/distroforge/`.
+Paket siap pasang: `release/distroforge_0.9.0~beta_all.deb`. Panduan PDF (bahasa Inggris):
+[docs/DistroForge-Guide.pdf](docs/DistroForge-Guide.pdf). Log error: `/tmp/distroforge/`.
 
 ## Support
 

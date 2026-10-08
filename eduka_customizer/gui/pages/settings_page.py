@@ -78,7 +78,8 @@ class SettingsPage(Page):
         self.errors.setMaximumHeight(160)
         c.add(self.errors)
         c.add(hbox(button("Open log folder", self.open_logs), button("Reload", self.load_errors), None,
-                   button("Create bug report", self.bug_report, "primary")))
+                   button("Save a bug report file", self.bug_report),
+                   button("Send feedback...", lambda: self.main.send_feedback(), "primary")))
 
         c.add(hbox(button("About {}, licenses and donations...".format(APP_NAME), lambda: self.main.go("AboutPage")),
                    None))

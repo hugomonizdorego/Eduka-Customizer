@@ -1,3 +1,22 @@
+distroforge (1:0.9.0~beta) unstable; urgency=medium
+
+  * First beta, on the way to 1.0. The epoch keeps upgrades from 0.17 Alpha
+    working (0.9 sorts before 0.17 without it).
+  * Boot Loader tab: install or remove GRUB 2, GRUB with Secure Boot,
+    systemd-boot, rEFInd, EFISTUB and Syslinux/EXTLINUX in the image, choose
+    the one the installer uses and set each one up. EFISTUB and Syslinux are
+    installed by an own Calamares step (shellprocess@distroforge-bootloader)
+    that falls back to a boot loader that works on the computer, GRUB last.
+  * Menus merged: 13 steps.
+  * After a build, everything but the ISO can be deleted.
+  * Send feedback: bugs, errors, ideas and questions with files attached.
+  * New slate and blue colors.
+  * Fixed: opening links and the user guide failed with "No such file or
+    directory: 'runuser'" when started through pkexec.
+  * One user guide, in English.
+
+ -- Hugo Moniz do Rego <hugomonizdorego@users.noreply.github.com>  Thu, 08 Oct 2026 23:00:00 +0000
+
 distroforge (0.17.0~alpha) unstable; urgency=medium
 
   * New name: DistroForge (was Eduka-Customizer). The package replaces

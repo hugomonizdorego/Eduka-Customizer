@@ -1,9 +1,9 @@
 # DistroForge manual
 
-Version 0.17 Alpha. DistroForge builds live ISO images of any Debian-based
+Version 0.9 Beta. DistroForge builds live ISO images of any Debian-based
 distribution; nothing is preset for a particular distribution. It was called
-Eduka-Customizer before 0.17. User guides with pictures: `docs/DistroForge-Panduan.pdf`
-(Indonesian) and `docs/DistroForge-Guide.pdf` (English), installed in
+Eduka-Customizer until 0.17 Alpha. The user guide with pictures is `docs/DistroForge-Guide.pdf`,
+installed in
 `/usr/share/distroforge/guide/`.
 
 ## Concepts
@@ -44,7 +44,7 @@ user leaves. *Terminal & Live → Unmount everything* or
 
 ## Pages of the GUI
 
-The sidebar lists 15 numbered steps in the order of the work, from the source
+The sidebar lists 13 numbered steps in the order of the work, from the source
 of the image to the finished ISO. Pages that are used together share one step
 as tabs:
 
@@ -57,16 +57,15 @@ as tabs:
 | 5. Language | |
 | 6. Desktop | |
 | 7. Software | Packages, Flatpak apps, Replace apps |
-| 8. Kernel & Boot | Kernel, Boot Menu, GRUB Design |
-| 9. Look & Feel | Themes & Icons, Wallpaper & Login, Plymouth |
-| 10. System Sounds | |
-| 11. Welcome Screen | |
-| 12. Installer | Calamares |
-| 13. Advanced | Terminal & Live, Package Workshop |
-| 14. Review & Apply | |
-| 15. Check & Build | |
+| 8. Kernel & Boot | Kernel, Boot Loader, Boot Menu |
+| 9. Look & Feel | Themes & Icons, Wallpaper & Login, Plymouth, System Sounds, Welcome Screen |
+| 10. Installer | Calamares |
+| 11. Advanced | Terminal & Live, Package Workshop |
+| 12. Review & Apply | |
+| 13. Check & Build | |
+| Settings & About | Settings, About |
 
-The header shows *Step N of 15* and how many steps are done.
+The header shows *Step N of 13* and how many steps are done.
 
 **Step by step.** A step opens when the step before it is done: press
 **Done — next step** at the bottom (✔ marks the done steps; *Back* goes to the
@@ -330,13 +329,44 @@ the others are removed with their package lists (*Keep or remove now*, at the la
   kernel copied by hand). The last kernel cannot be removed.
 * **Hold / unhold**, **Update initramfs**, **Use for the ISO**, **Copy to the
   ISO now**.
-* **GRUB of the installed system**: timeout, menu style, default entry,
-  kernel options, os-prober, recovery entries and resolution, written to
-  `/etc/default/grub.d/95-eduka-customizer.cfg`. Calamares installs GRUB and
-  runs `update-grub` with these settings; *Run update-grub* only works in an
-  image that already has an installed GRUB menu.
+* **GRUB of the installed system**: its settings are on the Boot Loader tab. *Run update-grub* only
+  works in an image that already has an installed GRUB menu.
 * **Drivers**: install common firmware (needs `non-free-firmware`) and
   rebuild DKMS modules for every kernel.
+
+### 8. Kernel & Boot → Boot Loader
+The boot loader that installed computers start with. The table lists every boot loader with the
+computers it works on, whether it is installed in the image and which one the installer uses.
+
+| Boot loader | Computers | Installed by | Settings |
+|---|---|---|---|
+| GRUB 2 | BIOS and UEFI | Calamares (`efiBootLoader: grub`) | timeout, kernel options, menu (shown, countdown, hidden), default entry (first or last chosen), os-prober, recovery entries, resolution — written to `/etc/default/grub.d/95-eduka-customizer.cfg` |
+| GRUB 2 with Secure Boot | BIOS and UEFI | Calamares (`sb-shim`) | as GRUB 2 |
+| systemd-boot | UEFI | Calamares (`systemd-boot`), then DistroForge's step | timeout, kernel options, default entry (newest or last chosen), editor, screen mode — `loader/loader.conf` on the EFI partition |
+| rEFInd | UEFI | Calamares 3.3 (`refind`), then DistroForge's step | timeout, kernel options, resolution, text mode, tools row — `refind.conf`, `/boot/refind_linux.conf` |
+| EFISTUB | UEFI, Secure Boot off | DistroForge's step | kernel options, name in the firmware menu — a UEFI boot entry (`efibootmgr`) that starts `\EFI\<id>\vmlinuz.efi` |
+| Syslinux / EXTLINUX | BIOS | DistroForge's step | timeout, kernel options, menu title, graphical menu — `/boot/syslinux/syslinux.cfg`, MBR or GPT boot code |
+
+* **Install into the image** installs the Debian packages (grub-pc-bin + grub-efi-amd64-bin, shim-signed,
+  systemd-boot, refind, efibootmgr, extlinux + syslinux-common + fdisk). **Remove from the image** purges
+  them; it never removes the boot loader in use, and stops when other packages would go with it.
+* **Use for installed systems** installs it when needed, writes `/etc/distroforge-bootloader.conf` and
+  points the installer at it. For EFISTUB and Syslinux the `bootloader` module in the sequence of
+  `settings.conf` is replaced by `shellprocess@distroforge-bootloader` (configuration
+  `modules/shellprocess-distroforge-bootloader.conf`), which runs `/usr/sbin/distroforge-bootloader install`
+  in the new system; for systemd-boot and rEFInd that step runs after Calamares' module and adds the
+  settings. Choosing GRUB again puts the `bootloader` module back.
+* **Fallbacks**, so the installation does not stop with an error: EFISTUB on a BIOS computer uses
+  Syslinux (when installed) or GRUB; Syslinux on a UEFI computer, or with /boot on LVM, encrypted or not
+  ext2/3/4/FAT, uses EFISTUB or GRUB. Debian live ISOs install GRUB from their pool, so GRUB is there.
+* Kernel and initramfs hooks (`/etc/kernel/postinst.d`, `postrm.d`, `/etc/initramfs/post-update.d`) copy
+  new kernels to the EFI partition (EFISTUB) or write the Syslinux menu again; they do nothing in the live
+  system or the image.
+* The installer check and Check & Build check the step, its configuration and the tools it needs;
+  *Fix automatically* sets the boot loader up again or installs what is missing.
+* Tested in QEMU: Syslinux on MBR and GPT disks (SeaBIOS) and EFISTUB (OVMF) start the kernel with the
+  options set here.
+* LILO and BURG are listed but cannot be chosen: they are no longer developed and not in Debian.
 
 ### 8. Kernel & Boot → Boot Menu
 * Menu settings: title, timeout, kernel options (e.g. `quiet splash`,
@@ -351,8 +381,6 @@ the others are removed with their package lists (*Keep or remove now*, at the la
 * **Save and apply to the ISO now** rebuilds the ISO in seconds with the
   compressed system of the last build (also *Rebuild boot files only* on
   Build & Test, `distroforge bootmenu apply`).
-
-### 8. Kernel & Boot → GRUB Design
 * **GRUB theme**: drop a theme folder or archive (with `theme.txt`). It is checked first and refused
   with the reasons when GRUB could not show it: no theme.txt, pictures GRUB cannot read (only PNG,
   JPEG and TGA), files theme.txt names that are missing (also `*_pixmap_style` patterns), TTF/OTF
@@ -362,11 +390,6 @@ the others are removed with their package lists (*Keep or remove now*, at the la
 * **Menu designer**: the entries of `/boot/grub/grub.cfg` — rename (double-click), reorder, remove,
   add ready-made entries (live, safe graphics, copy to RAM, boot messages, fail-safe, UEFI firmware
   settings, restart, power off), the default entry, the timeout and colors. Saved as a kept edit.
-* **Boot loader of installed systems**: GRUB, GRUB with Secure Boot (shim), systemd-boot or rEFInd
-  (Calamares 3.3 or newer). The packages come from the Debian archive of the image and Calamares'
-  `bootloader.conf` gets `efiBootLoader`. BIOS computers always get GRUB. LILO and BURG are no longer
-  developed and not in Debian, EFISTUB has no Calamares module, Syslinux/EXTLINUX already boots the
-  live ISO but cannot be installed by Calamares: they are listed with these reasons.
 
 ### 9. Look & Feel → Themes & Icons
 Only what fits the desktop chosen in step 6 is listed (all of it while none is chosen): theme packs
@@ -416,7 +439,7 @@ and desktop icons for LXQt/Eduka-Desktop and Xfce.
   are protected), **Create from a logo**.
 * Settings: delay before the splash, HiDPI scale, splash on ISO boot.
 
-### 10. System Sounds
+### 9. Look & Feel → System Sounds
 Sounds for **boot**, **startup (login)**, **log out**, **shutdown**, **error**, **warning**,
 **information**, **question**, new message / e-mail, task complete, bell, device connected /
 removed, power cable, battery low, trash, screenshot, volume and camera. Each event takes an OGG or
@@ -431,7 +454,7 @@ sounds themselves. Boot and shutdown sounds are played by `eduka-system-sounds.s
 and vorbis-tools are installed for it), the login sound by an autostart entry (Cinnamon plays its own).
 CLI: `distroforge sounds events|themes|show|set|add|clear|apply|remove`.
 
-### 11. Welcome Screen
+### 9. Look & Feel → Welcome Screen
 Four pages shown after login. Each page has a title, text (**bold**, *italic*, `[links](https://...)`;
 an empty line starts a paragraph), an optional picture (left, right, above or below the text), the
 logo, alignment, its own background color and up to three buttons: open a website, start a program,
@@ -444,7 +467,7 @@ In the image it is `/usr/bin/eduka-welcome` (Python + GTK 3; python3-gi and gir1
 installed), its design and pictures in `/usr/share/eduka-welcome/`, a menu entry and an autostart
 entry. CLI: `distroforge welcome show|export|import|apply|remove`.
 
-### 12. Installer (Calamares)
+### 10. Installer (Calamares)
 **Slides** have a title, text (**bold**, *italic*, links), a picture and colors, or are a picture only.
 **Check the installer** (also in Check & Build and `distroforge calamares check`): settings.conf
 and every module configuration are valid YAML; the branding folder exists and its `componentName` is
@@ -480,7 +503,7 @@ in `/usr/share/calamares/modules` are copied to `/etc` first.
 
 Test the installer by booting the ISO in QEMU (Build & Test).
 
-### 13. Advanced → Terminal & Live
+### 11. Advanced → Terminal & Live
 * **Live edit session** – starts the image's desktop in a Xephyr window.
   Modes: */etc/skel* (changes become defaults for all users, including the
   live user), *root*, or *sandbox* (temporary, discarded). *Run in session*
@@ -495,7 +518,7 @@ Test the installer by booting the ISO in QEMU (Build & Test).
   window** (installed on request, runs as root in the image), or use the
   terminal. The Build page offers the same right before building.
 
-### 13. Advanced → Package Workshop
+### 11. Advanced → Package Workshop
 Opens an installed package (dpkg-repack style) into `PROJECT/workshop/<pkg>/`:
 all its files plus `DEBIAN/control`, `conffiles` and maintainer scripts.
 Edit, then *Build and install*: the version becomes `<version>+<id>N`, the
@@ -505,8 +528,8 @@ the image. *Restore Debian version* unholds and reinstalls the original.
 Prefer Distro Branding for identity changes: it needs no hold, so security
 updates keep flowing.
 
-### 14. Review & Apply
-Changes chosen in steps 2 to 13 (install a desktop, packages, a theme, the
+### 12. Review & Apply
+Changes chosen in steps 2 to 11 (install a desktop, packages, a theme, the
 sounds, the welcome screen, the installer settings, ...) do not change the
 image at once: they wait in the Review & Apply list. The green button in the
 header shows how many are waiting; closing the window with waiting changes asks
@@ -525,7 +548,7 @@ Settings → *Apply every change at once (expert mode)* turns the list off. Thin
 that only read the image (lists, previews, checks) and the command line always
 run at once.
 
-### 15. Check & Build
+### 13. Check & Build
 **Check before building** (also `distroforge check [--deep] [--fix]`):
 
 | Check | Problem when |
@@ -596,15 +619,26 @@ Boot modes:
 Test in QEMU with BIOS, UEFI, or UEFI + Secure Boot (OVMF), with KVM when
 available and an optional virtual disk to test installation.
 
-### Settings
+### Keep only the ISO and the project folder
+A project is one folder with a sub-folder for each part (README.txt in it explains them): `rootfs/`
+(the system, also editable by hand), `iso/` (boot menus and the files around the system), `hooks/`,
+`workshop/`, `branding/`, and `boot/`, `cache/`, `logs/`, `output/` made by DistroForge. Check & Build
+lists them under *Project folder*.
+
+When the ISO is finished, **Keep only the ISO...** (Check & Build), closing the window after a build,
+or `distroforge clean --keep-iso` deletes the project but the ISO images and their checksum files, which
+move into the project folder. Everything is unmounted first and nothing is deleted while anything is
+still mounted inside the project; only what DistroForge made is deleted, files of your own stay. The
+project cannot be opened again afterwards.
+
+### Settings & About → Settings
 Global settings (free navigation, apply every change at once, projects folder,
 mirror, ...), host tool check with *Install missing packages*, the last errors,
-*Create bug report*.
+*Save a bug report file* and *Send feedback*.
 
-### About
+### Settings & About → About
 Version, license (GPL-3.0-or-later), credits, the license of every component
-DistroForge uses, trademark notes, the PDF user guides (Indonesian and English)
-and the donation links (PayPal, Facebook). `distroforge about` prints the same
+DistroForge uses, trademark notes, the PDF user guide and the donation links (PayPal, Facebook). `distroforge about` prints the same
 on the command line. Use a name and logo of your own for your distribution: the
 check warns when the name uses a trademark such as Debian or Ubuntu.
 
@@ -614,10 +648,21 @@ Every run (GUI and CLI) writes to `/tmp/distroforge/`:
 
 * `distroforge.log` — everything, including every command (rotated at 5 MiB)
 * `errors.log` — errors and unhandled exceptions with full tracebacks
-* `bug-report-*.tar.gz` — created by Settings → Create bug report (logs,
+* `bug-report-*.tar.gz` — created by Settings → Save a bug report file (logs,
   `project.json`, project logs, versions)
+* `outbox/` — feedback reports that wait to be sent; `outbox/sent/` the ones that went out
 
 The project's own log is `PROJECT/logs/distroforge.log`.
+
+## Send feedback
+
+*Send feedback* (sidebar, Settings, and the *Send a report...* button of every error message) opens a
+dialog for a bug, an error, an idea, a question or something else: a title, a message, optionally your
+e-mail address for an answer, files (screenshots, logs, anything up to 8 MB together, also a screenshot
+of the main window) and, if you agree, the logs of DistroForge and the settings of the open project. The
+report is packed into one `.tar.gz` and sent over HTTPS through a form-to-mail service to the
+developers; nothing else is collected. Without internet it stays in `/tmp/distroforge/outbox/` and is
+sent the next time DistroForge starts. `[feedback] url` in the settings file can point it elsewhere.
 
 ## Command line
 
@@ -634,7 +679,8 @@ recipe file. Actions: `sources`, `repo`, `apt-install`, `apt-remove`,
 `hook`, `command`, `boot`, `branding`, `themes`, `session-type`, `compositor`,
 `sddm-theme`, `language`, `users`, `assets`, `calamares`, `kernel`, `boot-file`, `replace-app`, `sounds`, `welcome`, `grub-theme`, `boot-loader`, `build`.
 `desktop` takes `"edition": "mini" | "compact" | "full" | "full_apps"`;
-`replace-app` takes `role`, `package` and `remove`. Examples:
+`replace-app` takes `role`, `package` and `remove`. `boot-loader` takes `id` (grub, grub-secureboot, systemd-boot, refind, efistub, syslinux) and
+optional `settings`, e.g. `{"action": "boot-loader", "id": "syslinux", "settings": {"TIMEOUT": 3}}`. Examples:
 `examples/my-distro.json` (Xfce, a general distribution) and
 `examples/school-edition.json` (Eduka-Desktop school edition).
 `recipe export` writes a recipe from the current project.

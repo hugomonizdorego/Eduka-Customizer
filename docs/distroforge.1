@@ -1,4 +1,4 @@
-.TH DISTROFORGE 1 "October 2026" "DistroForge 0.17 Alpha" "DistroForge"
+.TH DISTROFORGE 1 "October 2026" "DistroForge 0.9 Beta" "DistroForge"
 .SH NAME
 distroforge \- ISO builder and customizer for Debian-based distributions
 .SH SYNOPSIS
@@ -123,8 +123,10 @@ Welcome screen with four pages shown after login (design as JSON).
 .B grub-theme list|check|add|use|remove [THEME] [\-\-installed]
 Third-party GRUB themes; incompatible themes are refused with the reasons.
 .TP
-.B boot-loader list|use grub|grub-secureboot|systemd-boot|refind
-The boot loader Calamares installs on computers.
+.B boot-loader list|show|set|install|remove|use [ID] [KEY=VALUE...]
+Boot loaders of installed systems: grub, grub-secureboot, systemd-boot, refind, efistub,
+syslinux. \fBuse\fR installs it into the image and makes the Calamares installer put it on
+computers; \fBset\fR changes its settings (for example TIMEOUT=3 CMDLINE="quiet splash").
 .TP
 .B calamares check
 A careful check of the Calamares installer against the image.
@@ -145,8 +147,9 @@ Boot the image in QEMU.
 .B recipe apply|export [FILE]
 Apply or export a JSON recipe (reproducible builds).
 .TP
-.B clean [\-\-unmount\-only] [\-\-all]
-Unmount everything and remove caches (or the whole tree).
+.B clean [\-\-unmount\-only] [\-\-all] [\-\-keep\-iso [\-y]]
+Unmount everything and remove caches (or the whole tree). \-\-keep\-iso deletes everything of a
+finished project but its ISO images and their checksums.
 .TP
 .B doctor [\-\-fix]
 Check (and install) the host tools.
@@ -171,7 +174,10 @@ Project state and history.
 Developer logs: distroforge.log, errors.log and bug reports.
 .TP
 .I /usr/share/distroforge/guide/DistroForge-Guide.pdf
-User guide with pictures (DistroForge-Panduan.pdf in Indonesian).
+User guide with pictures.
+.TP
+.I /etc/distroforge-bootloader.conf, /usr/sbin/distroforge-bootloader
+In the image: the boot loader the installer sets up, and the program that does it.
 .SH EXAMPLES
 .nf
 sudo distroforge new ~/mylinux \-\-iso debian-live-13.1.0-amd64-standard.iso
@@ -185,7 +191,7 @@ distroforge -p ~/mylinux test \-\-firmware uefi
 .SH NOTES
 The graphical interface collects changes in step 14, Review & Apply, and applies
 them together; the commands apply each change at once. DistroForge was called
-Eduka-Customizer before 0.17; the commands \fBeduka-customizer\fR and
+Eduka-Customizer until 0.17 Alpha; the commands \fBeduka-customizer\fR and
 \fBeduka-customizer-pkexec\fR still work.
 .SH LICENSE
 GNU General Public License version 3 or later; there is NO WARRANTY. Debian is a

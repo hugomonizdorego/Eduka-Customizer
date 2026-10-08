@@ -21,7 +21,9 @@ COMPONENTS = [
     ("squashfs-tools", "compressing the live system", "GPL-2.0-or-later", "github.com/plougher/squashfs-tools"),
     ("xorriso (libisoburn)", "writing the ISO image", "GPL-3.0-or-later", "gnu.org/software/xorriso"),
     ("mtools, dosfstools", "the UEFI boot image", "GPL-3.0-or-later", "gnu.org/software/mtools"),
-    ("SYSLINUX / ISOLINUX", "BIOS boot menu of the ISO", "GPL-2.0-or-later", "syslinux.org"),
+    ("SYSLINUX / ISOLINUX / EXTLINUX", "BIOS boot menu of the ISO, optional boot loader", "GPL-2.0-or-later",
+     "syslinux.org"),
+    ("efibootmgr", "UEFI boot entries (EFISTUB)", "GPL-2.0-or-later", "github.com/rhboot/efibootmgr"),
     ("GNU GRUB", "UEFI boot menu, installed systems", "GPL-3.0-or-later", "gnu.org/software/grub"),
     ("shim", "Secure Boot", "BSD-2-Clause", "github.com/rhboot/shim"),
     ("systemd-boot", "optional boot loader", "LGPL-2.1-or-later", "systemd.io"),
@@ -37,6 +39,8 @@ COMPONENTS = [
     ("Xephyr (X.Org)", "live session in a window", "MIT / X11", "x.org"),
     ("GTK 3, PyGObject", "the welcome screen in the ISO", "LGPL-2.1-or-later", "gtk.org"),
     ("freedesktop sound theme", "standard event sounds", "GPL-2.0-or-later / CC-BY-SA", "freedesktop.org"),
+    ("FormSubmit", "web service that passes feedback on by e-mail", "service (formsubmit.co terms)",
+     "formsubmit.co"),
     ("Eduka-Desktop", "optional desktop (built from its repository)", "see its repository",
      "github.com/hugomonizdorego/Eduka-Desktop"),
 ]
@@ -92,7 +96,7 @@ class AboutPage(Page):
         info = label("<span style='font-size:16pt; font-weight:800'>{}</span> {}<br>"
                      "Free and open source software, licensed under the GNU General Public License "
                      "version 3 or later ({}).<br>"
-                     "Made by {} and contributors. {} was called {} before version 0.17.<br>"
+                     "Made by {} and contributors. {} was called {} until version 0.17 Alpha.<br>"
                      "Project page: {}".format(APP_NAME, VERSION_LABEL, LICENSE, AUTHOR, APP_NAME, OLD_NAME,
                                                HOMEPAGE))
         info.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)

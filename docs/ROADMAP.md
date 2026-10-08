@@ -1,6 +1,6 @@
 # Roadmap & rekomendasi
 
-Status: **0.17 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
+Status: **0.9 Beta** (Oktober 2026), menuju 1.0. Daftar ini adalah usulan langkah
 berikutnya untuk pengembang DistroForge (dulu Eduka-Customizer), diurutkan menurut manfaatnya.
 
 ## Selesai di 0.11 Alpha
@@ -42,7 +42,22 @@ peringatan palsu `grub-install` dihapus, langkah Review & Apply dengan daftar ce
 ukuran ISO (100 MB sampai 4,4 GB, kompresi lossless), halaman About (lisensi komponen, merek
 dagang, donasi), panduan PDF Indonesia dan Inggris, semua tulisan dirapikan.
 
-## Menuju 0.18 Alpha
+## Selesai di 0.9 Beta
+Bootloader sistem terpasang (GRUB 2, GRUB Secure Boot, systemd-boot, rEFInd, EFISTUB,
+Syslinux/EXTLINUX) dengan pengaturan masing-masing dan langkah installer sendiri yang kompatibel
+dengan Calamares; menu digabung menjadi 13 langkah; simpan hanya ISO setelah build; kirim masukan
+dengan lampiran; warna baru; perbaikan `runuser`; panduan PDF bahasa Inggris.
+
+## Menuju 1.0
+
+1. **Uji instalasi penuh dengan Calamares** di QEMU untuk setiap bootloader (BIOS dan UEFI,
+   ext4/btrfs, dengan dan tanpa enkripsi). Skrip pemasang sudah diuji dengan disk virtual; uji
+   end-to-end dengan ISO asli belum.
+2. **Aktivasi layanan kirim masukan**: kiriman pertama ke FormSubmit meminta konfirmasi lewat email
+   developer satu kali; setelah itu alias acak bisa dipasang di `[feedback] url`.
+3. **Terjemahan GUI** (Bahasa Indonesia, Tetun, Português) dengan Qt Linguist.
+
+## Usulan lain
 
 1. **Uji penuh dengan ISO Debian 13 live asli** (LXQt dan standard) di
    perangkat keras nyata, BIOS dan UEFI, termasuk Secure Boot. Unit test dan

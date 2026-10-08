@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.9.0 Beta — 2026-10-08
+
+The first beta on the way to 1.0. The Debian version is `1:0.9.0~beta`: the epoch keeps upgrades from
+0.17 Alpha working.
+
+### New
+* **Boot loaders of installed systems** (Kernel & Boot → Boot Loader, CLI `boot-loader
+  list|show|set|install|remove|use`, recipe `boot-loader` with `settings`): GRUB 2, GRUB 2 with Secure
+  Boot, systemd-boot, rEFInd, EFISTUB and Syslinux/EXTLINUX, each with its own settings. GRUB,
+  systemd-boot and rEFInd are installed by Calamares' bootloader module; EFISTUB and Syslinux by
+  `shellprocess@distroforge-bootloader`, which runs `/usr/sbin/distroforge-bootloader` in the new
+  system and adds the settings of systemd-boot and rEFInd. Fallbacks (Syslinux on UEFI → EFISTUB or
+  GRUB, EFISTUB on BIOS → Syslinux or GRUB, encrypted or unsupported /boot → GRUB) keep installations
+  from failing; kernel and initramfs hooks keep EFISTUB and Syslinux up to date. Removing a boot loader
+  never removes the one in use or unrelated packages. Tested with QEMU (SeaBIOS: MBR and GPT; OVMF).
+* **Keep only the ISO** after the build (closing the window, Check & Build, `clean --keep-iso`): the
+  build folders are deleted, the ISO and its checksums stay; never while something is mounted, never
+  files DistroForge did not make. README.txt in every project folder.
+* **Send feedback**: bugs, errors, ideas and questions with files, screenshots and (optionally) logs,
+  sent over HTTPS to the developers; kept and sent later without internet. Error messages offer it.
+
+### Changed
+* 13 steps: System Sounds and Welcome Screen are tabs of Look & Feel; GRUB Design is part of Boot Menu;
+  the GRUB settings of installed systems moved from Kernel to Boot Loader; Settings and About share one
+  menu. Review & Apply shows the tab of each change.
+* New slate and blue colors in light and dark mode.
+* One user guide, in English.
+
+### Fixed
+* Opening links, the user guide and folders failed with *No such file or directory: 'runuser'* when
+  started through pkexec (runuser is in /usr/sbin); every opener now uses full paths and falls back.
+* The boot loader table no longer sorts away from its descriptions.
+
 ## 0.17.0 Alpha — 2026-10-08
 
 ### Changed
