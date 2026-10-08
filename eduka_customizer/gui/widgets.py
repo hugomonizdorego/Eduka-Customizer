@@ -49,6 +49,9 @@ def hbox(*widgets, stretch_at=None, margins=0, spacing=8):
             lay.addStretch(1)
         if item is None:
             lay.addStretch(1)
+        elif isinstance(item, QLabel) and item.wordWrap():
+            # A wrapping text next to buttons takes the free room instead of a narrow column.
+            lay.addWidget(item, 3)
         elif isinstance(item, QWidget):
             lay.addWidget(item)
         else:

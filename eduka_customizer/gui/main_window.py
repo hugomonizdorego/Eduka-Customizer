@@ -228,9 +228,9 @@ class MainWindow(QMainWindow):
 
     def _header(self):
         h = QFrame()
-        h.setObjectName("statusBar")
+        h.setObjectName("headerBar")
         lay = QHBoxLayout(h)
-        lay.setContentsMargins(28, 10, 20, 10)
+        lay.setContentsMargins(28, 12, 20, 12)
         self.project_label = QLabel("No project open")
         f = QFont()
         f.setBold(True)
@@ -240,6 +240,18 @@ class MainWindow(QMainWindow):
         self.distro_badge.setObjectName("badge")
         lay.addWidget(self.distro_badge)
         lay.addStretch(1)
+        # Where you are in the build: "Step 6 of 14 · Desktop" and a thin progress bar.
+        box = QVBoxLayout()
+        box.setSpacing(4)
+        self.step_label = QLabel("")
+        self.step_label.setObjectName("stepLabel")
+        box.addWidget(self.step_label)
+        self.step_progress = QProgressBar()
+        self.step_progress.setObjectName("stepProgress")
+        self.step_progress.setTextVisible(False)
+        self.step_progress.setFixedWidth(220)
+        box.addWidget(self.step_progress)
+        lay.addLayout(box)
         self.mount_badge = QLabel("")
         self.mount_badge.setObjectName("badgeWarn")
         self.mount_badge.setVisible(False)
@@ -376,10 +388,28 @@ class MainWindow(QMainWindow):
             self.nav.blockSignals(False)
             return
         self.stack.setCurrentIndex(row)
+        self._update_step_header()
         try:
             sec.refresh()
         except Exception as e:  # a broken page must not take the window down
             get_logger().error("Could not refresh %s: %s", sec.title, e)
+
+    def _update_step_header(self):
+        if not hasattr(self, "step_label"):
+            return
+        sec = self.stack.currentWidget()
+        total = len(self.steps)
+        done = 0
+        if self.project:
+            for st in self.steps:
+                if (self.project.has_rootfs() if st.key == "start" else self.project.step_done(st.key)):
+                    done += 1
+        self.step_progress.setRange(0, max(1, total))
+        self.step_progress.setValue(done)
+        if sec is not None and getattr(sec, "step", 0):
+            self.step_label.setText("Step {} of {} · {}  —  {} done".format(sec.step, total, sec.title, done))
+        elif sec is not None:
+            self.step_label.setText("{}  —  {} of {} steps done".format(sec.title, done, total))
 
     def go_section(self, sec):
         self.nav.setCurrentRow(self.sections.index(sec))
@@ -425,8 +455,13 @@ class MainWindow(QMainWindow):
                 if sec.next_btn is not None:
                     sec.next_btn.setEnabled(bool(self.project and self.project.has_rootfs()))
                 sec.state.setText("✔ done" if done else "")
+        self._update_step_header()
         if self.project:
-            self.project_label.setText("{}  —  {}".format(self.project.state.get("name"), self.project.path))
+            path = str(self.project.path)
+            short = path if len(path) <= 48 else "…" + path[-46:]
+            self.project_label.setText("{}  —  {}".format(self.project.state.get("name") or
+                                                         self.project.display_name(), short))
+            self.project_label.setToolTip(path)
             d = self.project.distro
             self.distro_badge.setText(d.summary() if d.id else "empty project")
             self.distro_badge.setVisible(True)

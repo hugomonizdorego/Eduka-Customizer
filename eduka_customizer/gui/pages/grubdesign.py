@@ -28,6 +28,7 @@ class GrubDesignPage(Page):
         drop.dropped.connect(self.add_themes)
         c.add(drop)
         self.themes = combo([])
+        self.themes.setMinimumWidth(220)
         self.theme_installed = QCheckBox("Also for installed systems (GRUB_THEME)")
         self.theme_installed.setChecked(True)
         c.add(hbox(label("Theme:"), self.themes, self.theme_installed, None,

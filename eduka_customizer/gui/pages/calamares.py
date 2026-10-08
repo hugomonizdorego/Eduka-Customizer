@@ -106,7 +106,7 @@ class CalamaresPage(Page):
         self.check_table = table(["Result", "File", "Details"])
         self.check_table.setMinimumHeight(200)
         c.add(self.check_table)
-        self.check_state = label("", "muted")
+        self.check_state = label("", "muted", wrap=False)
         c.add(hbox(self.check_state, None, button("Check the installer", self.run_check, "primary")))
 
         # Users ---------------------------------------------------------------------------

@@ -197,11 +197,15 @@ class WelcomePage(Page):
                                                       ("title", "#00a879"), ("accent", "#00a879"),
                                                       ("button_text", "#ffffff"))}
         f.addRow("Colors:", hbox(label("Background"), self.colors["background"], label("Text"), self.colors["text"],
-                                 label("Titles"), self.colors["title"], label("Buttons"), self.colors["accent"],
-                                 label("Button text"), self.colors["button_text"], None))
+                                 label("Titles"), self.colors["title"], None))
+        f.addRow("", hbox(label("Buttons"), self.colors["accent"], label("Button text"), self.colors["button_text"],
+                          None))
         self.labels = {k: QLineEdit() for k in ("startup_label", "back_label", "next_label", "close_label")}
-        f.addRow("Texts:", hbox(self.labels["startup_label"], self.labels["back_label"], self.labels["next_label"],
-                                self.labels["close_label"]))
+        for k, w in self.labels.items():
+            w.setPlaceholderText({"startup_label": "Show this at startup", "back_label": "Back",
+                                  "next_label": "Next", "close_label": "Close"}[k])
+        f.addRow("Texts:", hbox(self.labels["startup_label"], self.labels["back_label"]))
+        f.addRow("", hbox(self.labels["next_label"], self.labels["close_label"]))
 
         c = self.card("Pages", "Design each page; the preview shows the page you are editing.")
         self.tabs = QTabWidget()
