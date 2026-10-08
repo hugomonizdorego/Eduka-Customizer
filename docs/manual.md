@@ -1,7 +1,10 @@
-# Eduka-Customizer manual
+# DistroForge manual
 
-Version 0.16 Alpha. Eduka-Customizer builds live ISO images of any Debian-based
-distribution; nothing is preset for a particular distribution.
+Version 0.17 Alpha. DistroForge builds live ISO images of any Debian-based
+distribution; nothing is preset for a particular distribution. It was called
+Eduka-Customizer before 0.17. User guides with pictures: `docs/DistroForge-Panduan.pdf`
+(Indonesian) and `docs/DistroForge-Guide.pdf` (English), installed in
+`/usr/share/distroforge/guide/`.
 
 ## Concepts
 
@@ -16,10 +19,10 @@ hooks/         your scripts, run inside the image in name order
 cache/         Eduka-Desktop source, EFI work files, QEMU disks
 downloads/     Debian ISOs downloaded by the GUI
 output/        built ISO images and checksum files
-logs/          eduka-customizer.log, live-session.log, qemu.log
+logs/          distroforge.log, live-session.log, qemu.log
 ```
 
-Only one Eduka-Customizer instance can use a project at a time.
+Only one DistroForge instance can use a project at a time.
 
 **Supported systems.** Images: Debian stable, testing and sid and every Debian
 derivative (`ID_LIKE=debian`) such as LMDE. Ubuntu-based systems are refused.
@@ -28,20 +31,20 @@ Build computer: Debian, a Debian derivative, Ubuntu or an Ubuntu-based system.
 The check reads `/etc/os-release`, `/etc/debian_version` and the APT sources
 of the image. Ubuntu and every Ubuntu derivative are refused. Debian oldstable is refused unless
 `allow_oldstable = yes` is set. Debian codenames live in
-`/etc/eduka-customizer/eduka-customizer.conf` (or the Settings page): update
+`/etc/distroforge/distroforge.conf` (or the Settings page): update
 them when Debian makes a new release.
 
-**Chroot.** Commands run inside the image with `chroot`. Eduka-Customizer
+**Chroot.** Commands run inside the image with `chroot`. DistroForge
 mounts `/proc`, `/sys`, `/dev` (recursive bind, made a *slave* so nothing
 propagates back to your computer) and a private `/run`, copies your DNS
 settings, and blocks services from starting (`policy-rc.d`). Mounts are
 shared between the GUI, terminals and the CLI and are removed when the last
 user leaves. *Terminal & Live → Unmount everything* or
-`eduka-customizer clean --unmount-only` recovers after a crash.
+`distroforge clean --unmount-only` recovers after a crash.
 
 ## Pages of the GUI
 
-The sidebar lists 14 numbered steps in the order of the work, from the source
+The sidebar lists 15 numbered steps in the order of the work, from the source
 of the image to the finished ISO. Pages that are used together share one step
 as tabs:
 
@@ -60,9 +63,10 @@ as tabs:
 | 11. Welcome Screen | |
 | 12. Installer | Calamares |
 | 13. Advanced | Terminal & Live, Package Workshop |
-| 14. Check & Build | |
+| 14. Review & Apply | |
+| 15. Check & Build | |
 
-The header shows *Step N of 14* and how many steps are done.
+The header shows *Step N of 15* and how many steps are done.
 
 **Step by step.** A step opens when the step before it is done: press
 **Done — next step** at the bottom (✔ marks the done steps; *Back* goes to the
@@ -122,7 +126,7 @@ Branding, Finish. Every answer becomes a recipe step; the last page shows the
 recipe. Finish creates or opens the project, extracts the ISO or bootstraps
 Debian, runs every step and (optionally) builds the ISO. The recipe is saved as
 `PROJECT/recipe-wizard.json` so the build can be repeated with
-`eduka-customizer recipe apply`.
+`distroforge recipe apply`.
 
 ### 2. Repositories
 * Suite presets write `/etc/apt/sources.list.d/debian.sources` (deb822)
@@ -223,7 +227,7 @@ Tetun has no glibc locale yet; for Timor-Leste use `pt_PT.UTF-8` and
 
 ### 6. Desktop
 * Install one of the desktops or window managers from
-  `/usr/share/eduka-customizer/desktops.json` (edit it to add more). Only what
+  `/usr/share/distroforge/desktops.json` (edit it to add more). Only what
   Debian ships is listed: GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, LXDE,
   Budgie, GNOME Flashback, Enlightenment, Eduka-Desktop, and the window
   managers Openbox, i3, Fluxbox, IceWM, awesome, JWM, herbstluftwm, bspwm, dwm,
@@ -306,8 +310,8 @@ own `/etc/xdg/*-mimeapps.list`), and for its Debian alternatives
 ones. When removing a program would take a metapackage (`task-gnome-desktop`,
 `kde-standard`, ...) with it, everything that metapackage installed is marked
 as manually installed first, so `autoremove` never removes the desktop. The
-roles live in `/usr/share/eduka-customizer/apps.json`. CLI:
-`eduka-customizer apps roles|status|replace ROLE PACKAGE [--remove-old]`.
+roles live in `/usr/share/distroforge/apps.json`. CLI:
+`distroforge apps roles|status|replace ROLE PACKAGE [--remove-old]`.
 
 ### 8. Kernel & Boot → Kernel
 **Third-party repository terminal**: commands run as root inside the image (for example the key and
@@ -346,7 +350,7 @@ the others are removed with their package lists (*Keep or remove now*, at the la
   version is kept in `PROJECT/boot-originals/` for *Revert to original*.
 * **Save and apply to the ISO now** rebuilds the ISO in seconds with the
   compressed system of the last build (also *Rebuild boot files only* on
-  Build & Test, `eduka-customizer bootmenu apply`).
+  Build & Test, `distroforge bootmenu apply`).
 
 ### 8. Kernel & Boot → GRUB Design
 * **GRUB theme**: drop a theme folder or archive (with `theme.txt`). It is checked first and refused
@@ -366,7 +370,7 @@ the others are removed with their package lists (*Keep or remove now*, at the la
 
 ### 9. Look & Feel → Themes & Icons
 Only what fits the desktop chosen in step 6 is listed (all of it while none is chosen): theme packs
-from `/usr/share/eduka-customizer/themes.json` (for all desktops, GTK desktops and window managers,
+from `/usr/share/distroforge/themes.json` (for all desktops, GTK desktops and window managers,
 Qt desktops, or one desktop), the GTK theme (for GTK applications on KDE/LXQt), the LXQt theme, and
 the window theme of Xfwm4, Openbox, Cinnamon, Marco/Metacity, the Plasma global theme and Kvantum.
 * **Add your own**: drop folders, archives or files. Recognized and placed:
@@ -425,7 +429,7 @@ Drop a folder: files called `boot`, `login`/`startup`, `logout`, `shutdown`, `er
 exist in the image), GTK `settings.ini`, Xfce xsettings and KDE `plasmarc`. Desktops play the event
 sounds themselves. Boot and shutdown sounds are played by `eduka-system-sounds.service` (alsa-utils
 and vorbis-tools are installed for it), the login sound by an autostart entry (Cinnamon plays its own).
-CLI: `eduka-customizer sounds events|themes|show|set|add|clear|apply|remove`.
+CLI: `distroforge sounds events|themes|show|set|add|clear|apply|remove`.
 
 ### 11. Welcome Screen
 Four pages shown after login. Each page has a title, text (**bold**, *italic*, `[links](https://...)`;
@@ -438,11 +442,11 @@ welcome screen* runs it on this computer.
 
 In the image it is `/usr/bin/eduka-welcome` (Python + GTK 3; python3-gi and gir1.2-gtk-3.0 are
 installed), its design and pictures in `/usr/share/eduka-welcome/`, a menu entry and an autostart
-entry. CLI: `eduka-customizer welcome show|export|import|apply|remove`.
+entry. CLI: `distroforge welcome show|export|import|apply|remove`.
 
 ### 12. Installer (Calamares)
 **Slides** have a title, text (**bold**, *italic*, links), a picture and colors, or are a picture only.
-**Check the installer** (also in Check & Build and `eduka-customizer calamares check`): settings.conf
+**Check the installer** (also in Check & Build and `distroforge calamares check`): settings.conf
 and every module configuration are valid YAML; the branding folder exists and its `componentName` is
 the folder name; its images and slideshow exist and the QML is complete; every module of the sequence
 is installed and every instance has its configuration; unpackfs copies live-boot's
@@ -485,7 +489,7 @@ Test the installer by booting the ISO in QEMU (Build & Test).
   icons, themes, panels and desktop icons visually. When you stop, caches are removed and files
   that mention `/etc/skel` are listed for review.
 * **Terminal** – opens your terminal emulator with a root shell inside the
-  image (`eduka-customizer shell`); or run one command.
+  image (`distroforge shell`); or run one command.
 * **Hooks** – scripts in `PROJECT/hooks`, run as root inside the image.
 * **Install applications** – type package names (APT), open **Synaptic in a
   window** (installed on request, runs as root in the image), or use the
@@ -501,8 +505,28 @@ the image. *Restore Debian version* unholds and reinstalls the original.
 Prefer Distro Branding for identity changes: it needs no hold, so security
 updates keep flowing.
 
-### 14. Check & Build
-**Check before building** (also `eduka-customizer check [--deep]`):
+### 14. Review & Apply
+Changes chosen in steps 2 to 13 (install a desktop, packages, a theme, the
+sounds, the welcome screen, the installer settings, ...) do not change the
+image at once: they wait in the Review & Apply list. The green button in the
+header shows how many are waiting; closing the window with waiting changes asks
+first.
+
+* Tick every change you are sure about. *Go back and change it* opens the step
+  of the selected change; *Remove from the list* drops it; *Up*/*Down* change
+  the order.
+* *Apply all changes* is enabled when every change is ticked. The changes run in
+  the list order; when one fails, the ones before it are applied and leave the
+  list, the rest keep waiting.
+* *Your distribution so far* sums up the name, live user, language, desktop,
+  purpose, default applications, sounds, welcome screen and boot loader.
+
+Settings → *Apply every change at once (expert mode)* turns the list off. Things
+that only read the image (lists, previews, checks) and the command line always
+run at once.
+
+### 15. Check & Build
+**Check before building** (also `distroforge check [--deep] [--fix]`):
 
 | Check | Problem when |
 |---|---|
@@ -520,9 +544,33 @@ updates keep flowing.
 | Free disk space | less than the expected ISO size + 1 GiB |
 | ISO size | information; warning above 4 GiB |
 
-Double-click a row to open the page that fixes it. *Build ISO image* runs the
-checks first and stops on problems (*Build anyway* overrides it). The build
-itself then:
+The **How to fix** column says what happens: *Automatic: ...* is fixed by
+**Fix automatically** (install missing packages or host tools, `dpkg
+--configure -a` and `apt-get -f install`, remove a leftover `policy-rc.d`,
+release mounts, correct Calamares settings such as the branding component,
+display managers, slideshow or time zone; then the checks run again); *By hand
+(double-click)* opens the page that fixes it. *Build ISO image* runs the checks
+first; with problems left it asks **Fix automatically**, **I will fix it
+myself** or **Build anyway**.
+
+Calamares installs GRUB with `bootloader-config` or its own commands on many
+Debian live ISOs (from `grub-*.deb` files in the ISO pool): then a missing
+`/usr/sbin/grub-install` in the image is correct and not reported.
+
+**ISO size.** Choose a target: *As small as possible*, 100 MB, 300 MB, 500 MB,
+700 MB (CD), 1 GB, 2 GB, 4.4 GB (DVD) or *No limit*. *Estimate* compresses an
+evenly spread 16 MiB sample of the system with xz and computes the ISO size of
+each method (lz4, zstd 3, zstd 15, zstd 19, xz); the fastest method that
+reaches the target is chosen (`build --target-size 500` on the command line).
+Squashfs compression is lossless: every file comes back exactly as it was, so a
+smaller ISO is never a damaged ISO; it only takes longer to build. When even xz
+is too big, the size savers are suggested with what each saves: documentation
+(`/usr/share/doc`, copyright and license files stay), manual and info pages,
+translations of unused languages, APT lists and old kernels. Removing
+applications helps most. The estimate is an estimate: the build log says
+whether the target was met.
+
+The build itself then:
 
 1. Checks the system again (Debian-based only).
 2. Installs live-boot/live-config and a kernel when missing.
@@ -549,24 +597,33 @@ Test in QEMU with BIOS, UEFI, or UEFI + Secure Boot (OVMF), with KVM when
 available and an optional virtual disk to test installation.
 
 ### Settings
-Global settings, host tool check with *Install missing packages*, the last
-errors, *Create bug report*, About.
+Global settings (free navigation, apply every change at once, projects folder,
+mirror, ...), host tool check with *Install missing packages*, the last errors,
+*Create bug report*.
+
+### About
+Version, license (GPL-3.0-or-later), credits, the license of every component
+DistroForge uses, trademark notes, the PDF user guides (Indonesian and English)
+and the donation links (PayPal, Facebook). `distroforge about` prints the same
+on the command line. Use a name and logo of your own for your distribution: the
+check warns when the name uses a trademark such as Debian or Ubuntu.
 
 ## Logs for developers
 
-Every run (GUI and CLI) writes to `/tmp/eduka-customizer/`:
+Every run (GUI and CLI) writes to `/tmp/distroforge/`:
 
-* `eduka-customizer.log` — everything, including every command (rotated at 5 MiB)
+* `distroforge.log` — everything, including every command (rotated at 5 MiB)
 * `errors.log` — errors and unhandled exceptions with full tracebacks
 * `bug-report-*.tar.gz` — created by Settings → Create bug report (logs,
   `project.json`, project logs, versions)
 
-The project's own log is `PROJECT/logs/eduka-customizer.log`.
+The project's own log is `PROJECT/logs/distroforge.log`.
 
 ## Command line
 
-Run `eduka-customizer --help` and `eduka-customizer COMMAND --help`. See also
-`man eduka-customizer`.
+Run `distroforge --help` (the commands in the order of the steps) and
+`distroforge COMMAND --help`. The old command `eduka-customizer` still works. See also
+`man distroforge`.
 
 ## Recipes
 
@@ -584,11 +641,11 @@ recipe file. Actions: `sources`, `repo`, `apt-install`, `apt-remove`,
 
 ## Troubleshooting
 
-* *"Another Eduka-Customizer instance is using ..."* – close the other window
+* *"Another DistroForge instance is using ..."* – close the other window
   or remove `PROJECT/.lock` if no instance runs.
-* *Busy mounts after a crash* – `sudo eduka-customizer -p PROJECT clean --unmount-only`.
+* *Busy mounts after a crash* – `sudo distroforge -p PROJECT clean --unmount-only`.
 * *The ISO stops in an `(initramfs)` shell* – live-boot is missing or the
   initramfs is old: build again with *Initramfs: Always rebuild*.
 * *GNOME does not start in the live edit window* – GNOME needs systemd user
   services; test GNOME images in QEMU instead.
-* Logs: `PROJECT/logs/eduka-customizer.log`.
+* Logs: `PROJECT/logs/distroforge.log`.

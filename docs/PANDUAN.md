@@ -1,9 +1,15 @@
-# Panduan singkat Eduka-Customizer 0.16 Alpha
+# Panduan singkat DistroForge 0.17 Alpha
 
-Eduka-Customizer adalah pembangun ISO untuk **semua distribusi berbasis
+> Panduan lengkap bergambar (PDF): [DistroForge-Panduan.pdf](DistroForge-Panduan.pdf)
+> (English: [DistroForge-Guide.pdf](DistroForge-Guide.pdf)). Setelah dipasang:
+> `/usr/share/distroforge/guide/` atau tombol *User guide* di halaman **About**.
+
+DistroForge adalah pembangun ISO untuk **semua distribusi berbasis
 Debian**: Debian stable, testing, sid dan turunan Debian seperti **LMDE**
-(ISO Ubuntu dan turunannya ditolak). Tidak ada lagi pengaturan bawaan untuk
-Edukasaun OS — nama, ID, host name dan homepage kosong sampai Anda mengisinya
+, MX Linux, antiX, Kali Linux, Deepin (ISO Ubuntu dan turunannya ditolak).
+Sebelum versi 0.17 namanya **Eduka-Customizer**; perintah lama
+`eduka-customizer` tetap bekerja. Tidak ada pengaturan bawaan untuk distribusi
+tertentu — nama, ID, host name dan homepage kosong sampai Anda mengisinya
 (selama kosong, nama dari `os-release` image yang dipakai). **Eduka-Desktop**
 tetap tersedia sebagai salah satu desktop. Aplikasinya sendiri bisa dipasang
 di Debian, turunan Debian, **Ubuntu dan turunannya**.
@@ -21,7 +27,7 @@ langsung dibangun, dan semua langkah di sidebar terbuka untuk penyesuaian.
 Paket siap pakai untuk dicoba (Debian 13, Ubuntu 24.04 dan turunannya):
 
 ```sh
-sudo apt install ./release/eduka-customizer_0.16.0~alpha_all.deb
+sudo apt install ./release/distroforge_0.17.0~alpha_all.deb
 ```
 
 Atau build sendiri:
@@ -29,9 +35,30 @@ Atau build sendiri:
 ```sh
 sudo apt install debhelper python3-pytest dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.16.0~alpha_all.deb
-eduka-customizer doctor        # cek alat yang dibutuhkan
+sudo apt install ../distroforge_0.17.0~alpha_all.deb
+distroforge doctor        # cek alat yang dibutuhkan
 ```
+
+## Baru di 0.17
+
+* **Nama baru: DistroForge.** Paket `distroforge` menggantikan `eduka-customizer`;
+  perintah dan pengaturan lama tetap bekerja.
+* **Perbaiki otomatis atau manual.** Setiap masalah di *Check & Build* dan *Check the
+  installer* punya kolom **How to fix**: *Automatic* diperbaiki dengan tombol **Fix
+  automatically** (pasang paket yang kurang, perbaiki database paket, betulkan pengaturan
+  Calamares, lalu periksa lagi); *By hand* dibuka dengan klik dua kali. Saat build masih ada
+  masalah, muncul pilihan **Fix automatically**, **I will fix it myself** atau **Build anyway**.
+* **Peringatan palsu GRUB hilang**: ISO live Debian yang memasang GRUB dari pool ISO saat
+  instalasi tidak lagi dilaporkan kekurangan `grub-install`.
+* **Review & Apply (langkah 14).** Perubahan tidak langsung diterapkan: semuanya menunggu di
+  satu daftar. Centang setiap perubahan yang sudah yakin, atau *Go back and change it*, hapus,
+  ubah urutan, lalu **Apply all changes** sekaligus.
+* **Target ukuran ISO**: sekecil mungkin, 100 MB, 300 MB, 500 MB, 700 MB (CD), 1 GB, 2 GB,
+  4,4 GB (DVD) atau tanpa batas. Kompresi squashfs lossless — ISO yang lebih kecil tidak
+  rusak, hanya build lebih lama. Penghemat ukuran yang aman disarankan bila perlu.
+* **About**: lisensi (GPL-3.0-or-later), lisensi semua komponen, merek dagang, kredit,
+  panduan PDF dan tombol donasi (PayPal, Facebook).
+* Semua tulisan di GUI dan `distroforge --help` dirapikan.
 
 ## Baru di 0.16
 
@@ -63,7 +90,7 @@ eduka-customizer doctor        # cek alat yang dibutuhkan
   kompatibel), desain menu GRUB (judul, urutan, default, timeout, warna), dan bootloader
   sistem terpasang: GRUB, GRUB + Secure Boot, systemd-boot, rEFInd. LILO, BURG, EFISTUB dan
   Syslinux dijelaskan alasannya tidak dipakai.
-* Tampilan lebih modern: sidebar gradien, tab pil, *Step N of 14* dengan bar kemajuan.
+* Tampilan lebih modern: sidebar gradien, tab pil, *Step N of 14* (sejak 0.17: 15 langkah) dengan bar kemajuan.
 
 
 * **Untuk semua distro berbasis Debian** — default Edukasaun OS dihapus.
@@ -98,7 +125,7 @@ eduka-customizer doctor        # cek alat yang dibutuhkan
   ukuran ISO. Masalah serius menghentikan build; klik dua kali baris untuk
   membuka halaman perbaikannya.
 
-## Alur kerja di GUI (14 langkah)
+## Alur kerja di GUI (15 langkah)
 
 1. **Start** – buat project (folder kerja), lalu pilih sumber: ISO Debian live
    (disarankan *standard*) atau ISO turunan Debian, *Download Debian* (dicek
@@ -125,39 +152,56 @@ eduka-customizer doctor        # cek alat yang dibutuhkan
 12. **Installer** – Calamares (slide, pemeriksaan).
 13. **Advanced** – tab *Terminal & Live* (desktop image di jendela, terminal
     root, Synaptic) dan *Package Workshop*.
-14. **Check & Build** – periksa, build ISO, uji di QEMU (BIOS/UEFI/Secure Boot).
+14. **Review & Apply** – daftar semua perubahan yang dipilih di langkah 2–13: centang,
+    kembali dan ubah, hapus atau ubah urutan, lalu terapkan sekaligus.
+15. **Check & Build** – periksa (perbaiki otomatis), pilih ukuran ISO, build ISO, uji di
+    QEMU (BIOS/UEFI/Secure Boot).
+
+Halaman **About** berisi versi, lisensi, lisensi komponen, merek dagang, panduan PDF dan
+tombol donasi.
 
 ## Baris perintah
 
 ```sh
-sudo eduka-customizer new ~/mylinux --iso debian-live-13.1.0-amd64-standard.iso
-sudo eduka-customizer -p ~/mylinux brand identity name="My Linux" id=mylinux version=1.0
-sudo eduka-customizer -p ~/mylinux purpose apply home --edition full_apps
-sudo eduka-customizer -p ~/mylinux desktop install xfce --edition compact --dm lightdm
-sudo eduka-customizer -p ~/mylinux desktop install eduka            # Eduka-Desktop
-sudo eduka-customizer -p ~/mylinux apps replace browser chromium --remove-old
-sudo eduka-customizer -p ~/mylinux flatpak install org.kde.gcompris --firstboot
-sudo eduka-customizer -p ~/mylinux shell          # terminal di dalam image
-sudo eduka-customizer -p ~/mylinux sounds add ~/suara/ && sudo eduka-customizer -p ~/mylinux sounds apply
-sudo eduka-customizer -p ~/mylinux welcome apply
-sudo eduka-customizer -p ~/mylinux grub-theme add ~/Unduhan/tema-grub.tar.xz --installed
-sudo eduka-customizer -p ~/mylinux boot-loader use systemd-boot
-sudo eduka-customizer -p ~/mylinux calamares check
-sudo eduka-customizer -p ~/mylinux check --deep   # periksa sebelum build
-sudo eduka-customizer -p ~/mylinux build
-eduka-customizer -p ~/mylinux test --firmware uefi
+sudo distroforge new ~/mylinux --iso debian-live-13.1.0-amd64-standard.iso
+sudo distroforge -p ~/mylinux brand identity name="My Linux" id=mylinux version=1.0
+sudo distroforge -p ~/mylinux purpose apply home --edition full_apps
+sudo distroforge -p ~/mylinux desktop install xfce --edition compact --dm lightdm
+sudo distroforge -p ~/mylinux desktop install eduka            # Eduka-Desktop
+sudo distroforge -p ~/mylinux apps replace browser chromium --remove-old
+sudo distroforge -p ~/mylinux flatpak install org.kde.gcompris --firstboot
+sudo distroforge -p ~/mylinux shell          # terminal di dalam image
+sudo distroforge -p ~/mylinux sounds add ~/suara/ && sudo distroforge -p ~/mylinux sounds apply
+sudo distroforge -p ~/mylinux welcome apply
+sudo distroforge -p ~/mylinux grub-theme add ~/Unduhan/tema-grub.tar.xz --installed
+sudo distroforge -p ~/mylinux boot-loader use systemd-boot
+sudo distroforge -p ~/mylinux calamares check
+sudo distroforge -p ~/mylinux check --deep --fix   # periksa, perbaiki otomatis, periksa lagi
+sudo distroforge -p ~/mylinux build --target-size 700   # smallest, 100, 300, 500, ..., none
+distroforge -p ~/mylinux test --firmware uefi
+distroforge about                            # versi, lisensi, donasi
 ```
 
+Baris perintah menerapkan setiap perubahan langsung (tanpa daftar Review & Apply).
+
 Build yang bisa diulang (reproducible) memakai *recipe* JSON:
-`sudo eduka-customizer -p ~/mylinux recipe apply examples/my-distro.json`
+`sudo distroforge -p ~/mylinux recipe apply examples/my-distro.json`
 (contoh edisi sekolah dengan Eduka-Desktop: `examples/school-edition.json`).
 
 ## Tips
 
-* Jika aplikasi crash dan masih ada mount: `sudo eduka-customizer -p PROJECT clean --unmount-only`.
+* Jika aplikasi crash dan masih ada mount: `sudo distroforge -p PROJECT clean --unmount-only`.
 * Saat Debian rilis versi baru, ubah codename di halaman **Settings**.
-* Log lengkap: `PROJECT/logs/eduka-customizer.log`.
-* **Log untuk developer** (setiap kali jalan): `/tmp/eduka-customizer/eduka-customizer.log`
-  dan `/tmp/eduka-customizer/errors.log` (error + traceback). Menu
+* Log lengkap: `PROJECT/logs/distroforge.log`.
+* **Log untuk developer** (setiap kali jalan): `/tmp/distroforge/distroforge.log`
+  dan `/tmp/distroforge/errors.log` (error + traceback). Menu
   **Settings → Create bug report** membuat arsip untuk dikirim ke developer.
 * Screenshot semua halaman: `docs/screenshots/`.
+
+## Lisensi dan dukungan
+
+DistroForge adalah perangkat lunak bebas (GNU GPL versi 3 atau lebih baru), tanpa jaminan.
+Debian adalah merek dagang terdaftar Software in the Public Interest, Inc.; DistroForge tidak
+berafiliasi dengan Debian — berikan distribusi Anda nama dan logo sendiri.
+Dukung proyek ini: [PayPal](https://paypal.me/hugocenturion0311) ·
+[Facebook](https://facebook.com/hugomonizdorego).

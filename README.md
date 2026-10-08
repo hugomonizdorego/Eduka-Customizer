@@ -1,25 +1,56 @@
-# Eduka-Customizer 0.16 Alpha
+# DistroForge 0.17 Alpha
 
-**Eduka-Customizer** builds live ISO images of **your own Debian-based
-distribution**. It takes a Debian live image (or a Debian derivative such as
-LMDE, a fresh Debian base, or the running computer) and guides you **step by
-step** to a new, bootable ISO: repositories, identity, users, language,
-desktop, software, kernel and boot menu, look and feel, installer, and a
-**check before the build**. Every name is yours: nothing is preset for a
-particular distribution (earlier versions were made only for Edukasaun OS;
-**Eduka-Desktop** stays available as one of the desktops).
+**DistroForge** (formerly *Eduka-Customizer*) builds live ISO images of **your
+own Debian-based distribution**. It takes a Debian live image (or a Debian
+derivative such as LMDE, MX Linux or Kali), a fresh Debian base or the running
+computer and guides you **step by step** to a new, bootable ISO: repositories,
+identity, users, language, desktop, software, kernel and boot menu, look and
+feel, sounds, welcome screen, installer, **Review & Apply** and **Check &
+Build**. Every name is yours: nothing is preset for a particular distribution.
 
 The images it builds are always **Debian-based**: Debian stable, testing, sid
-or a **Debian derivative such as LMDE** (Ubuntu-based images are refused as a
-source). The recommended start is the **Debian live standard ISO**: no
-desktop, small and clean. Eduka-Customizer itself can be installed on Debian,
-Debian derivatives, **Ubuntu and Ubuntu-based** computers.
+or a Debian derivative (Ubuntu-based images are refused as a source). The
+recommended start is the **Debian live standard ISO**: no desktop, small and
+clean. DistroForge itself installs on Debian, Debian derivatives, **Ubuntu and
+Ubuntu-based** computers.
 
-![Welcome screen designer](docs/screenshots/14-welcome-screen.png)
+![Review & Apply](docs/screenshots/19-review-apply.png)
 
-> Eduka-Customizer is a complete rewrite of *Customizer* (Ivailo Monev,
-> Mubiin Kimura, Graham Cantin and contributors). It takes ideas from
-> *Cubic*, *remastersys* and *penguins-eggs*.
+> DistroForge is free and open source software (GPL-3.0-or-later). It is a
+> complete rewrite of *Customizer* (Ivailo Monev, Mubiin Kimura, Graham Cantin
+> and contributors) and takes ideas from *Cubic*, *remastersys* and
+> *penguins-eggs*. It is not affiliated with Debian.
+
+**User guides (PDF):** [Bahasa Indonesia](docs/DistroForge-Panduan.pdf) ·
+[English](docs/DistroForge-Guide.pdf)
+
+**Support the project:** [Donate with PayPal](https://paypal.me/hugocenturion0311) ·
+[Facebook](https://facebook.com/hugomonizdorego)
+
+## New in 0.17
+
+* **New name: DistroForge.** The package `distroforge` replaces `eduka-customizer`; the old commands
+  (`eduka-customizer`, `eduka-customizer-pkexec`) and the settings in `/etc/eduka-customizer` keep
+  working.
+* **Fix automatically or by hand.** Every problem found by *Check & Build* and *Check the installer*
+  says how to fix it. *Fix automatically* installs missing packages, repairs the package database,
+  corrects Calamares settings and checks again; problems that need you open the right step on a
+  double-click. Building with problems left asks: *Fix automatically*, *I will fix it myself* or
+  *Build anyway*.
+* **No more false alarm for GRUB**: Debian live ISOs that install GRUB from the ISO pool during
+  installation are no longer reported as missing `grub-install`.
+* **Review & Apply (step 14).** Changes wait in one list instead of changing the image at once. Tick
+  each one when you are sure, go back and change it, remove it or change the order, then apply them
+  all together. Experts can switch back to applying at once in Settings.
+* **ISO size targets**: as small as possible, 100 MB, 300 MB, 500 MB, 700 MB (CD), 1 GB, 2 GB,
+  4.4 GB (DVD) or no limit. *Estimate* compresses a sample of the system and chooses the fastest
+  compression that reaches the target. Compression is lossless, so a smaller ISO is never a damaged
+  ISO. Safe size savers (documentation, manual pages, unused translations, APT lists, old kernels)
+  are suggested when needed; license files always stay.
+* **About**: version, license (GPL-3.0-or-later), credits, the license of every component, trademark
+  notes, the PDF user guides and donation links.
+* **Clearer words** on every page, in the dialogs and in `distroforge --help` (commands listed by
+  step); a warning when the distribution name uses a trademark such as Debian or Ubuntu.
 
 ## New in 0.16
 
@@ -55,7 +86,7 @@ Debian derivatives, **Ubuntu and Ubuntu-based** computers.
   menu designer (entries, order, default, timeout, colors); the boot loader of installed systems: GRUB,
   GRUB with Secure Boot, systemd-boot or rEFInd (LILO, BURG, EFISTUB and Syslinux are explained, not
   offered).
-* **A more modern window**: gradient sidebar, pill tabs, cards, and *Step N of 14* with a progress bar.
+* **A more modern window**: gradient sidebar, pill tabs, cards, and *Step N of 15* with a progress bar.
 
 ## New in 0.15
 
@@ -105,7 +136,7 @@ Debian derivatives, **Ubuntu and Ubuntu-based** computers.
 | Package Workshop | Open any installed package (base-files, desktop-base, ...), edit files and control data directly, rebuild, install, hold, or restore Debian's version |
 | Themes & Icons | GTK, icon, cursor and LXQt themes, fonts, dark style, one-click theme packs, theme import, desktop icons |
 | Login & session | LightDM (GTK, Slick, Arctica, KDE greeters), SDDM with themes, GDM, LXDM, Ly, greetd; X11 or Wayland; compositor (picom presets, built-in, labwc, KWin, Wayfire, Sway) |
-| Developer logs | Every run writes `/tmp/eduka-customizer/eduka-customizer.log` and `errors.log`; Settings → Create bug report |
+| Developer logs | Every run writes `/tmp/distroforge/distroforge.log` and `errors.log`; Settings → Create bug report |
 | Source | Extract a Debian or Debian-based live ISO, download an official Debian live ISO (SHA256 and GPG checked), bootstrap a new Debian base with mmdebstrap, or snapshot the running system (remastersys style) |
 | Identity | os-release (`ID=yourdistro`, `ID_LIKE=debian`), version, codename, host name, live user, Calamares branding, protected from `base-files` upgrades |
 | Repositories | Switch between stable, testing and sid with a clean deb822 `debian.sources`, add third-party repositories with their own `Signed-By` key, edit every sources file |
@@ -113,7 +144,9 @@ Debian derivatives, **Ubuntu and Ubuntu-based** computers.
 | Flatpak | The whole Flathub catalog by category, search, install into the ISO or on the first boot of the installed system |
 | Desktop | GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, LXDE, Budgie, GNOME Flashback, Enlightenment, Eduka-Desktop (built from git) or 14 window managers, each in a Mini, Compact, Full or Full-with-apps edition; login manager (LightDM, SDDM, GDM, LXDM, Ly, greetd) and default session |
 | Replace apps | Another browser, mail program, office, editor, file manager, terminal, viewer or player as the default; remove the old one |
-| Check & Build | Checks before every build stop what would break the ISO |
+| Review & Apply | Every change waits in one list: tick, go back and change, reorder, then apply all at once |
+| Check & Build | Checks before every build stop what would break the ISO; most problems are fixed automatically |
+| ISO size | Targets from 100 MB to 4.4 GB or as small as possible, with lossless compression and safe size savers |
 | Eduka-Desktop | Fetch any branch/tag, build the `.deb`, install it, and set panel/menu/desktop defaults for every new user |
 | Appearance | Plymouth themes (choose, import, or generate one from a logo), wallpaper for all major desktops, login screen background/theme, boot menu title, timeout, kernel options and background |
 | Live edit | Run the image's desktop in a nested window (Xephyr) and change settings directly; changes become the defaults in `/etc/skel` |
@@ -131,6 +164,7 @@ Debian derivatives, **Ubuntu and Ubuntu-based** computers.
 | ![The welcome screen in the ISO](docs/screenshots/welcome-screen-gtk.png) | ![GRUB Design](docs/screenshots/08d-grub-design.png) |
 | ![Desktops and editions](docs/screenshots/06b-desktop-login-session.png) | ![Flathub by category](docs/screenshots/07b-software-flatpak.png) |
 | ![Installer check](docs/screenshots/15b-installer-check.png) | ![Check & Build](docs/screenshots/18-check-build.png) |
+| ![Review & Apply](docs/screenshots/19-review-apply.png) | ![About](docs/screenshots/23-about.png) |
 | ![Identity & Branding from the ISO](docs/screenshots/03b-identity-branding.png) | ![Kernel terminal](docs/screenshots/08-kernel-boot.png) |
 | ![Look & Feel](docs/screenshots/09-look-themes-icons.png) | ![Dark mode](docs/screenshots/22-dark-welcome.png) |
 
@@ -138,14 +172,14 @@ All screenshots, including every Quick Wizard step: [docs/screenshots](docs/scre
 
 ## Install
 
-On Debian 13 (trixie), a Debian derivative, Ubuntu 22.04/24.04 or an Ubuntu-based system:
+On Debian 12/13, a Debian derivative, Ubuntu 22.04/24.04 or an Ubuntu-based system:
 
 ```sh
-sudo apt install ./release/eduka-customizer_0.16.0~alpha_all.deb   # ready-made package
+sudo apt install ./release/distroforge_0.17.0~alpha_all.deb   # ready-made package
 # or build it yourself:
 sudo apt install debhelper python3-pytest python3-yaml dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../eduka-customizer_0.16.0~alpha_all.deb
+sudo apt install ../distroforge_0.17.0~alpha_all.deb
 ```
 
 Or run it from the source tree:
@@ -156,20 +190,20 @@ sudo apt install python3-pyqt6 python3-yaml xorriso squashfs-tools mtools dosfst
 sudo make run
 ```
 
-Check the computer with `eduka-customizer doctor`. The package works with PyQt6 or
+Check the computer with `distroforge doctor`. The package works with PyQt6 or
 PyQt5 and Python 3.9 or newer.
 
 ### When something goes wrong
 
 Every run writes logs for the developers:
 
-* `/tmp/eduka-customizer/eduka-customizer.log` — full debug log
-* `/tmp/eduka-customizer/errors.log` — errors with tracebacks
+* `/tmp/distroforge/distroforge.log` — full debug log
+* `/tmp/distroforge/errors.log` — errors with tracebacks
 * Settings → **Create bug report** packs both with the project state.
 
 ## Quick start (GUI)
 
-1. Start **Eduka-Customizer** from the menu (it asks for the administrator password).
+1. Start **DistroForge** from the menu (it asks for the administrator password).
    The fastest way: **Quick Wizard** → Next, Next, Finish.
 2. **1. Start**: create a project, then choose a Debian live ISO (the *standard* ISO is
    recommended), another Debian-based ISO, *Download Debian*, or *New Debian base*. Answer
@@ -177,45 +211,50 @@ Every run writes logs for the developers:
 3. Press **Done — next step** at the bottom of every step: 2. Repositories, 3. Identity & Branding,
    4. Users, 5. Language, 6. Desktop, 7. Software, 8. Kernel & Boot, 9. Look & Feel, 10. System Sounds,
    11. Welcome Screen, 12. Installer, 13. Advanced. The next menu opens when the step before it is done.
-4. **14. Check & Build**: check the image, build the ISO and boot it in QEMU.
-5. Write the ISO to a USB stick: `sudo dd if=mylinux.iso of=/dev/sdX bs=4M status=progress oflag=sync`.
+   Your choices are collected in **Review & Apply**.
+4. **14. Review & Apply**: tick every change you are sure about (or go back and change it), then
+   *Apply all changes*.
+5. **15. Check & Build**: check the image (*Fix automatically* fixes what it can), choose the ISO
+   size, build the ISO and boot it in QEMU.
+6. Write the ISO to a USB stick: `sudo dd if=mylinux.iso of=/dev/sdX bs=4M status=progress oflag=sync`.
 
 ## Quick start (command line)
 
+The command line applies every change at once (there is no review list).
+
 ```sh
-sudo eduka-customizer new ~/mylinux --iso debian-live-13.1.0-amd64-standard.iso
+sudo distroforge new ~/mylinux --iso debian-live-13.1.0-amd64-standard.iso
 cd ~/mylinux
-sudo eduka-customizer sources --suite stable
-sudo eduka-customizer brand identity name="My Linux" id=mylinux version=1.0 codename=Aurora
-sudo eduka-customizer purpose apply home --edition full_apps          # or: education, server, professional
-sudo eduka-customizer desktop install xfce --edition compact --dm lightdm   # mini, compact, full, full_apps
-sudo eduka-customizer apps replace browser chromium --remove-old       # replace a default application
-sudo eduka-customizer apps status
-sudo eduka-customizer apt install libreoffice vlc
-sudo eduka-customizer flatpak install org.geogebra.GeoGebra --firstboot
-sudo eduka-customizer branding apply --logo logo.png --wallpaper wallpaper.png --keyring --email archive@example.org
-sudo eduka-customizer themes apply --gtk Arc --icons Papirus --cursor Breeze_Snow
-sudo eduka-customizer assets ~/Downloads/Nordic.tar.xz ~/Downloads/*.ttf    # themes, icons, fonts ...
-sudo eduka-customizer users live live --fullname Live --no-password   # live user "live", no password
-sudo eduka-customizer language set pt_PT.UTF-8 --extra en_US.UTF-8 --timezone Asia/Dili --boot-menu all
-sudo eduka-customizer calamares partition fs=btrfs efi_size=512MiB "swap=[none, file]" initial_swap=file
-sudo eduka-customizer kernel third-party backports --headers
-sudo eduka-customizer sounds add ~/sounds/ && sudo eduka-customizer sounds apply   # boot.ogg, login.wav, ...
-sudo eduka-customizer welcome export welcome.json      # edit, then: welcome import welcome.json && welcome apply
-sudo eduka-customizer grub-theme add ~/Downloads/Vimix-grub.tar.xz --installed   # refused when incompatible
-sudo eduka-customizer boot-loader use systemd-boot     # or grub, grub-secureboot, refind
-sudo eduka-customizer calamares check                  # a careful check of the installer
-sudo eduka-customizer check --deep                                     # what would break the ISO
-sudo eduka-customizer build
-eduka-customizer test --firmware uefi
+sudo distroforge sources --suite stable
+sudo distroforge brand identity name="My Linux" id=mylinux version=1.0 codename=Aurora
+sudo distroforge purpose apply home --edition full_apps          # or: education, server, professional
+sudo distroforge desktop install xfce --edition compact --dm lightdm   # mini, compact, full, full_apps
+sudo distroforge apps replace browser chromium --remove-old       # replace a default application
+sudo distroforge apt install libreoffice vlc
+sudo distroforge flatpak install org.geogebra.GeoGebra --firstboot
+sudo distroforge branding apply --logo logo.png --wallpaper wallpaper.png --keyring --email archive@example.org
+sudo distroforge themes apply --gtk Arc --icons Papirus --cursor Breeze_Snow
+sudo distroforge users live live --fullname Live --no-password   # live user "live", no password
+sudo distroforge language set pt_PT.UTF-8 --extra en_US.UTF-8 --timezone Asia/Dili --boot-menu all
+sudo distroforge kernel third-party backports --headers
+sudo distroforge sounds add ~/sounds/ && sudo distroforge sounds apply   # boot.ogg, login.wav, ...
+sudo distroforge grub-theme add ~/Downloads/Vimix-grub.tar.xz --installed   # refused when incompatible
+sudo distroforge boot-loader use systemd-boot     # or grub, grub-secureboot, refind
+sudo distroforge check --fix                      # check, fix what can be fixed, check again
+sudo distroforge build --target-size 700          # smallest, 100, 300, 500, 700, 1000, ..., none
+distroforge test --firmware uefi
+distroforge about                                 # version, license, credits, donations
 ```
 
-Eduka-Desktop is still one command away: `sudo eduka-customizer desktop install eduka`.
-Or apply a recipe: `sudo eduka-customizer -p ~/mylinux recipe apply examples/my-distro.json`
-(`examples/school-edition.json` is an Eduka-Desktop school edition).
+`distroforge --help` lists the commands in the order of the steps. Eduka-Desktop is still one
+command away: `sudo distroforge desktop install eduka`. Or apply a recipe:
+`sudo distroforge -p ~/mylinux recipe apply examples/my-distro.json`
+(`examples/school-edition.json` is a school edition with Eduka-Desktop).
 
 ## Documentation
 
+* User guide (PDF): [Bahasa Indonesia](docs/DistroForge-Panduan.pdf), [English](docs/DistroForge-Guide.pdf)
+  (made with `tools/make_guide.py`).
 * [Manual](docs/manual.md) — every page and command explained.
 * [Panduan singkat (Bahasa Indonesia)](docs/PANDUAN.md)
 * [Roadmap and recommendations](docs/ROADMAP.md)
@@ -223,29 +262,36 @@ Or apply a recipe: `sudo eduka-customizer -p ~/mylinux recipe apply examples/my-
 
 ## Ringkasan (Bahasa Indonesia)
 
-Eduka-Customizer adalah pembangun ISO untuk **semua distribusi berbasis Debian**
-(Debian stable, testing, sid dan turunannya seperti LMDE — bukan berbasis Ubuntu).
-**Eduka-Desktop** tetap tersedia sebagai salah satu desktop. Versi 0.16:
+**DistroForge** (sebelumnya Eduka-Customizer) adalah pembangun ISO untuk **semua distribusi
+berbasis Debian** (Debian stable, testing, sid dan turunannya seperti LMDE, MX Linux, Kali —
+bukan berbasis Ubuntu). **Eduka-Desktop** tetap tersedia sebagai salah satu desktop. Versi 0.17:
 
-* **System Sounds** — suara boot, login (startup), logout, shutdown, error, notifikasi,
-  perangkat dan daya; menjadi tema suara default semua desktop.
-* **Welcome Screen** — 4 halaman yang didesain sendiri (judul, teks, logo, gambar, warna,
-  tombol), muncul setelah login.
-* **Identity & Branding** dimuat langsung dari ISO yang diekstrak, lalu bisa diubah.
-* **Edisi** dengan istilah resmi setiap desktop (GNOME Core, KDE Gear, Xfce Goodies, ...).
-* **Flatpak** untuk semua: seluruh katalog Flathub per kategori (Office, Audio & Video, ...).
-* **Replace apps** berlaku untuk semua pengguna.
-* **Kernel**: terminal untuk repositori pihak ke-3; repositori hanya tetap jika kernelnya dipasang.
-* **Look & Feel**: hanya tema/ikon yang cocok dengan desktop/WM yang dipilih.
-* **Calamares**: slide teks, pemeriksaan installer yang teliti, ID dari ISO dipertahankan.
-* **GRUB Design**: tema GRUB pihak ke-3 (dicek, ditolak bila tidak kompatibel), desain menu,
-  pilihan bootloader (GRUB, systemd-boot, rEFInd).
-* Tampilan lebih modern dengan indikator langkah.
+* **Perbaiki otomatis atau manual** — setiap masalah di *Check & Build* menunjukkan cara
+  memperbaikinya; peringatan palsu `grub-install` untuk ISO live Debian sudah hilang.
+* **Review & Apply (langkah 14)** — semua perubahan menunggu di satu daftar, dicentang satu per
+  satu (atau kembali dan diubah), lalu diterapkan bersama.
+* **Target ukuran ISO** — sekecil mungkin, 100 MB, 300 MB, 500 MB, ... 4,4 GB; kompresi lossless,
+  ISO tidak rusak.
+* **About** — lisensi semua komponen, merek dagang, kredit, panduan PDF dan tombol donasi.
+* Semua tulisan dirapikan; nama baru DistroForge (perintah lama tetap bekerja).
 
-Paket siap pasang: `release/eduka-customizer_0.16.0~alpha_all.deb`. Panduan
-lengkap: [docs/PANDUAN.md](docs/PANDUAN.md). Log error: `/tmp/eduka-customizer/`.
+Paket siap pasang: `release/distroforge_0.17.0~alpha_all.deb`. Panduan PDF:
+[docs/DistroForge-Panduan.pdf](docs/DistroForge-Panduan.pdf). Log error: `/tmp/distroforge/`.
+
+## Support
+
+DistroForge is free. If it helps you, a donation keeps the work going:
+[paypal.me/hugocenturion0311](https://paypal.me/hugocenturion0311). News on
+[Facebook](https://facebook.com/hugomonizdorego).
 
 ## License
 
-GNU General Public License version 3 or later. See [LICENSE](LICENSE).
-Original Customizer contributors are listed in [data/contributors](data/contributors).
+DistroForge is free software: GNU General Public License version 3 or later, without any
+warranty. See [LICENSE](LICENSE). The licenses of the components it uses are listed on the
+About page and in [debian/copyright](debian/copyright); menu icons come from the Papirus icon
+theme (GPL-3.0). Original Customizer contributors are listed in [data/contributors](data/contributors).
+
+Debian is a registered trademark of Software in the Public Interest, Inc. Linux® is the
+registered trademark of Linus Torvalds in the U.S. and other countries. Other names belong to
+their owners. DistroForge is not affiliated with, sponsored or endorsed by Debian or any of
+these projects.

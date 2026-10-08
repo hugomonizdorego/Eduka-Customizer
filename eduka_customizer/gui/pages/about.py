@@ -90,7 +90,8 @@ def open_url(url):
 def guide_path(lang="id"):
     """The PDF user guide (installed, or in the source tree)."""
     name = "DistroForge-Panduan.pdf" if lang == "id" else "DistroForge-Guide.pdf"
-    for base in (Path("/usr/share/doc/distroforge"), Path(__file__).resolve().parents[3] / "docs"):
+    from eduka_customizer.core.config import DATA_DIR
+    for base in (DATA_DIR / "guide", Path("/usr/share/doc/distroforge"), Path(__file__).resolve().parents[3] / "docs"):
         if (base / name).exists():
             return base / name
     return None

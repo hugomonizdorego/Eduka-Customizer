@@ -25,4 +25,4 @@ override_dh_builddeb:
 
 # Keep the icons, screenshots and documentation exactly as they are.
 override_dh_compress:
-	dh_compress -X.md -X.png -X.svg
+	dh_compress -X.md -X.png -X.svg -X.pdf

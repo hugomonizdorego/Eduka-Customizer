@@ -68,7 +68,7 @@ ran = []
 page.task("Apply system sounds", lambda t: ran.append(1))
 page.task("List something", lambda t: ran.append(2))
 assert len(w.pending) == 1 and w.pending[0]["section"] == "System Sounds", w.pending
-assert w.pending_btn.text().startswith("Review & Apply: 1 change")
+assert w.pending_btn.text() == "Review && Apply: 1 waiting"
 w.go("ReviewPage")
 review = w.stack.currentWidget().current()
 assert review.items.count() == 1 and not review.apply_btn.isEnabled()

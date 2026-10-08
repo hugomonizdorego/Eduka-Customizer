@@ -1,7 +1,7 @@
 # Roadmap & rekomendasi
 
-Status: **0.16 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
-berikutnya untuk pengembang Eduka-Customizer, diurutkan menurut manfaatnya.
+Status: **0.17 Alpha** (Oktober 2026). Daftar ini adalah usulan langkah
+berikutnya untuk pengembang DistroForge (dulu Eduka-Customizer), diurutkan menurut manfaatnya.
 
 ## Selesai di 0.11 Alpha
 Quick Wizard, Distro Branding Studio (paket branding + keyring), Package
@@ -36,7 +36,13 @@ desktop, katalog Flathub per kategori, Replace apps untuk semua pengguna, termin
 (sementara), Look & Feel per desktop, slide teks dan pemeriksaan Calamares, tema GRUB pihak ke-3,
 desain menu GRUB, pilihan bootloader, tampilan modern.
 
-## Menuju 0.17 Alpha
+## Selesai di 0.17 Alpha
+Nama baru DistroForge, perbaikan otomatis/manual di Check & Build dan pemeriksaan installer,
+peringatan palsu `grub-install` dihapus, langkah Review & Apply dengan daftar centang, target
+ukuran ISO (100 MB sampai 4,4 GB, kompresi lossless), halaman About (lisensi komponen, merek
+dagang, donasi), panduan PDF Indonesia dan Inggris, semua tulisan dirapikan.
+
+## Menuju 0.18 Alpha
 
 1. **Uji penuh dengan ISO Debian 13 live asli** (LXQt dan standard) di
    perangkat keras nyata, BIOS dan UEFI, termasuk Secure Boot. Unit test dan
@@ -44,14 +50,16 @@ desain menu GRUB, pilihan bootloader, tampilan modern.
    pengembangan ini.
 2. **Uji Secure Boot pada hardware nyata** dengan GRUB bernama distro
    (EFI/<id> + salinan EFI/debian) dan Calamares.
-3. **Repositori APT untuk Eduka-Desktop** (misalnya `repo.edukasaun.org`) yang berisi
-   paket `edukasaun-desktop-menu`, tema Plymouth, wallpaper dan
-   `edukasaun-keyring`, sehingga update Eduka-Desktop bisa lewat `apt`.
-   Eduka-Customizer sudah mendukung penambahan repositori dengan kunci.
+3. **Repositori APT untuk Eduka-Desktop** dengan paket menu, tema Plymouth,
+   wallpaper dan keyring, sehingga update Eduka-Desktop bisa lewat `apt`.
+   DistroForge sudah mendukung penambahan repositori dengan kunci.
 4. **Folder `debian/` di Eduka-Desktop** (paket sumber yang benar, dengan
-   `dpkg-buildpackage`). Eduka-Customizer sudah mendeteksinya otomatis.
-5. **Terjemahan GUI** (Tetun, Português, Bahasa Indonesia, English) memakai
-   Qt Linguist (`pylupdate6`/`lrelease`).
+   `dpkg-buildpackage`). DistroForge sudah mendeteksinya otomatis.
+5. **Terjemahan GUI** (Bahasa Indonesia, Tetun, Português) memakai
+   Qt Linguist (`pylupdate6`/`lrelease`); teks GUI sudah dirapikan di 0.17
+   sehingga siap diterjemahkan.
+6. **Ukuran ISO yang tepat**: perkiraan sekarang memakai sampel; build uji
+   squashfs cepat (lz4) bisa memberi angka lebih akurat.
 
 ## Menuju 0.18 – 0.20
 
@@ -72,13 +80,13 @@ desain menu GRUB, pilihan bootloader, tampilan modern.
   grafis – cocok dengan mode *low resource* Eduka-Desktop.
 * **Pembaruan ISO inkremental** (hanya membangun ulang squashfs ketika
   rootfs berubah, berdasarkan checksum).
-* **Pipeline CI** yang membangun ISO Edukasaun dari recipe pada setiap tag
+* **Pipeline CI** yang membangun ISO dari recipe pada setiap tag
   dan mengunggahnya sebagai rilis.
 
 ## Catatan teknis yang perlu dipantau
 
 * Codename Debian berubah setiap rilis (sekarang: stable `trixie`, testing
-  `forky`). Ubah di Settings atau `/etc/eduka-customizer/eduka-customizer.conf`.
+  `forky`). Ubah di Settings atau `/etc/distroforge/distroforge.conf`.
 * Debian tidak membuat ISO live untuk sid: mulai dari testing lalu ganti
   sumber ke sid, atau bootstrap basis sid.
 * Jika Debian berhenti memakai ISOLINUX untuk BIOS, mode *replay* tetap

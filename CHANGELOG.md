@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.17.0 Alpha — 2026-10-08
+
+### Changed
+* **New name: DistroForge** (was Eduka-Customizer). Package `distroforge`, command `distroforge`,
+  settings `/etc/distroforge/distroforge.conf`, data `/usr/share/distroforge`, logs
+  `/tmp/distroforge/`. The package replaces `eduka-customizer`; the commands `eduka-customizer` and
+  `eduka-customizer-pkexec` and the old settings file keep working. File names inside built images
+  stay the same, so older projects build as before.
+* **Step 14 Review & Apply**: changes chosen in steps 2–13 wait in one list; tick each, go back and
+  change it, remove it or reorder, then apply them all (Settings can switch back to applying at once).
+  Check & Build is step 15.
+* Clearer texts on every page, in dialogs and in `distroforge --help` (commands listed by step).
+* Nothing is preset for one distribution any more: the school example is
+  `examples/school-edition.json` with a neutral name.
+
+### New
+* **Fix automatically or by hand**: a *How to fix* column in Check & Build and in the installer check;
+  *Fix automatically* (`check --fix`) installs missing packages and host tools, repairs dpkg, removes a
+  leftover policy-rc.d, releases mounts and corrects Calamares settings, then checks again. Building
+  with problems left asks *Fix automatically*, *I will fix it myself* or *Build anyway*.
+* **ISO size targets**: smallest, 100 MB, 300 MB, 500 MB, 700 MB, 1 GB, 2 GB, 4.4 GB or none, with an
+  estimate from a compressed sample of the system (`build --target-size`). New lossless size savers:
+  documentation (license files stay), manual pages, unused translations.
+* **About page** and `distroforge about`: license, credits, the license of every component, trademark
+  notes, PDF user guides, PayPal and Facebook links; a *Support DistroForge* button in the sidebar.
+* **PDF user guides** in Indonesian and English (`docs/DistroForge-Panduan.pdf`,
+  `docs/DistroForge-Guide.pdf`, made by `tools/make_guide.py`), installed in
+  `/usr/share/distroforge/guide/` (minimal systems drop /usr/share/doc).
+* A warning when the distribution name uses a trademark (Debian, Ubuntu, ...).
+
+### Fixed
+* *"grub needs /usr/sbin/grub-install in the image"* is no longer reported when Calamares installs GRUB
+  itself (bootloader-config, its own commands or grub packages in the ISO pool), as on Debian live ISOs.
+
 ## 0.16.0 Alpha — 2026-10-08
 
 ### New

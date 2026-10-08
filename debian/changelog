@@ -1,3 +1,19 @@
+distroforge (0.17.0~alpha) unstable; urgency=medium
+
+  * New name: DistroForge (was Eduka-Customizer). The package replaces
+    eduka-customizer; the old commands and settings keep working.
+  * Check & Build: fix problems automatically or by hand; GRUB that Debian
+    live ISOs install from their pool is no longer reported as missing.
+  * Review & Apply: changes wait in one list, are checked one by one and
+    applied together.
+  * ISO size targets (100 MB to 4.4 GB, or smallest) with lossless
+    compression and safe size savers.
+  * About page: licenses of every component, trademarks, credits,
+    donations; PDF user guides in Indonesian and English.
+  * Clearer texts on every page and in the command line help.
+
+ -- Hugo Moniz do Rego <hugomonizdorego@users.noreply.github.com>  Thu, 08 Oct 2026 22:00:00 +0000
+
 eduka-customizer (0.16.0~alpha) unstable; urgency=medium
 
   * System Sounds: a sound theme for boot, login, logout, shutdown, errors,

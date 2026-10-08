@@ -562,7 +562,7 @@ class MainWindow(QMainWindow):
     def _update_pending(self):
         if hasattr(self, "pending_btn"):
             n = len(self.pending)
-            self.pending_btn.setText("Review & Apply: {} change{} waiting".format(n, "" if n == 1 else "s"))
+            self.pending_btn.setText("Review && Apply: {} waiting".format(n))
             self.pending_btn.setVisible(n > 0)
 
     def run_task(self, name, func, done=None, queue=False, page=None):

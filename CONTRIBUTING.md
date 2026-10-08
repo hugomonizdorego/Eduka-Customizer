@@ -1,6 +1,6 @@
-# Contributing to Eduka-Customizer
+# Contributing to DistroForge
 
-Thank you for helping Eduka-Customizer!
+Thank you for helping DistroForge!
 
 ## Development setup
 
@@ -20,6 +20,7 @@ eduka_customizer/core/   logic without any GUI code (usable from the CLI and rec
 eduka_customizer/gui/    PyQt6 interface; pages/ has one file per sidebar page
 data/                    desktops.json, exclude.list, config, launchers, polkit, desktop file
 tests/                   pytest unit tests (fake root filesystems, no root required)
+tools/make_guide.py      writes the PDF user guides in docs/ from docs/screenshots
 examples/                recipes and hook scripts
 debian/                  Debian packaging (3.0 native)
 ```
