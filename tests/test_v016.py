@@ -290,3 +290,49 @@ def test_replace_terminal_for_everyone(project, nochroot):
     replace.Replacer(project).replace("browser", "tilix")  # any package works the same way
     assert "BrowserApplication=com.gexperts.Tilix.desktop" in (r / "etc/xdg/kdeglobals").read_text()
     assert "x-scheme-handler/http=com.gexperts.Tilix.desktop;" in (skel / "mimeapps.list").read_text()
+
+
+# Kernel repositories from the terminal ---------------------------------------------------------
+
+def test_kernel_console_temporary_repositories(project, monkeypatch):
+    from eduka_customizer.core import chroot
+    from eduka_customizer.core.kernel import Kernels
+    r = project.rootfs
+    (r / "etc/apt/keyrings").mkdir(parents=True, exist_ok=True)
+
+    def fake_output(self, cmd, **k):
+        text = cmd[-1]
+        if "xanmod" in text:
+            (r / "etc/apt/keyrings/xanmod.gpg").write_bytes(b"key")
+            (r / "etc/apt/sources.list.d/xanmod.list").write_text(
+                "deb [signed-by=/etc/apt/keyrings/xanmod.gpg] http://deb.xanmod.org releases main\n")
+        if "liquorix" in text:
+            (r / "etc/apt/sources.list").write_text("deb http://liquorix.net/debian trixie main\n")
+        return "ok\n"
+    monkeypatch.setattr(chroot.Chroot, "output", fake_output)
+    monkeypatch.setattr(chroot.Chroot, "__enter__", lambda self: self)
+    monkeypatch.setattr(chroot.Chroot, "__exit__", lambda self, *a: False)
+    k = Kernels(project)
+    assert k.console("add xanmod") == "ok\n"
+    k.console("add liquorix")
+    temp = k.temp_files()
+    assert "etc/apt/sources.list.d/xanmod.list" in temp and "etc/apt/keyrings/xanmod.gpg" in temp
+    assert "etc/apt/sources.list.d/kernel-console-1.list" in temp
+    assert "liquorix" not in (r / "etc/apt/sources.list").read_text()
+    assert Kernels.list_prefix("https://user@liquorix.net/debian/") == "liquorix.net_debian_"
+    lists = r / "var/lib/apt/lists"
+    lists.mkdir(parents=True, exist_ok=True)
+    (lists / "deb.xanmod.org_dists_releases_main_binary-amd64_Packages").write_text(
+        "Package: linux-image-6.15.0-x64v3-xanmod1\nVersion: 6.15.0-x64v3-xanmod1-0~1\n\n"
+        "Package: linux-xanmod-x64v3\nVersion: 6.15.0-1\n")
+    (lists / "liquorix.net_debian_dists_trixie_main_binary-amd64_Packages").write_text(
+        "Package: linux-image-liquorix-amd64\nVersion: 6.14-1\n")
+    repos = {x["file"]: x for x in k.temp_repos()}
+    assert "linux-xanmod-x64v3" in repos["etc/apt/sources.list.d/xanmod.list"]["kernels"]
+    st = r / "var/lib/dpkg/status"
+    st.write_text(st.read_text() + "\nPackage: linux-xanmod-x64v3\nStatus: install ok installed\nVersion: 6.15.0-1\n")
+    kept, removed = k.finalize_temp_repos()
+    assert set(kept) == {"etc/apt/sources.list.d/xanmod.list", "etc/apt/keyrings/xanmod.gpg"}
+    assert removed == ["etc/apt/sources.list.d/kernel-console-1.list"]
+    assert not (lists / "liquorix.net_debian_dists_trixie_main_binary-amd64_Packages").exists()
+    assert (r / "etc/apt/sources.list.d/xanmod.list").exists() and k.temp_files() == []

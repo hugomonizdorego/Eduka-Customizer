@@ -378,6 +378,9 @@ class Builder:
     def run(self):
         p = self.project
         self.check()
+        # Repositories tried in the kernel console stay only when a kernel came from them.
+        from eduka_customizer.core.kernel import Kernels
+        Kernels(p).finalize_temp_repos()
         with self.chroot:
             self.ensure_live_stack()
             self.initramfs()

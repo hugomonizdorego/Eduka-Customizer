@@ -137,6 +137,10 @@ def run(project, deep=False):
         else:
             add("ok", "Kernel", "{} with its initrd{}".format(version, " ({} kernels)".format(len(kernels))
                                                                if len(kernels) > 1 else ""))
+    temp = p.state.get("kernel", {}).get("temp_repos", [])
+    if temp:
+        add("info", "Temporary repositories", "{} file(s) from the kernel terminal: removed by the build unless a "
+            "kernel was installed from them".format(len(temp)), "KernelPage")
     have = _installed(r)
     live_missing = [x for x in ("live-boot", "live-config", "live-config-systemd") if x not in have]
     add("warn" if live_missing else "ok", "Live boot support",

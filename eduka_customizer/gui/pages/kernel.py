@@ -2,7 +2,7 @@
 removal, initramfs, GRUB defaults of the installed system, firmware and DKMS."""
 
 from eduka_customizer.qt.core import Qt
-from eduka_customizer.qt.widgets import (QCheckBox, QFileDialog, QLineEdit, QMessageBox, QSpinBox,
+from eduka_customizer.qt.widgets import (QCheckBox, QFileDialog, QLineEdit, QMessageBox, QPlainTextEdit, QSpinBox,
                                           QTreeWidget, QTreeWidgetItem)
 
 from eduka_customizer.core.kernel import THIRD_PARTY, Kernels
@@ -47,6 +47,38 @@ class KernelPage(Page):
         c.add(label("Third-party kernels are not signed: Secure Boot must be disabled to boot them. Keep "
                     "Debian's kernel installed as a fallback.", "muted"))
         c.add(hbox(None, button("Add repository and install", self.install_preset, "primary")))
+
+        c = self.card("Third-party repository terminal",
+                      "Type the commands of the kernel's website here (they run as root inside the image): add "
+                      "its repository and key, then 'apt update'. Its kernels appear below. If you install one, "
+                      "the repository and the kernel stay in the system; otherwise the repository is only "
+                      "temporary and is removed again (at the latest when the ISO is built).")
+        self.console_out = QPlainTextEdit()
+        self.console_out.setReadOnly(True)
+        self.console_out.setObjectName("console")
+        self.console_out.setMinimumHeight(170)
+        self.console_out.setPlainText("# Example (XanMod):\n"
+                                      "# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o "
+                                      "/etc/apt/keyrings/xanmod.gpg\n"
+                                      "# echo 'deb [signed-by=/etc/apt/keyrings/xanmod.gpg] "
+                                      "http://deb.xanmod.org releases main' > /etc/apt/sources.list.d/xanmod.list\n"
+                                      "# apt update\n")
+        c.add(self.console_out)
+        self.console_in = QLineEdit()
+        self.console_in.setObjectName("consoleInput")
+        self.console_in.setPlaceholderText("root@image:~# type a command and press Enter")
+        self.console_in.returnPressed.connect(self.run_console)
+        self._history, self._hpos = [], 0
+        c.add(hbox(self.console_in, button("Run", self.run_console), button("apt update", self.console_update)))
+        self.temp_tree = QTreeWidget()
+        self.temp_tree.setHeaderLabels(["Kernel package", "Version", "Repository"])
+        self.temp_tree.setRootIsDecorated(False)
+        self.temp_tree.setMinimumHeight(120)
+        c.add(self.temp_tree)
+        self.temp_state = label("", "muted")
+        c.add(self.temp_state)
+        c.add(hbox(button("Keep or remove the temporary repositories now", self.finalize_repos), None,
+                   button("Install selected kernel", self.install_temp_kernel, "primary")))
 
         c = self.card("Kernel from your own repository or from files")
         f = c.form()
@@ -107,6 +139,7 @@ class KernelPage(Page):
     def refresh(self):
         if not self.project:
             return
+        self.show_temp_repos()
         k = self.k()
         kernels, meta = k.installed()
         self._kernels = {x["version"]: x for x in kernels}
@@ -214,6 +247,63 @@ class KernelPage(Page):
         proj, comp, key = self.project, self.r_comp.text().strip(), self.r_key.text()
         self._run("Install kernel from " + name,
                   lambda t: Kernels(proj).add_repository(name, uri, suite, comp, key, pkgs))
+
+    # Third-party repository terminal --------------------------------------------------
+    def run_console(self, command=None):
+        cmd = command if isinstance(command, str) else self.console_in.text().strip()
+        if not cmd:
+            return
+        self._history.append(cmd)
+        self.console_in.clear()
+        self.console_out.appendPlainText("root@image:~# " + cmd)
+        proj = self.project
+
+        def done(out):
+            self.console_out.appendPlainText((out or "").rstrip())
+            self.show_temp_repos()
+        self.task("Terminal: " + cmd[:60], lambda t: Kernels(proj).console(cmd), done)
+
+    def console_update(self):
+        self.run_console("apt-get update")
+
+    def show_temp_repos(self):
+        self.temp_tree.clear()
+        repos = self.k().temp_repos()
+        for repo in repos:
+            for name, versions in sorted(repo["kernels"].items()):
+                it = QTreeWidgetItem([name, ", ".join(sorted(set(versions))), " ".join(repo["uris"])])
+                it.setData(0, Qt.ItemDataRole.UserRole, name)
+                self.temp_tree.addTopLevelItem(it)
+        for i in range(3):
+            self.temp_tree.resizeColumnToContents(i)
+        files = self.k().temp_files()
+        self.temp_state.setText("Temporary repository files: {}".format(", ".join(files)) if files else
+                                "No temporary repository.")
+
+    def install_temp_kernel(self):
+        it = self.temp_tree.currentItem()
+        if not it:
+            QMessageBox.information(self, "Kernel", "Select a kernel of the new repository first.")
+            return
+        name = it.data(0, Qt.ItemDataRole.UserRole)
+        proj, headers = self.project, self.headers.isChecked()
+
+        def work(t):
+            k = Kernels(proj)
+            k.install([name], headers=headers)
+            return k.finalize_temp_repos()
+        self.task("Install " + name, work, lambda r: (self.show_temp_repos(), self._report_repos(r)))
+
+    def finalize_repos(self):
+        proj = self.project
+        self.task("Temporary repositories", lambda t: Kernels(proj).finalize_temp_repos(),
+                  lambda r: (self.show_temp_repos(), self._report_repos(r)))
+
+    def _report_repos(self, result):
+        kept, removed = result or ([], [])
+        QMessageBox.information(self, "Repositories", "Kept (a kernel was installed from them): {}\n\n"
+                                "Removed (temporary): {}".format(", ".join(kept) or "none",
+                                                                 ", ".join(removed) or "none"))
 
     def install_debs(self):
         files, _ = QFileDialog.getOpenFileNames(self, "Kernel packages", "", "Debian packages (*.deb)")

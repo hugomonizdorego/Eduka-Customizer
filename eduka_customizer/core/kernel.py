@@ -184,6 +184,158 @@ class Kernels:
         self.pkgs.install_debs(files)
         self.project.record("kernel-deb", " ".join(f.name for f in files))
 
+    # Third-party repositories typed in the console --------------------------------------
+    # Repositories added in the kernel console are temporary: they stay in the system only
+    # when a kernel from them is installed; otherwise they are removed again (with their
+    # keys and package lists), so a test never ends up in the ISO.
+    APT_DIRS = ("etc/apt/sources.list.d", "etc/apt/keyrings", "etc/apt/trusted.gpg.d", "usr/share/keyrings")
+
+    def _apt_files(self):
+        out = set()
+        for d in self.APT_DIRS:
+            base = self.rootfs / d
+            if base.is_dir():
+                out |= {str(p.relative_to(self.rootfs)) for p in base.iterdir() if p.is_file()}
+        return out
+
+    def _sources_list_lines(self):
+        p = self.rootfs / "etc/apt/sources.list"
+        return p.read_text(errors="replace").splitlines() if p.exists() else []
+
+    def temp_files(self):
+        return list(self.project.state.get("kernel", {}).get("temp_repos", []))
+
+    def _set_temp(self, files):
+        self.project.state.setdefault("kernel", {})["temp_repos"] = sorted(set(files))
+        self.project.save()
+
+    def console(self, command):
+        """Run a shell command inside the image (as root) and return its output. Repository
+        files and keys it creates are remembered as temporary."""
+        if not command.strip():
+            return ""
+        before, lines = self._apt_files(), self._sources_list_lines()
+        with self.chroot:
+            out = self.chroot.output(["/bin/bash", "-c", command + " 2>&1"], check=False) or ""
+        new = sorted(self._apt_files() - before)
+        added = [l for l in self._sources_list_lines() if l not in lines and l.strip().startswith("deb")]
+        if added:
+            # Lines appended to sources.list move to a file of their own, so they can be removed again.
+            p = self.rootfs / "etc/apt/sources.list"
+            p.write_text("\n".join(l for l in self._sources_list_lines() if l not in added) + "\n")
+            n = 1
+            while (self.rootfs / "etc/apt/sources.list.d" / "kernel-console-{}.list".format(n)).exists():
+                n += 1
+            f = self.rootfs / "etc/apt/sources.list.d" / "kernel-console-{}.list".format(n)
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text("\n".join(added) + "\n")
+            new.append(str(f.relative_to(self.rootfs)))
+        if new:
+            self._set_temp(self.temp_files() + new)
+            log.info("Temporary repository files: %s", ", ".join(new))
+        self.project.record("kernel-console", command[:200])
+        return out
+
+    @staticmethod
+    def repo_uris(path):
+        """URIs of a .list or .sources file."""
+        text = Path(path).read_text(errors="replace") if Path(path).is_file() else ""
+        uris = []
+        if str(path).endswith(".sources"):
+            for st in parse_deb822(text):
+                uris += st.get("URIs", "").split()
+        else:
+            for line in text.splitlines():
+                line = re.sub(r"\[[^\]]*\]", "", line.split("#")[0]).split()
+                if len(line) >= 2 and line[0] in ("deb", "deb-src"):
+                    uris.append(line[1])
+        return [u for u in uris if u]
+
+    @staticmethod
+    def list_prefix(uri):
+        """The file name prefix APT uses for the package lists of *uri*."""
+        u = re.sub(r"^[a-z0-9+.-]+://", "", uri.strip()).rstrip("/")
+        u = re.sub(r"^[^@/]*@", "", u)
+        return u.replace(":", "%3a").replace("/", "_") + "_"
+
+    def repo_packages(self, uri, prefix="linux-"):
+        """{package: [versions]} of the package lists that came from *uri*."""
+        lists = self.rootfs / "var/lib/apt/lists"
+        out = {}
+        if not lists.is_dir():
+            return out
+        start = self.list_prefix(uri)
+        for f in lists.iterdir():
+            if f.name.startswith(start) and f.name.endswith("_Packages"):
+                for st in parse_deb822(f.read_text(errors="replace")):
+                    name = st.get("Package", "")
+                    if name.startswith(prefix):
+                        out.setdefault(name, []).append(st.get("Version", ""))
+        return out
+
+    def temp_repos(self):
+        """[{file, uris, kernels: {package: [versions]}}] of the temporary repositories."""
+        out = []
+        for rel in self.temp_files():
+            p = self.rootfs / rel
+            if p.suffix in (".list", ".sources") and p.exists():
+                kernels = {}
+                for uri in self.repo_uris(p):
+                    for name, versions in self.repo_packages(uri).items():
+                        if name.startswith("linux-image-") or name.startswith("linux-xanmod"):
+                            kernels.setdefault(name, []).extend(versions)
+                out.append({"file": rel, "uris": self.repo_uris(p), "kernels": kernels})
+        return out
+
+    def finalize_temp_repos(self):
+        """Keep the temporary repositories a kernel was installed from; remove the others
+        (source file, unused keys and package lists). Returns (kept, removed) file lists."""
+        temp = self.temp_files()
+        if not temp:
+            return [], []
+        installed = {st.get("Package"): st.get("Version", "") for st in self._status()}
+        kept, removed = [], []
+        for rel in temp:
+            p = self.rootfs / rel
+            if p.suffix not in (".list", ".sources") or not p.exists():
+                continue
+            used = False
+            for uri in self.repo_uris(p):
+                for name, versions in self.repo_packages(uri).items():
+                    if installed.get(name) in versions and (name.startswith("linux-image-") or
+                                                            name.startswith("linux-xanmod") or
+                                                            name.startswith("linux-headers-")):
+                        used = True
+            if used:
+                kept.append(rel)
+            else:
+                for uri in self.repo_uris(p):
+                    lists = self.rootfs / "var/lib/apt/lists"
+                    if lists.is_dir():
+                        for f in lists.iterdir():
+                            if f.name.startswith(self.list_prefix(uri)):
+                                f.unlink()
+                p.unlink()
+                removed.append(rel)
+        # Keys of the temporary repositories: kept only when a kept source file uses them.
+        kept_text = " ".join((self.rootfs / k).read_text(errors="replace") for k in kept if (self.rootfs / k).exists())
+        for rel in temp:
+            p = self.rootfs / rel
+            if p.suffix in (".list", ".sources") or not p.exists():
+                continue
+            if Path(rel).name in kept_text or ("trusted.gpg.d" in rel and kept):
+                kept.append(rel)
+            else:
+                p.unlink()
+                removed.append(rel)
+        self._set_temp([])
+        if kept:
+            log.info("Repositories kept (a kernel was installed from them): %s", ", ".join(kept))
+        if removed:
+            log.info("Temporary repositories removed: %s", ", ".join(removed))
+        self.project.record("kernel-repos", "kept {} removed {}".format(len(kept), len(removed)))
+        return kept, removed
+
     # Remove / hold --------------------------------------------------------------------
     def remove(self, version):
         kernels, _meta = self.installed()
