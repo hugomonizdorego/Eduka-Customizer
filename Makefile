@@ -32,7 +32,7 @@ install:
 	sed -e 's|@PREFIX@|$(PREFIX)|g' data/eduka-customizer-pkexec.in \
 		> $(DESTDIR)$(PREFIX)/bin/eduka-customizer-pkexec
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/eduka-customizer $(DESTDIR)$(PREFIX)/bin/eduka-customizer-pkexec
-	$(INSTALL) -m644 data/exclude.list data/desktops.json data/languages.json data/profiles.json data/apps.json $(DESTDIR)$(DATADIR)/
+	$(INSTALL) -m644 data/exclude.list data/desktops.json data/languages.json data/profiles.json data/apps.json data/themes.json $(DESTDIR)$(DATADIR)/
 	$(INSTALL) -m644 data/eduka-customizer.conf $(DESTDIR)/etc/eduka-customizer/eduka-customizer.conf
 	sed -e 's|@PREFIX@|$(PREFIX)|g' data/org.edukasaun.customizer.desktop.in \
 		> $(DESTDIR)$(PREFIX)/share/applications/org.edukasaun.customizer.desktop

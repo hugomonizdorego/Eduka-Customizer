@@ -305,7 +305,7 @@ def cmd_workshop(args):
 
 
 def cmd_themes(args):
-    from eduka_customizer.core.themes import THEME_PACKS, Themes
+    from eduka_customizer.core.themes import Themes, packs_catalog
     p = _locked(args)
     th = Themes(p)
     if args.action == "list":
@@ -313,7 +313,7 @@ def cmd_themes(args):
         print("Icons:  ", ", ".join(th.icon_themes()))
         print("Cursors:", ", ".join(th.cursor_themes()))
         print("Current:", th.current())
-        print("Packs:  ", ", ".join(p for p, _k, _t in THEME_PACKS))
+        print("Packs:  ", ", ".join(p["package"] for p in packs_catalog()))
     elif args.action == "apply":
         th.apply(args.gtk or "", args.icons or "", args.cursor or "", args.font or "", args.dark)
     elif args.action == "packs":

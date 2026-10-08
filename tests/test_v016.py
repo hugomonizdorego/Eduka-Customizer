@@ -336,3 +336,45 @@ def test_kernel_console_temporary_repositories(project, monkeypatch):
     assert removed == ["etc/apt/sources.list.d/kernel-console-1.list"]
     assert not (lists / "liquorix.net_debian_dists_trixie_main_binary-amd64_Packages").exists()
     assert (r / "etc/apt/sources.list.d/xanmod.list").exists() and k.temp_files() == []
+
+
+# Look & Feel per desktop -----------------------------------------------------------------------
+
+def test_theme_packs_fit_the_desktop():
+    from eduka_customizer.core import desktop as dsk
+    from eduka_customizer.core import themes
+    packs = {p["package"]: p for p in themes.packs_catalog()}
+    kde, xfce, gnome, sway = (dsk.desktop(i) for i in ("kde", "xfce", "gnome", "sway"))
+    fits = lambda pkg, de: themes.pack_fits(packs[pkg], de)  # noqa: E731
+    assert fits("papirus-icon-theme", kde) and fits("papirus-icon-theme", sway)
+    assert fits("qt-style-kvantum", kde) and not fits("qt-style-kvantum", xfce)
+    assert fits("greybird-gtk-theme", xfce) and not fits("greybird-gtk-theme", kde)
+    assert fits("breeze-gtk-theme", kde) and not fits("breeze-gtk-theme", gnome)
+    assert fits("xfwm4-themes", xfce) and not fits("xfwm4-themes", gnome)
+    assert fits("picom", xfce) and not fits("picom", gnome) and not fits("picom", sway)
+    assert all(themes.pack_fits(p, None) for p in packs.values())
+    opts = themes.look_options(kde)
+    assert opts["plasma"] and opts["kvantum"] and opts["gtk_apps_only"] and not opts["xfwm4"]
+    assert themes.look_options(xfce)["xfwm4"] and not themes.look_options(xfce)["plasma"]
+
+
+def test_window_themes(project, nochroot):
+    from eduka_customizer.core.themes import Themes
+    r = project.rootfs
+    for name, sub in (("Greybird", "xfwm4"), ("Numix", "openbox-3"), ("Arc", "cinnamon")):
+        (r / "usr/share/themes" / name / sub).mkdir(parents=True)
+    xf = r / "etc/xdg/xfce4/xfconf/xfce-perchannel-xml"
+    xf.mkdir(parents=True)
+    (xf / "xfwm4.xml").write_text('<channel><property name="theme" type="string" value="Default"/></channel>')
+    (r / "etc/xdg/openbox").mkdir(parents=True)
+    (r / "etc/xdg/openbox/rc.xml").write_text("<openbox_config><theme>\n  <name>Clearlooks</name></theme>")
+    schema(r, "org.cinnamon.theme", ["name"])
+    th = Themes(project)
+    assert th.xfwm4_themes() == ["Greybird"] and th.openbox_themes() == ["Numix"] and th.cinnamon_themes() == ["Arc"]
+    th.apply_extra(xfwm4="Greybird", openbox="Numix", cinnamon="Arc", plasma="org.kde.breezedark.desktop")
+    assert 'value="Greybird"' in (xf / "xfwm4.xml").read_text()
+    assert "<name>Numix</name>" in (r / "etc/xdg/openbox/rc.xml").read_text()
+    assert "name='Arc'" in (r / gsettings.SCHEMAS / "91_eduka-wm-theme.gschema.override").read_text()
+    assert "LookAndFeelPackage=org.kde.breezedark.desktop" in (r / "etc/xdg/kdeglobals").read_text()
+    with pytest.raises(ValueError):
+        th.apply_extra(xfwm4="../../etc")
