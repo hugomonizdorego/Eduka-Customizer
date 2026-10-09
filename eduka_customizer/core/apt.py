@@ -163,7 +163,7 @@ class Sources:
         legacy = self.rootfs / "etc/apt/sources.list"
         if legacy.exists() and re.search(r"(?m)^\s*deb\s", legacy.read_text(errors="replace")):
             shutil.move(str(legacy), str(legacy) + ".eduka-old")
-            legacy.write_text("# Moved to /etc/apt/sources.list.d/debian.sources by Eduka-Customizer\n")
+            legacy.write_text("# Moved to /etc/apt/sources.list.d/debian.sources by DistroForge\n")
         for p in self.files():
             if p.suffix == ".sources" and p.name != "debian.sources":
                 stz = parse_deb822(p.read_text(errors="replace"))
@@ -191,7 +191,7 @@ class Sources:
         """Store a repository key (URL or local file, armored or binary)."""
         if re.match(r"^https?://", key):
             log.info("Downloading key %s", key)
-            req = urllib.request.Request(key, headers={"User-Agent": "Eduka-Customizer"})
+            req = urllib.request.Request(key, headers={"User-Agent": "DistroForge"})
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = resp.read()
         else:
@@ -268,10 +268,32 @@ class Packages:
         _check_names(packages)
         log.info("Removing: %s", " ".join(packages))
         with self.chroot:
+            if autoremove:
+                self.keep_desktop(packages)
             self.chroot.run(APT + (["purge"] if purge else ["remove"]) + packages)
             if autoremove:
                 self.chroot.run(APT + ["autoremove", "--purge"])
         self.project.record("apt-remove", " ".join(packages))
+
+    def keep_desktop(self, packages):
+        """Removing one application can take a metapackage with it (task-gnome-desktop,
+        kde-standard, ...); autoremove would then remove the whole desktop. Mark what
+        those metapackages pulled in as manually installed so it stays."""
+        sim = self.chroot.output(["apt-get", "-s", "purge"] + list(packages), check=False) or ""
+        gone = set(re.findall(r"(?m)^(?:Remv|Purg) (\S+)", sim)) - set(packages)
+        if not gone:
+            return []
+        deps = self.chroot.output(["apt-cache", "depends", "--installed", "--no-suggests", "--no-conflicts",
+                                   "--no-breaks", "--no-replaces", "--no-enhances"] + sorted(gone),
+                                  check=False) or ""
+        names = set(re.findall(r"(?m)^\s+\|?(?:Pre)?(?:Depends|Recommends):\s+<?([^\s<>]+)>?", deps))
+        names |= set(re.findall(r"(?m)^\s{4}(\S+)$", deps))
+        installed = {n for n, *_r in self.installed()}
+        keep = sorted((names & installed) - set(packages) - gone)
+        if keep:
+            log.info("Keeping what %s installed: %d packages marked manual", " ".join(sorted(gone)), len(keep))
+            self.chroot.run(["apt-mark", "manual"] + keep, check=False, quiet=True)
+        return keep
 
     def autoremove(self):
         self.chroot.run(APT + ["autoremove", "--purge"])

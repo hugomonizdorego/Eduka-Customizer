@@ -12,14 +12,14 @@ from eduka_customizer.qt.widgets import (QButtonGroup, QDialog, QListWidget, QLi
                                           QWidget, QGridLayout)
 
 from eduka_customizer.core import profiles
-from eduka_customizer.gui.widgets import button, hbox, label, tile
+from eduka_customizer.gui.widgets import button, combo, hbox, label, tile
 
 
 class PurposeDialog(QDialog):
     def __init__(self, parent=None, current=None):
         super().__init__(parent)
         self.setWindowTitle("What is your distribution for?")
-        self.setMinimumSize(820, 600)
+        self.setMinimumSize(820, 660)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(22, 18, 22, 18)
         head = label("What is your distribution for?", wrap=False)
@@ -43,6 +43,11 @@ class PurposeDialog(QDialog):
             t.clicked.connect(lambda _c=False, pid=p["id"]: self.choose(pid))
             grid.addWidget(t, i // 2, i % 2)
         lay.addWidget(holder)
+        lay.addWidget(label("ISO edition", "cardTitle"))
+        self.edition = combo([(e["id"], "{} — {}".format(e["name"], e["description"]))
+                              for e in profiles.iso_editions()], "full_apps")
+        self.edition.currentIndexChanged.connect(lambda _i: self.choose(self.profile_id))
+        lay.addWidget(self.edition)
         lay.addWidget(label("Recommendations", "cardTitle"))
         self.items = QListWidget()
         self.items.setMinimumHeight(170)
@@ -58,7 +63,7 @@ class PurposeDialog(QDialog):
         self.profile_id = profile_id
         self.tiles[profile_id].setChecked(True)
         self.items.clear()
-        for key, text, _step in profiles.recommendations(profile_id):
+        for key, text, _step in profiles.recommendations(profile_id, self.edition.currentData()):
             it = QListWidgetItem(text)
             it.setToolTip(text)
             it.setData(Qt.ItemDataRole.UserRole, key)
@@ -91,6 +96,7 @@ def ask_purpose(page, force=False):
         proj.state["purpose"] = proj.state.get("purpose") or "other"
         proj.save()
         return
-    pid, keys = dlg.profile_id, dlg.keys()
+    pid, keys, edition = dlg.profile_id, dlg.keys(), dlg.edition.currentData()
     page.task("Apply recommendations for " + profiles.get(pid)["name"],
-              lambda t: profiles.apply(proj, pid, keys, t.set_stage), lambda _r: page.main.update_state())
+              lambda t: profiles.apply(proj, pid, keys, t.set_stage, edition=edition),
+              lambda _r: page.main.update_state())

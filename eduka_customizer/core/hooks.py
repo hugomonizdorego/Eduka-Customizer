@@ -39,7 +39,7 @@ def run_command(project, command):
 
 
 def hook_dirs(project):
-    """Hooks in <project>/hooks run in order with 'eduka-customizer hooks'."""
+    """Hooks in <project>/hooks run in order with 'distroforge hooks'."""
     d = project.path / "hooks"
     d.mkdir(exist_ok=True)
     return sorted(p for p in d.iterdir() if p.is_file() and not p.name.startswith("."))

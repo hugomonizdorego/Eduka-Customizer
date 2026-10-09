@@ -1,0 +1,275 @@
+{
+ "comment": "Theme packs offered on Look & Feel. 'for': all, gtk (GTK desktops and window managers), qt (KDE, LXQt, Eduka-Desktop), qt+gtk, x11-nocomp (X11 desktops that do not composite themselves) or a desktop id.",
+ "packs": [
+  {
+   "package": "papirus-icon-theme",
+   "kind": "icons",
+   "name": "Papirus icons",
+   "for": "all"
+  },
+  {
+   "package": "numix-icon-theme-circle",
+   "kind": "icons",
+   "name": "Numix Circle icons",
+   "for": "all"
+  },
+  {
+   "package": "numix-icon-theme",
+   "kind": "icons",
+   "name": "Numix icons",
+   "for": "all"
+  },
+  {
+   "package": "elementary-xfce-icon-theme",
+   "kind": "icons",
+   "name": "elementary Xfce icons",
+   "for": "gtk"
+  },
+  {
+   "package": "breeze-icon-theme",
+   "kind": "icons",
+   "name": "Breeze icons (KDE)",
+   "for": "all"
+  },
+  {
+   "package": "adwaita-icon-theme",
+   "kind": "icons",
+   "name": "Adwaita icons (GNOME)",
+   "for": "all"
+  },
+  {
+   "package": "yaru-theme-icon",
+   "kind": "icons",
+   "name": "Yaru icons",
+   "for": "all"
+  },
+  {
+   "package": "moka-icon-theme",
+   "kind": "icons",
+   "name": "Moka icons",
+   "for": "all"
+  },
+  {
+   "package": "faba-icon-theme",
+   "kind": "icons",
+   "name": "Faba icons",
+   "for": "all"
+  },
+  {
+   "package": "paper-icon-theme",
+   "kind": "icons",
+   "name": "Paper icons",
+   "for": "all"
+  },
+  {
+   "package": "obsidian-icon-theme",
+   "kind": "icons",
+   "name": "Obsidian icons",
+   "for": "all"
+  },
+  {
+   "package": "deepin-icon-theme",
+   "kind": "icons",
+   "name": "Deepin icons",
+   "for": "all"
+  },
+  {
+   "package": "mate-icon-theme",
+   "kind": "icons",
+   "name": "MATE icons",
+   "for": "mate"
+  },
+  {
+   "package": "oxygen-icon-theme",
+   "kind": "icons",
+   "name": "Oxygen icons (KDE classic)",
+   "for": "qt"
+  },
+  {
+   "package": "tango-icon-theme",
+   "kind": "icons",
+   "name": "Tango icons",
+   "for": "gtk"
+  },
+  {
+   "package": "arc-theme",
+   "kind": "gtk",
+   "name": "Arc GTK theme (with Cinnamon, Xfce and GNOME Shell parts)",
+   "for": "gtk"
+  },
+  {
+   "package": "materia-gtk-theme",
+   "kind": "gtk",
+   "name": "Materia GTK theme",
+   "for": "gtk"
+  },
+  {
+   "package": "numix-gtk-theme",
+   "kind": "gtk",
+   "name": "Numix GTK theme (with Xfwm4 and Openbox parts)",
+   "for": "gtk"
+  },
+  {
+   "package": "greybird-gtk-theme",
+   "kind": "gtk",
+   "name": "Greybird GTK theme (Xfce)",
+   "for": "gtk"
+  },
+  {
+   "package": "blackbird-gtk-theme",
+   "kind": "gtk",
+   "name": "Blackbird GTK theme (dark, Xfce)",
+   "for": "gtk"
+  },
+  {
+   "package": "bluebird-gtk-theme",
+   "kind": "gtk",
+   "name": "Bluebird GTK theme (Xfce)",
+   "for": "gtk"
+  },
+  {
+   "package": "albatross-gtk-theme",
+   "kind": "gtk",
+   "name": "Albatross GTK theme (Xfce)",
+   "for": "gtk"
+  },
+  {
+   "package": "orchis-gtk-theme",
+   "kind": "gtk",
+   "name": "Orchis GTK theme",
+   "for": "gtk"
+  },
+  {
+   "package": "yaru-theme-gtk",
+   "kind": "gtk",
+   "name": "Yaru GTK theme",
+   "for": "gtk"
+  },
+  {
+   "package": "gnome-themes-extra",
+   "kind": "gtk",
+   "name": "Adwaita dark and HighContrast for GTK 2/3",
+   "for": "gtk"
+  },
+  {
+   "package": "mate-themes",
+   "kind": "gtk",
+   "name": "MATE themes (GTK and Marco)",
+   "for": "mate"
+  },
+  {
+   "package": "xfwm4-themes",
+   "kind": "xfwm4",
+   "name": "Window decorations for Xfce",
+   "for": "xfce"
+  },
+  {
+   "package": "breeze-gtk-theme",
+   "kind": "gtk",
+   "name": "Breeze GTK theme (GTK apps match KDE)",
+   "for": "qt"
+  },
+  {
+   "package": "qt-style-kvantum",
+   "kind": "qt",
+   "name": "Kvantum Qt style engine",
+   "for": "qt"
+  },
+  {
+   "package": "qt-style-kvantum-themes",
+   "kind": "qt",
+   "name": "Kvantum themes",
+   "for": "qt"
+  },
+  {
+   "package": "qt5ct",
+   "kind": "qt",
+   "name": "Qt5 settings (Qt apps follow your choice)",
+   "for": "qt+gtk"
+  },
+  {
+   "package": "qt6ct",
+   "kind": "qt",
+   "name": "Qt6 settings",
+   "for": "qt+gtk"
+  },
+  {
+   "package": "breeze-cursor-theme",
+   "kind": "cursor",
+   "name": "Breeze cursors",
+   "for": "all"
+  },
+  {
+   "package": "dmz-cursor-theme",
+   "kind": "cursor",
+   "name": "DMZ cursors",
+   "for": "all"
+  },
+  {
+   "package": "oxygen-cursor-theme",
+   "kind": "cursor",
+   "name": "Oxygen cursors",
+   "for": "all"
+  },
+  {
+   "package": "xcursor-themes",
+   "kind": "cursor",
+   "name": "X.Org cursors",
+   "for": "all"
+  },
+  {
+   "package": "chameleon-cursor-theme",
+   "kind": "cursor",
+   "name": "Chameleon cursors",
+   "for": "all"
+  },
+  {
+   "package": "fonts-noto",
+   "kind": "font",
+   "name": "Noto fonts (many languages)",
+   "for": "all"
+  },
+  {
+   "package": "fonts-noto-color-emoji",
+   "kind": "font",
+   "name": "Noto color emoji",
+   "for": "all"
+  },
+  {
+   "package": "fonts-inter",
+   "kind": "font",
+   "name": "Inter",
+   "for": "all"
+  },
+  {
+   "package": "fonts-cantarell",
+   "kind": "font",
+   "name": "Cantarell (GNOME)",
+   "for": "all"
+  },
+  {
+   "package": "fonts-ubuntu",
+   "kind": "font",
+   "name": "Ubuntu font family",
+   "for": "all"
+  },
+  {
+   "package": "fonts-liberation2",
+   "kind": "font",
+   "name": "Liberation (MS compatible)",
+   "for": "all"
+  },
+  {
+   "package": "fonts-jetbrains-mono",
+   "kind": "font",
+   "name": "JetBrains Mono (code)",
+   "for": "all"
+  },
+  {
+   "package": "picom",
+   "kind": "compositor",
+   "name": "picom compositor (X11)",
+   "for": "x11-nocomp"
+  }
+ ]
+}

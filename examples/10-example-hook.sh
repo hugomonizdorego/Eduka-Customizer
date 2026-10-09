@@ -5,10 +5,10 @@ set -e
 # systemctl enable ssh
 # Add a default bookmark for every new user:
 mkdir -p /etc/skel/Desktop
-cat > /etc/skel/Desktop/edukasaun.desktop <<'DESKTOP'
+cat > /etc/skel/Desktop/website.desktop <<'DESKTOP'
 [Desktop Entry]
 Type=Link
-Name=Edukasaun OS
-URL=https://edukasaun.org
+Name=My Linux website
+URL=https://example.org
 Icon=applications-education
 DESKTOP

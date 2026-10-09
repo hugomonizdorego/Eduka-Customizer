@@ -213,8 +213,8 @@ def test_profiles():
     keys = [k for k, _l, _s in profiles.recommendations("education")]
     assert keys[:4] == ["desktop", "session", "compositor", "look"] and "apps" in keys
     edu = dict((k, s) for k, _l, s in profiles.recommendations("education"))
-    assert edu["desktop"] == {"action": "desktop", "id": "eduka", "dm": "lightdm"}
-    assert edu["compositor"]["id"] == "picom"
+    assert edu["desktop"] == {"action": "desktop", "id": "xfce", "dm": "lightdm", "edition": "full"}
+    assert edu["compositor"]["id"] == "xfwm4"
     home = dict((k, s) for k, _l, s in profiles.recommendations("home"))
     assert home["compositor"]["id"] == "muffin"  # Cinnamon's own, never picom
     server = [k for k, _l, _s in profiles.recommendations("server")]
@@ -260,12 +260,12 @@ def test_menu_icons_exist_for_every_page():
     src = (root / "eduka_customizer/gui/main_window.py").read_text()
     import re
     keys = re.findall(r'"(\w+Page)": "(\w+)"', src)
-    assert len(keys) == 20
+    assert len(keys) == 26
     for _page, key in keys:
         assert data_file("icons", "menu", key + ".svg").exists(), key
     assert "GPL-3.0" in (root / "data/icons/menu/README.md").read_text()
     for size in (16, 32, 48, 256):
-        assert (root / "icons/hicolor/{0}x{0}/apps/eduka-customizer.png".format(size)).exists()
+        assert (root / "icons/hicolor/{0}x{0}/apps/distroforge.png".format(size)).exists()
 
 
 def test_archive_links():
@@ -275,3 +275,25 @@ def test_archive_links():
     assert not link_stays_inside("theme/x", "../../etc/passwd")
     assert not link_stays_inside("x", "/etc/passwd")
     assert not link_stays_inside("x", "..")
+
+
+def test_new_projects_are_not_edukasaun(blank_project, tmp_path):
+    """0.15: nothing about Edukasaun OS is preset; names fall back to the image's os-release."""
+    p = blank_project
+    ident = p.state["identity"]
+    assert ident["name"] == "" and ident["id"] == "" and ident["volume_label"] == "" and ident["hostname"] == ""
+    from eduka_customizer.core import distro, legacy
+    p.state["distro"] = distro.detect(p.rootfs).to_dict()
+    assert p.display_name() == "Debian GNU/Linux" and p.os_id() == "debian"
+    assert p.volume_label() == "DEBIAN_GNU_LINUX"
+    from eduka_customizer.core.isobuild import BuildOptions
+    o = BuildOptions.from_project(p)
+    assert o.title == "Debian GNU/Linux" and o.volume_label == "DEBIAN_GNU_LINUX"
+    from eduka_customizer.core.branding import Branding
+    with pytest.raises(ValueError, match="name"):
+        Branding(p).apply_identity(dict(ident))
+    old = p.rootfs / "etc/live/config.conf.d/50-edukasaun.conf"
+    old.parent.mkdir(parents=True)
+    old.write_text('LIVE_USERNAME="live"\n')
+    assert legacy.migrate(p.rootfs) == 1
+    assert (p.rootfs / "etc/live/config.conf.d/50-eduka-customizer.conf").exists() and not old.exists()

@@ -5,8 +5,8 @@
    "id": "education",
    "name": "Education",
    "icon": "applications-education",
-   "description": "Schools and learning: light Eduka-Desktop, learning programs, accessibility, simple for children and teachers.",
-   "desktop": "eduka",
+   "description": "Schools and learning: light Xfce desktop (or choose Eduka-Desktop on the Desktop page), learning programs, accessibility, simple for children and teachers.",
+   "desktop": "xfce",
    "dm": "lightdm",
    "session_type": "x11",
    "compositor": "auto",
@@ -68,7 +68,12 @@
    "flatpaks": [],
    "plymouth": null,
    "firmware": true,
-   "calamares": false
+   "calamares": false,
+   "minimal_packages": [
+    "openssh-server",
+    "ufw",
+    "unattended-upgrades"
+   ]
   },
   {
    "id": "professional",
@@ -159,6 +164,26 @@
    "plymouth": null,
    "firmware": false,
    "calamares": false
+  }
+ ],
+ "iso_editions": [
+  {
+   "id": "minimal",
+   "name": "Minimal",
+   "desktop_edition": "mini",
+   "description": "Smallest ISO: the desktop in its Mini edition, firmware and the installer. No extra applications."
+  },
+  {
+   "id": "full",
+   "name": "Full",
+   "desktop_edition": "full",
+   "description": "The complete desktop and the applications for this purpose."
+  },
+  {
+   "id": "full_apps",
+   "name": "Full with recommended apps",
+   "desktop_edition": "full_apps",
+   "description": "Full, plus the desktop's recommended applications and the Flatpak apps (largest ISO). Recommended."
   }
  ]
 }

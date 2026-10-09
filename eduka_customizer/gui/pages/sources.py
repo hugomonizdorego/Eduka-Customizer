@@ -16,9 +16,9 @@ class RepoDialog(QDialog):
         self.setWindowTitle("Add repository")
         f = QFormLayout(self)
         self.name = QLineEdit()
-        self.name.setPlaceholderText("edukasaun")
+        self.name.setPlaceholderText("myrepo")
         self.uri = QLineEdit()
-        self.uri.setPlaceholderText("https://repo.edukasaun.org/debian")
+        self.uri.setPlaceholderText("https://repo.example.org/debian")
         self.suites = QLineEdit()
         self.suites.setPlaceholderText("trixie")
         self.components = QLineEdit("main")
@@ -35,8 +35,9 @@ class RepoDialog(QDialog):
 
 class SourcesPage(Page):
     title = "Repositories"
-    subtitle = ("Edit sources.list and sources.list.d. Choose the Debian suite the image follows: "
-                "stable, testing or sid.")
+    nav_title = "Repositories"
+    subtitle = ("Step 2 · Where packages come from: the Debian release (stable, testing or sid) and extra "
+                "repositories.")
     icon_names = ("software-properties", "preferences-system-network", "network-server")
 
     def build(self):

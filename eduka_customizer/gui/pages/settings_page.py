@@ -1,14 +1,12 @@
-"""Settings, host check (doctor) and About."""
+"""Settings, host check (doctor) and the error log."""
 
 import os
-import shutil
-import subprocess
 import tarfile
 import time
 
 from eduka_customizer.qt.widgets import QCheckBox, QLineEdit, QMessageBox, QPlainTextEdit
 
-from eduka_customizer import APP_NAME, HOMEPAGE, VERSION_LABEL
+from eduka_customizer import APP_NAME, VERSION_LABEL
 from eduka_customizer.core import doctor
 from eduka_customizer.core import log as logmod
 from eduka_customizer import qt as qtmod
@@ -25,8 +23,8 @@ FIELDS = [
     ("debian", "mirror", "Debian mirror"),
     ("debian", "security_mirror", "Security mirror"),
     ("debian", "components", "Components"),
-    ("edukasaun", "eduka_desktop_repo", "Eduka-Desktop repository"),
-    ("edukasaun", "eduka_desktop_ref", "Eduka-Desktop branch / tag"),
+    ("eduka_desktop", "repo", "Eduka-Desktop repository"),
+    ("eduka_desktop", "ref", "Eduka-Desktop branch / tag"),
     ("flatpak", "remote_url", "Flathub remote"),
     ("build", "iso_name", "ISO file name template"),
     ("qemu", "memory", "QEMU memory (MiB)"),
@@ -36,12 +34,13 @@ FIELDS = [
 
 class SettingsPage(Page):
     title = "Settings"
-    subtitle = "Global preferences, host computer check and information about Eduka-Customizer."
+    nav_title = "Settings"
+    subtitle = "Preferences, the tools DistroForge needs on this computer, and the error log for bug reports."
     icon_names = ("preferences-system", "configure")
     needs_rootfs = False
 
     def build(self):
-        c = self.card("Preferences", "Stored in /etc/eduka-customizer/eduka-customizer.conf. Update the "
+        c = self.card("Preferences", "Stored in /etc/distroforge/distroforge.conf. Update the "
                                      "codenames when Debian makes a new release.")
         f = c.form()
         self.edits = {}
@@ -51,10 +50,16 @@ class SettingsPage(Page):
             f.addRow(text + ":", e)
         self.oldstable = QCheckBox("Allow Debian oldstable (not recommended)")
         f.addRow("", self.oldstable)
+        self.free_nav = QCheckBox("Free navigation (expert mode): open every menu at any time instead of "
+                                  "one step after the other")
+        f.addRow("", self.free_nav)
+        self.apply_now = QCheckBox("Apply every change at once (expert mode) instead of collecting the changes in "
+                                   "Review & Apply")
+        f.addRow("", self.apply_now)
         c.add(label("ISO name fields: {id} {name} {version} {codename} {suite} {debian} {arch} {date}", "muted"))
         c.add(hbox(None, button("Save settings", self.save, "primary")))
 
-        c = self.card("Host computer", "Tools Eduka-Customizer uses on this computer.")
+        c = self.card("Host computer", "Tools DistroForge uses on this computer.")
         self.host = label("", "muted")
         c.add(self.host)
         self.checks = table(["", "Tool", "Package", "Used for"])
@@ -64,7 +69,7 @@ class SettingsPage(Page):
                    button("Install missing packages", self.install_missing, "primary")))
 
         c = self.card("Logs and error reports",
-                      "Every run writes a debug log and an error log to /tmp/eduka-customizer/. "
+                      "Every run writes a debug log and an error log to /tmp/distroforge/. "
                       "Send them to the developers when something fails.")
         self.log_paths = label("", "muted")
         c.add(self.log_paths)
@@ -73,29 +78,23 @@ class SettingsPage(Page):
         self.errors.setMaximumHeight(160)
         c.add(self.errors)
         c.add(hbox(button("Open log folder", self.open_logs), button("Reload", self.load_errors), None,
-                   button("Create bug report", self.bug_report, "primary")))
+                   button("Save a bug report file", self.bug_report),
+                   button("Send feedback...", lambda: self.main.send_feedback(), "primary")))
 
-        c = self.card("About")
-        c.add(label(
-            "<b>{} {}</b> — the ISO builder and customizer for <b>Edukasaun OS</b>, based on Debian "
-            "stable, testing and sid.<br><br>"
-            "Rewritten from <i>Customizer</i> by Ivailo Monev, Mubiin Kimura, Graham Cantin and "
-            "contributors. Techniques inspired by <i>Cubic</i> (boot replay, ISO remastering), "
-            "<i>remastersys</i> (system snapshot, clean-up) and <i>penguins-eggs</i> (hybrid "
-            "BIOS/UEFI boot, exclusion lists).<br><br>"
-            "Desktop: <i>Eduka-Desktop</i> — github.com/hugomonizdorego/Eduka-Desktop<br>"
-            "Apps: <i>Flathub</i> — flathub.org<br><br>"
-            "License: GNU GPL version 3 or later. {}".format(APP_NAME, VERSION_LABEL, HOMEPAGE)))
+        c.add(hbox(button("About {}, licenses and donations...".format(APP_NAME), lambda: self.main.go("AboutPage")),
+                   None))
 
     def refresh(self):
         cfg = settings()
         for (section, key), e in self.edits.items():
             e.setText(cfg.get(section, key))
         self.oldstable.setChecked(cfg.getbool("debian", "allow_oldstable"))
+        self.free_nav.setChecked(cfg.getbool("general", "free_navigation"))
+        self.apply_now.setChecked(cfg.get("general", "apply_mode") == "now")
         host = doctor.host_info()
         text = "This computer: {}.".format(host["distro"].summary())
         if not host["supported"]:
-            text += " Fine as a build computer; only 'snapshot this computer' needs Debian or Edukasaun OS."
+            text += " Fine as a build computer; only 'snapshot this computer' needs a Debian-based system."
         text += "  KVM: {}.".format("yes" if host["kvm"] else "no")
         self.host.setText(text)
         rows = [("✓" if r["ok"] else ("✗ required" if r["required"] else "–"), r["item"], r["package"],
@@ -114,13 +113,11 @@ class SettingsPage(Page):
         self.errors.verticalScrollBar().setValue(self.errors.verticalScrollBar().maximum())
 
     def open_logs(self):
-        opener = shutil.which("xdg-open")
-        if opener:
-            subprocess.Popen([opener, logmod.DEBUG_DIR], start_new_session=True,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        from eduka_customizer.gui.opener import open_url
+        open_url(logmod.DEBUG_DIR)
 
     def bug_report(self):
-        """Pack logs and project state into /tmp/eduka-customizer/bug-report-*.tar.gz."""
+        """Pack logs and project state into /tmp/distroforge/bug-report-*.tar.gz."""
         name = os.path.join(logmod.DEBUG_DIR, time.strftime("bug-report-%Y%m%d-%H%M%S.tar.gz"))
         with tarfile.open(name, "w:gz") as tf:
             for f in os.listdir(logmod.DEBUG_DIR):
@@ -128,13 +125,13 @@ class SettingsPage(Page):
                     tf.add(os.path.join(logmod.DEBUG_DIR, f), arcname=f)
             p = self.main.project
             if p:
-                for extra in (p.state_file, p.logs / "eduka-customizer.log", p.logs / "live-session.log",
+                for extra in (p.state_file, p.logs / "distroforge.log", p.logs / "live-session.log",
                               p.logs / "qemu.log"):
                     if extra.exists():
                         tf.add(str(extra), arcname="project/" + extra.name)
             info = doctor.host_info()
             import io
-            data = "Eduka-Customizer {}\nHost: {}\nQt: {}\n".format(
+            data = "DistroForge {}\nHost: {}\nQt: {}\n".format(
                 VERSION_LABEL, info["distro"].summary(), qtmod.version())
             ti = tarfile.TarInfo("system.txt")
             ti.size = len(data.encode())
@@ -148,12 +145,15 @@ class SettingsPage(Page):
         for (section, key), e in self.edits.items():
             cfg.set(section, key, e.text().strip())
         cfg.set("debian", "allow_oldstable", "yes" if self.oldstable.isChecked() else "no")
+        cfg.set("general", "free_navigation", "yes" if self.free_nav.isChecked() else "no")
+        cfg.set("general", "apply_mode", "now" if self.apply_now.isChecked() else "review")
         try:
             cfg.save()
         except OSError as e:
             QMessageBox.warning(self, "Settings", "Could not save: {}".format(e))
             return
         reload()
+        self.main.update_state()
         self.main.stage_label.setText("Settings saved")
 
     def install_missing(self):

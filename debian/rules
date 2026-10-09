@@ -12,12 +12,12 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 endif
 
 override_dh_auto_install:
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/eduka-customizer PREFIX=/usr
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/distroforge PREFIX=/usr
 	# Documentation and screenshots for developers who try the package.
-	install -d $(CURDIR)/debian/eduka-customizer/usr/share/doc/eduka-customizer/screenshots
+	install -d $(CURDIR)/debian/distroforge/usr/share/doc/distroforge/screenshots
 	install -m644 README.md CHANGELOG.md docs/manual.md docs/PANDUAN.md docs/ROADMAP.md \
-		$(CURDIR)/debian/eduka-customizer/usr/share/doc/eduka-customizer/
-	install -m644 docs/screenshots/*.png $(CURDIR)/debian/eduka-customizer/usr/share/doc/eduka-customizer/screenshots/
+		$(CURDIR)/debian/distroforge/usr/share/doc/distroforge/
+	install -m644 docs/screenshots/*.png $(CURDIR)/debian/distroforge/usr/share/doc/distroforge/screenshots/
 
 # The package is not compressed: whatever its size, it is built as it is.
 override_dh_builddeb:
@@ -25,4 +25,4 @@ override_dh_builddeb:
 
 # Keep the icons, screenshots and documentation exactly as they are.
 override_dh_compress:
-	dh_compress -X.md -X.png -X.svg
+	dh_compress -X.md -X.png -X.svg -X.pdf

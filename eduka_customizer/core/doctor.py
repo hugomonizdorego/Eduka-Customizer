@@ -1,4 +1,4 @@
-"""Check the host computer for the tools Eduka-Customizer uses."""
+"""Check the host computer for the tools DistroForge uses."""
 
 import os
 from pathlib import Path

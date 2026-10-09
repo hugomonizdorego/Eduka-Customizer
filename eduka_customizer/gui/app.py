@@ -1,4 +1,4 @@
-"""Start the Eduka-Customizer GUI."""
+"""Start the DistroForge GUI."""
 
 import os
 import shutil
@@ -9,7 +9,7 @@ from eduka_customizer import APP_ID, APP_NAME, VERSION_LABEL
 
 def _relaunch_as_root(args):
     """Restart through pkexec, keeping the display variables the GUI needs."""
-    launcher = shutil.which("eduka-customizer-pkexec")
+    launcher = shutil.which("distroforge-pkexec") or shutil.which("eduka-customizer-pkexec")
     if launcher and os.path.dirname(launcher) in ("/usr/bin", "/usr/local/bin"):
         os.execv(launcher, [launcher] + args)
     pkexec = shutil.which("pkexec")
@@ -40,7 +40,7 @@ def run(project=None, iso=None):
 
     if os.geteuid() != 0 and not os.environ.get("EDUKA_CUSTOMIZER_NO_ROOT"):
         r = QMessageBox.question(None, APP_NAME,
-                                 "Eduka-Customizer needs administrator rights to mount, chroot and "
+                                 "DistroForge needs administrator rights to mount, chroot and "
                                  "build images.\n\nRestart as administrator now?")
         if r == QMessageBox.StandardButton.Yes and _relaunch_as_root([a for a in (iso or project,) if a]):
             return 0

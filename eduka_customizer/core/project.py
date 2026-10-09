@@ -14,25 +14,27 @@ STATE_FILE = "project.json"
 
 DEFAULT_STATE = {
     "format": 1,
-    "name": "Edukasaun OS",
+    "name": "",
     "created": "",
     "customizer_version": VERSION,
     "source": {"kind": "", "path": "", "label": "", "boot_mode": "replay"},
     "distro": {},
     "identity": {
-        "name": "Edukasaun OS",
-        "id": "edukasaun",
-        "version": "1.0",
-        "codename": "Kameli",
-        "home_url": "https://edukasaun.org",
+        # Empty on purpose: every distribution is named by its maker. Until then the
+        # build uses what the image says about itself (os-release).
+        "name": "",
+        "id": "",
+        "version": "",
+        "codename": "",
+        "home_url": "",
         "support_url": "",
         "bug_url": "",
-        "hostname": "edukasaun",
+        "hostname": "",
         "live_user": "live",
         "live_fullname": "Live",
-        "volume_label": "EDUKASAUN_OS",
+        "volume_label": "",
     },
-    "locale": {"default": "en_US.UTF-8", "extra": ["pt_PT.UTF-8", "id_ID.UTF-8"],
+    "locale": {"default": "en_US.UTF-8", "extra": [],
                "timezone": DEFAULT_TIMEZONE, "keyboard": "us"},
     "build": {},
     "boot": {"extra_params": "quiet splash", "timeout": 10, "title": ""},
@@ -92,21 +94,33 @@ class Project:
             p.load()
         else:
             p.state["created"] = datetime.datetime.now().isoformat(timespec="seconds")
+            p.state["steps_done"] = []
             if name:
                 p.state["name"] = name
         for d in (p.rootfs, p.isodir, p.output, p.cache, p.logs, p.bootdir):
             d.mkdir(exist_ok=True)
         p.save()
+        from eduka_customizer.core.projectfiles import write_readme
+        write_readme(p)
         return p
 
     @classmethod
     def open(cls, path):
         p = cls(path)
         if not p.state_file.is_file():
-            raise FileNotFoundError("Not an Eduka-Customizer project: {}".format(p.path))
+            raise FileNotFoundError("Not a DistroForge project: {}".format(p.path))
         p.load()
         for d in (p.output, p.cache, p.logs, p.bootdir):
             d.mkdir(exist_ok=True)
+        if not (p.path / "README.txt").exists():
+            from eduka_customizer.core.projectfiles import write_readme
+            write_readme(p)
+        if p.has_rootfs():
+            try:
+                from eduka_customizer.core import legacy
+                legacy.migrate(p.rootfs)
+            except OSError:
+                pass  # read-only or foreign files: harmless, the build still works
         return p
 
     def load(self):
@@ -118,7 +132,25 @@ class Project:
                 merged[key].update(value)
             else:
                 merged[key] = value
+        if "steps_done" not in data:
+            merged["steps_done"] = ["*"]  # made before 0.15: every step stays open
         self.state = merged
+
+    # Steps of the build (step by step navigation) ---------------------------
+    def step_done(self, key):
+        done = self.state.get("steps_done", [])
+        return "*" in done or key in done
+
+    def mark_step(self, key, done=True):
+        steps = [k for k in self.state.setdefault("steps_done", []) if k != key]
+        if done:
+            steps.append(key)
+        self.state["steps_done"] = steps
+        self.save()
+
+    def mark_all_steps(self):
+        self.state["steps_done"] = ["*"]
+        self.save()
 
     def save(self):
         self.state["customizer_version"] = VERSION
@@ -134,7 +166,7 @@ class Project:
             fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             fh.close()
-            raise ProjectLocked("Another Eduka-Customizer instance is using {}".format(self.path))
+            raise ProjectLocked("Another DistroForge instance is using {}".format(self.path))
         fh.write(str(os.getpid()))
         fh.flush()
         self._lock_fh = fh
@@ -149,6 +181,25 @@ class Project:
     @property
     def distro(self):
         return DistroInfo.from_dict(self.state.get("distro"))
+
+    # Names used when the Identity page is still empty ------------------------
+    def display_name(self):
+        """The distribution's name: from the Identity page, else from the image's os-release."""
+        name = self.state.get("identity", {}).get("name") or self.state.get("name")
+        if name:
+            return name
+        d = self.distro
+        return (d.name or d.pretty_name or "Debian GNU/Linux").strip()
+
+    def os_id(self):
+        import re
+        oid = self.state.get("identity", {}).get("id") or self.distro.id or "debian"
+        return re.sub(r"[^a-z0-9-]", "", oid.lower()) or "debian"
+
+    def volume_label(self):
+        import re
+        label = self.state.get("identity", {}).get("volume_label") or self.display_name().upper()
+        return (re.sub(r"[^A-Za-z0-9_]", "_", label).strip("_") or "LIVE")[:32]
 
     def has_rootfs(self):
         return all((self.rootfs / d).exists() for d in ("etc", "usr", "var"))

@@ -1,0 +1,22 @@
+{
+  "name": "My Linux 1.0",
+  "comment": "A general Debian-based distribution. Apply with: sudo eduka-customizer -p PROJECT recipe apply my-distro.json",
+  "steps": [
+    {"action": "sources", "suite": "stable", "backports": false},
+    {"action": "apt-upgrade"},
+    {"action": "identity", "name": "My Linux", "id": "mylinux", "version": "1.0", "codename": "Aurora",
+     "hostname": "mylinux", "home_url": "https://example.org", "volume_label": "MYLINUX_1_0"},
+    {"action": "users", "live": {"username": "live", "fullname": "Live", "password_mode": "none"}},
+    {"action": "language", "default": "en_US.UTF-8", "extra": [], "timezone": "Asia/Dili", "keyboard": "us",
+     "packs": true, "boot_menu": []},
+    {"action": "desktop", "id": "xfce", "dm": "lightdm", "edition": "full_apps"},
+    {"action": "compositor", "id": "xfwm4", "preset": "shadows"},
+    {"action": "replace-app", "role": "terminal", "package": "tilix", "remove": ["xterm"]},
+    {"action": "replace-app", "role": "video", "package": "mpv"},
+    {"action": "themes", "packs": ["papirus-icon-theme", "arc-theme"], "icons": "Papirus", "gtk": "Arc"},
+    {"action": "kernel", "firmware": true},
+    {"action": "calamares", "install": true},
+    {"action": "boot", "extra_params": "quiet splash", "timeout": 10},
+    {"action": "build", "options": {"compression": "zstd", "level": 15}}
+  ]
+}

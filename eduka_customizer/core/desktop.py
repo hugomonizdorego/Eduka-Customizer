@@ -78,6 +78,54 @@ def detect_display_manager(rootfs):
     return ""
 
 
+EDITIONS = ("mini", "compact", "full", "full_apps")
+
+
+def editions():
+    """[{id, name, description}] of the install editions (Mini, Compact, Full, Full with apps)."""
+    return catalog().get("editions", [])
+
+
+def edition_name(de_id, edition):
+    """(name, summary) of an edition in the desktop's own words (KDE Gear, Xfce Goodies, GNOME Core...)."""
+    d = desktop(de_id)
+    own = (d.get("edition_names") or {}).get(edition)
+    if own:
+        return own["name"], own["summary"]
+    generic = {e["id"]: e for e in editions()}.get(edition, {"name": edition, "description": ""})
+    return generic["name"], generic["description"]
+
+
+def package_descriptions(rootfs, names):
+    """{package: Debian description} read from the image's APT lists (the packages' own words)."""
+    from eduka_customizer.core.catalog import Catalog, _open, _stanzas
+    wanted, out = set(names), {}
+    for f in Catalog(rootfs).list_files():
+        try:
+            with _open(f) as fh:
+                for st in _stanzas(fh):
+                    n = st.get("Package")
+                    if n in wanted and n not in out:
+                        out[n] = st.get("Description", "")
+        except Exception:  # a damaged list must not hide the others
+            continue
+        if len(out) == len(wanted):
+            break
+    return out
+
+
+def edition_plan(de_id, edition="full"):
+    """(packages, apps, no_recommends) to install *de_id* in the given edition."""
+    d = desktop(de_id)
+    if edition not in EDITIONS:
+        raise ValueError("Unknown edition: {} (use {})".format(edition, ", ".join(EDITIONS)))
+    e = (d.get("editions") or {}).get(edition)
+    if not e:
+        return list(d["packages"]), [], False
+    apps = catalog().get("app_sets", {}).get(e.get("apps"), []) if e.get("apps") else []
+    return list(e["packages"]), list(apps), bool(e.get("no_recommends"))
+
+
 def installed_desktops(rootfs):
     have = {s["id"] for s in sessions(rootfs)}
     return [d["id"] for d in catalog()["desktops"] if d["session"] in have]
@@ -118,13 +166,22 @@ class DesktopManager:
         self.pkgs = Packages(project)
         self.chroot = Chroot(project.rootfs)
 
-    def install(self, de_id, dm_id=None, remove_others=False, no_recommends=False):
+    def install(self, de_id, dm_id=None, remove_others=False, no_recommends=False, edition="full"):
         d = desktop(de_id)
-        log.info("Installing desktop: %s", d["name"])
+        packages, apps, ed_norec = edition_plan(de_id, edition)
+        log.info("Installing desktop: %s (%s)", d["name"], edition)
         with self.chroot:
             if remove_others:
                 self.remove_other_desktops(keep=de_id)
-            self.pkgs.install(d["packages"], no_recommends=no_recommends)
+            self.pkgs.install(packages, no_recommends=no_recommends or ed_norec)
+            if apps:
+                # Applications that this Debian suite does not have are skipped, not fatal.
+                have = self.pkgs.available(apps)
+                skipped = [a for a in apps if a not in have]
+                if skipped:
+                    log.warning("Not in this Debian suite, skipped: %s", " ".join(skipped))
+                if have:
+                    self.pkgs.install([a for a in apps if a in have], update=False)
             if d.get("eduka_desktop"):
                 from eduka_customizer.core.eduka_desktop import EdukaDesktop
                 EdukaDesktop(self.project).fetch_build_install()
@@ -132,10 +189,10 @@ class DesktopManager:
             if dm_id:
                 self.set_display_manager(dm_id)
             self.set_default_session(d["session"])
-        self.project.state.setdefault("desktop", {})["id"] = de_id
+        self.project.state.setdefault("desktop", {}).update({"id": de_id, "edition": edition})
         self.project.save()
         self.guard_compositors()
-        self.project.record("desktop-install", de_id)
+        self.project.record("desktop-install", "{} ({})".format(de_id, edition))
 
     def remove_other_desktops(self, keep):
         tasks = [d["task"] for d in catalog()["desktops"]
@@ -173,7 +230,7 @@ class DesktopManager:
         self.project.record("display-manager", dm_id)
 
     def _lightdm_conf(self, values):
-        p = Path(self.rootfs, "etc/lightdm/lightdm.conf.d/50-edukasaun.conf")
+        p = Path(self.rootfs, "etc/lightdm/lightdm.conf.d/50-eduka-customizer.conf")
         cp = configparser.ConfigParser(interpolation=None)
         cp.optionxform = str
         if p.exists():
@@ -193,7 +250,7 @@ class DesktopManager:
             log.warning("Session %s is not installed yet", session_id)
         log.info("Default session: %s", session_id)
         self._lightdm_conf({"user-session": session_id, "autologin-session": session_id})
-        sddm = Path(self.rootfs, "etc/sddm.conf.d/50-edukasaun.conf")
+        sddm = Path(self.rootfs, "etc/sddm.conf.d/50-eduka-customizer.conf")
         if Path(self.rootfs, "usr/bin/sddm").exists():
             sddm.parent.mkdir(parents=True, exist_ok=True)
             cp = configparser.ConfigParser(interpolation=None)
@@ -246,7 +303,7 @@ class DesktopManager:
                 self.pkgs.install([pkg])
             if not Path(self.rootfs, "usr/share/sddm/themes", theme).is_dir():
                 raise RuntimeError("SDDM theme not installed: {}".format(theme))
-        p = Path(self.rootfs, "etc/sddm.conf.d/10-edukasaun-theme.conf")
+        p = Path(self.rootfs, "etc/sddm.conf.d/10-eduka-customizer-theme.conf")
         p.parent.mkdir(parents=True, exist_ok=True)
         cp = configparser.ConfigParser(interpolation=None)
         cp.optionxform = str
@@ -284,7 +341,7 @@ class DesktopManager:
                 text = text.replace("[daemon]", "[daemon]\nWaylandEnable=" + value, 1)
             gdm.write_text(text)
         if Path(self.rootfs, "usr/bin/sddm").exists() and kind == "x11":
-            p = Path(self.rootfs, "etc/sddm.conf.d/20-edukasaun-display.conf")
+            p = Path(self.rootfs, "etc/sddm.conf.d/20-eduka-customizer-display.conf")
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("[General]\nDisplayServer=x11\n")
         self.project.state.setdefault("desktop", {})["session_type"] = kind
@@ -427,7 +484,7 @@ class DesktopManager:
         ours = Path(r, "etc/xdg/autostart/picom.desktop")
         if ours.exists() and "NoDisplay=true" in ours.read_text(errors="replace") and \
                 "Exec=picom\n" in ours.read_text(errors="replace"):
-            ours.unlink()  # the entry Eduka-Customizer wrote for picom
+            ours.unlink()  # the entry DistroForge wrote for picom
         if c["id"] == "xfwm4":
             xml = Path(r, "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml")
             if xml.exists():
@@ -466,13 +523,13 @@ class DesktopManager:
 
 
 PICOM = {
-    "light": "# picom (Eduka-Customizer preset: light)\nbackend = \"xrender\";\nvsync = true;\n"
+    "light": "# picom (DistroForge preset: light)\nbackend = \"xrender\";\nvsync = true;\n"
              "shadow = false;\nfading = true;\nfade-delta = 6;\n",
-    "shadows": "# picom (Eduka-Customizer preset: shadows)\nbackend = \"xrender\";\nvsync = true;\n"
+    "shadows": "# picom (DistroForge preset: shadows)\nbackend = \"xrender\";\nvsync = true;\n"
                "shadow = true;\nshadow-radius = 12;\nshadow-opacity = 0.35;\nshadow-offset-x = -10;\n"
                "shadow-offset-y = -10;\nshadow-exclude = [ \"class_g = 'eduka-panel'\", \"_GTK_FRAME_EXTENTS@:c\" ];\n"
                "fading = true;\nfade-delta = 5;\ncorner-radius = 8;\n",
-    "glass": "# picom (Eduka-Customizer preset: glass, needs OpenGL)\nbackend = \"glx\";\nvsync = true;\n"
+    "glass": "# picom (DistroForge preset: glass, needs OpenGL)\nbackend = \"glx\";\nvsync = true;\n"
              "shadow = true;\nshadow-radius = 16;\nshadow-opacity = 0.3;\nfading = true;\n"
              "blur-method = \"dual_kawase\";\nblur-strength = 6;\nblur-background = true;\n"
              "corner-radius = 12;\nblur-background-exclude = [ \"window_type = 'desktop'\" ];\n",

@@ -14,15 +14,19 @@ from eduka_customizer.gui.widgets import (FilePicker, FileTreeEditor, ImagePrevi
 class BrandingPage(Page):
     title = "Distro Branding"
     nav_title = "Distro Branding"
-    subtitle = ("Make the system your own distribution, not just Debian renamed. Eduka-Customizer "
-                "builds a <id>-branding package that replaces the identity of base-files, "
-                "lsb-release, distro-info-data, desktop-base, the Debian logos, GRUB and the "
-                "Calamares installer with dpkg diversions, plus an optional archive keyring. "
-                "No repository is needed and Debian updates keep your branding.")
+    subtitle = ("Step 3 · Your name, logo, colors and artwork everywhere: system information, login, GRUB, boot "
+                "splash and installer. DistroForge packs them into a <id>-branding package, so Debian updates "
+                "keep them. Your changes wait in Review & Apply (step 12).")
     icon_names = ("preferences-desktop-theme-global", "applications-graphics", "emblem-favorite")
+    CHANGES = ('Apply distro branding', 'Build edited branding packages')
 
     def build(self):
         c = self.card("1. Identity and artwork")
+        self.source = label("", "muted")
+        c.add(self.source)
+        c.add(hbox(button("Load from the ISO", self.load_from_image,
+                          tooltip="Name, links, logo, wallpaper, login and GRUB backgrounds and colors of the "
+                                  "extracted ISO"), None))
         f = c.form()
         self.name = QLineEdit()
         self.os_id = QLineEdit()
@@ -75,7 +79,7 @@ class BrandingPage(Page):
                       "Your own GnuPG key and <id>-archive-keyring package, like debian-archive-keyring. "
                       "Use it to sign your own repository later. Keep a backup of the secret key!")
         self.email = QLineEdit()
-        self.email.setPlaceholderText("archive@edukasaun.org")
+        self.email.setPlaceholderText("archive@example.org")
         self.key_state = label("", "muted")
         c.add(hbox(label("E-mail"), self.email, button("Create key", self.create_key)))
         c.add(self.key_state)
@@ -136,6 +140,36 @@ class BrandingPage(Page):
             "{} {}".format(k, v or "(not installed)") for k, v in inst.items()))
         self.editors["branding"].set_root(db.tree(spec) if db.tree(spec).exists() else None)
         self.editors["keyring"].set_root(db.keyring_tree(spec) if db.keyring_tree(spec).exists() else None)
+        if not self.project.state.get("branding", {}).get("spec") and self.project.has_rootfs():
+            # Nothing chosen yet: start from the ISO itself.
+            self.load_from_image(quiet=True)
+            self.source.setText("Loaded from the extracted ISO. Change what you like, then build.")
+        else:
+            self.source.setText("Your branding. <i>Load from the ISO</i> starts again from the extracted ISO.")
+
+    def load_from_image(self, quiet=False):
+        from eduka_customizer.core import imageinfo
+        ident = imageinfo.identity(self.project)
+        named = self.project.state.get("identity", {}).get("name")
+        if not named:
+            for w, key in ((self.name, "name"), (self.version, "version"), (self.codename, "codename"),
+                           (self.home, "home_url"), (self.support, "support_url"), (self.bugs, "bug_url")):
+                if ident.get(key):
+                    w.setText(ident[key])
+            if ident.get("id"):
+                self.os_id.setText(ident["id"])
+        art = imageinfo.copy_artwork(self.project)
+        for w, key in ((self.logo, "logo"), (self.wall, "wallpaper"), (self.login, "login_background"),
+                       (self.grub, "grub_background")):
+            if art.get(key):
+                w.setText(art[key])
+        if art.get("accent"):
+            self.accent.set(art["accent"])
+        if art.get("dark"):
+            self.dark.set(art["dark"])
+        if not quiet:
+            self.main.stage_label.setText("Loaded from the ISO: " + ", ".join(sorted(art)) if art else
+                                          "The ISO has no artwork DistroForge recognizes")
 
     def spec(self):
         s = BrandingSpec.from_project(self.project)

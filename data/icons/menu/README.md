@@ -27,7 +27,13 @@ elementary+ (GPL-3) icon themes.
 | Distro Branding | branding.svg | preferences-desktop-color |
 | Calamares | calamares.svg | calamares (ubiquity-kde) |
 | Boot Menu | bootmenu.svg | grub-customizer |
+| Boot Loader | bootloader.svg | boot (system-shutdown) |
 | Package Workshop | workshop.svg | application-x-deb (gdebi) |
 | Terminal & Live | terminal.svg | utilities-terminal |
-| Build & Test | build.svg | brasero (disk-burner) |
+| System Sounds | sounds.svg | yast-sound (preferences-desktop-sound) |
+| Welcome Screen | welcome.svg | org.gnome.Tour |
+| Replace apps | replace.svg | preferences-desktop-default-applications |
+| Check & Build | build.svg | brasero (disk-burner) |
+| Review & Apply | review.svg | gnome-todo |
+| About | about.svg | system-help |
 | Settings | settings.svg | preferences-system (utilities-tweak-tool) |

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.hugomonizdorego.DistroForge</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>DistroForge</name>
+  <summary>ISO builder for Debian-based distributions</summary>
+  <description>
+    <p>DistroForge builds live images of your own Debian-based distribution from Debian
+    stable, testing, sid or a derivative such as LMDE, step by step: extract an ISO or bootstrap a
+    new base, choose the desktop or window manager in a Mini, Compact, Full or Full-with-apps
+    edition (GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, Eduka-Desktop, i3, Sway and more),
+    install packages and Flatpak apps by category, replace the default applications, add system
+    sounds and a welcome screen, brand the boot splash, login screen, GRUB theme and installer, check
+    the image and build a hybrid BIOS/UEFI ISO.</p>
+  </description>
+  <launchable type="desktop-id">io.github.hugomonizdorego.DistroForge.desktop</launchable>
+  <provides><binary>distroforge</binary></provides>
+  <replaces><id>org.edukasaun.customizer</id></replaces>
+  <developer id="io.github.hugomonizdorego"><name>Hugo Moniz do Rego</name></developer>
+  <url type="donation">https://paypal.me/hugocenturion0311</url>
+  <url type="homepage">https://github.com/hugomonizdorego/Eduka-Customizer</url>
+  <releases>
+    <release version="0.9.0~beta" date="2026-10-08" type="development"/>
+    <release version="0.17.0~alpha" date="2026-10-08"/>
+    <release version="0.16.0~alpha" date="2026-10-08"/>
+    <release version="0.15.0~alpha" date="2026-10-08"/>
+    <release version="0.14.0~alpha" date="2026-10-07"/>
+    <release version="0.13.0~alpha" date="2026-10-07"/>
+    <release version="0.12.0~alpha" date="2026-10-07"/>
+    <release version="0.11.0~alpha" date="2026-10-07"/>
+    <release version="0.10.0~alpha" date="2026-10-07"/>
+  </releases>
+</component>

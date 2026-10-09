@@ -82,8 +82,8 @@ def test_distro_branding_generate(project, tmp_path):
     (r / "etc/calamares/modules").mkdir(parents=True)
     (r / "etc/calamares/settings.conf").write_text("branding: debian\n")
     (r / "etc/calamares/modules/bootloader.conf").write_text("timeout: 5\n")
-    spec = BrandingSpec(logo=str(png(tmp_path / "logo.png", 300, 300)),
-                        wallpaper=str(png(tmp_path / "w.png", 800, 450)))
+    spec = BrandingSpec.from_project(project)
+    spec.logo, spec.wallpaper = str(png(tmp_path / "logo.png", 300, 300)), str(png(tmp_path / "w.png", 800, 450))
     db = DistroBranding(project)
     assert db.debian_logo_files() == ["/usr/share/pixmaps/debian-logo.png"]
     tree = db.generate(spec)

@@ -20,7 +20,10 @@ class ColorButton(QPushButton):
     def set(self, color):
         self.color = color
         self.setText(color)
-        self.setStyleSheet("background: {0}; color: white; border-radius: 8px; padding: 6px 12px;".format(color))
+        r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5)) if len(color) == 7 else (0, 0, 0)
+        text = "#16231f" if 0.299 * r + 0.587 * g + 0.114 * b > 160 else "white"
+        self.setStyleSheet("background: {0}; color: {1}; border-radius: 9px; padding: 6px 12px; "
+                           "border: 1px solid rgba(0,0,0,0.15);".format(color, text))
 
     def pick(self):
         from eduka_customizer.qt.gui import QColor
@@ -32,8 +35,10 @@ class ColorButton(QPushButton):
 class AppearancePage(Page):
     title = "Wallpaper & Login"
     nav_title = "Wallpaper & Login"
-    subtitle = "A gallery of wallpapers with one default, and the look of the login screen."
+    subtitle = ("Step 9 · Choose the wallpapers of your distribution (one is the default) and the look of the "
+                "login screen. Your changes wait in Review & Apply (step 12).")
     icon_names = ("preferences-desktop-theme", "preferences-desktop-wallpaper")
+    CHANGES = ('Configure login screen', 'Default wallpaper ', 'Remove wallpaper ')
 
     def build(self):
         # Wallpaper gallery -----------------------------------------------------------

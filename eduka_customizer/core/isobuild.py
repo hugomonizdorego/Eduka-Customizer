@@ -38,9 +38,9 @@ class BuildOptions:
     compression: str = "zstd"
     level: int = 15
     block_size: str = "1M"
-    volume_label: str = "EDUKASAUN_OS"
+    volume_label: str = ""
     iso_name: str = "{id}-{version}-{suite}-{arch}-{date}.iso"
-    title: str = "Edukasaun OS"
+    title: str = ""
     boot_params: str = "quiet splash"
     timeout: int = 10
     reuse_squashfs: bool = False
@@ -51,6 +51,7 @@ class BuildOptions:
     checksums: list = field(default_factory=lambda: ["sha256"])
     cleanup: dict = field(default_factory=cleanup.defaults)
     processors: int = 0
+    target_size: str = "none"        # none | smallest | megabytes (see isosize.TARGETS)
 
     @classmethod
     def from_project(cls, project):
@@ -67,8 +68,8 @@ class BuildOptions:
         # earlier build must not hide a later rename.
         ident = project.state.get("identity", {})
         boot = project.state.get("boot", {})
-        o.volume_label = ident.get("volume_label") or o.volume_label
-        o.title = boot.get("title") or ident.get("name") or o.title
+        o.volume_label = ident.get("volume_label") or project.volume_label()
+        o.title = boot.get("title") or ident.get("name") or project.display_name()
         o.boot_params = boot.get("extra_params", o.boot_params)
         o.timeout = int(boot.get("timeout", o.timeout))
         return o
@@ -79,15 +80,15 @@ class BuildOptions:
 
 def sanitize_label(label):
     label = re.sub(r"[^A-Za-z0-9_ .-]", "_", label.strip())[:32]
-    return label or "EDUKASAUN_OS"
+    return label or "LIVE"
 
 
 def iso_filename(template, project):
     info = project.distro
     ident = project.state.get("identity", {})
     values = {
-        "id": ident.get("id") or "edukasaun",
-        "name": ident.get("name") or "Edukasaun-OS",
+        "id": project.os_id(),
+        "name": (ident.get("name") or project.display_name()).replace(" ", "-"),
         "version": ident.get("version") or "0",
         "codename": (ident.get("codename") or "").lower(),
         "suite": info.suite or "debian",
@@ -265,6 +266,8 @@ class Builder:
         from eduka_customizer.core.language import Language
         Language(p).apply_boot_menu(self.opts.title)
         bootedit.apply_overrides(p)
+        from eduka_customizer.core.grubtheme import GrubThemes
+        GrubThemes(p).reapply()
         info = p.distro
         disk_info = p.isodir / ".disk/info"
         disk_info.parent.mkdir(parents=True, exist_ok=True)
@@ -361,7 +364,7 @@ class Builder:
             args += ["-V", label]
         else:
             args = ["-as", "mkisofs"] + bootloader.BootGenerator(p).xorriso_args(label)
-        args += ["-publisher", "Edukasaun OS", "-preparer", "Eduka-Customizer",
+        args += ["-publisher", p.display_name()[:120], "-preparer", "DistroForge",
                  "-o", out, p.isodir]
         runner.run(["xorriso"] + args, progress=self.progress)
         return out
@@ -378,6 +381,9 @@ class Builder:
     def run(self):
         p = self.project
         self.check()
+        # Repositories tried in the kernel console stay only when a kernel came from them.
+        from eduka_customizer.core.kernel import Kernels
+        Kernels(p).finalize_temp_repos()
         with self.chroot:
             self.ensure_live_stack()
             self.initramfs()
@@ -396,6 +402,13 @@ class Builder:
         p.record("build", out.name)
         minutes = (time.time() - self.started) / 60
         log.info("Done: %s (%.2f GiB, %.1f min)", out, out.stat().st_size / 1024 ** 3, minutes)
+        if str(self.opts.target_size).isdigit():
+            got = out.stat().st_size / 1000 ** 2
+            if got > int(self.opts.target_size):
+                log.warning("The ISO is %.0f MB, more than the target of %s MB: turn on the size savers or "
+                            "remove applications", got, self.opts.target_size)
+            else:
+                log.info("The ISO is %.0f MB: within the target of %s MB", got, self.opts.target_size)
         return out
 
 

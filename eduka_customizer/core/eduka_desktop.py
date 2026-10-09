@@ -94,8 +94,8 @@ class EdukaDesktop:
     # Source ----------------------------------------------------------
     def fetch(self, repo=None, ref=None):
         cfg = settings()
-        repo = repo or cfg.get("edukasaun", "eduka_desktop_repo")
-        ref = ref if ref is not None else cfg.get("edukasaun", "eduka_desktop_ref")
+        repo = repo or cfg.get("eduka_desktop", "repo")
+        ref = ref if ref is not None else cfg.get("eduka_desktop", "ref")
         if ref and not REF_RE.match(ref):
             raise ValueError("Invalid git branch/tag: {}".format(ref))
         if os.path.isdir(repo):

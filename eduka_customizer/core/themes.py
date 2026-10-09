@@ -19,33 +19,62 @@ from eduka_customizer.core.log import log
 
 SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._+-]{0,80}$")
 
-# Theme packs offered with one click (availability is checked with APT).
-THEME_PACKS = [
-    ("papirus-icon-theme", "icons", "Papirus icons"),
-    ("numix-icon-theme-circle", "icons", "Numix Circle icons"),
-    ("elementary-xfce-icon-theme", "icons", "elementary Xfce icons"),
-    ("breeze-icon-theme", "icons", "Breeze icons (KDE)"),
-    ("adwaita-icon-theme", "icons", "Adwaita icons (GNOME)"),
-    ("yaru-theme-icon", "icons", "Yaru icons"),
-    ("arc-theme", "gtk", "Arc GTK theme"),
-    ("materia-gtk-theme", "gtk", "Materia GTK theme"),
-    ("numix-gtk-theme", "gtk", "Numix GTK theme"),
-    ("greybird-gtk-theme", "gtk", "Greybird GTK theme"),
-    ("breeze-gtk-theme", "gtk", "Breeze GTK theme"),
-    ("yaru-theme-gtk", "gtk", "Yaru GTK theme"),
-    ("orchis-gtk-theme", "gtk", "Orchis GTK theme"),
-    ("breeze-cursor-theme", "cursor", "Breeze cursors"),
-    ("dmz-cursor-theme", "cursor", "DMZ cursors"),
-    ("oxygen-cursor-theme", "cursor", "Oxygen cursors"),
-    ("fonts-noto", "font", "Noto fonts (many languages)"),
-    ("fonts-noto-color-emoji", "font", "Noto color emoji"),
-    ("fonts-inter", "font", "Inter"),
-    ("fonts-cantarell", "font", "Cantarell"),
-    ("fonts-liberation2", "font", "Liberation (MS compatible)"),
-    ("qt5ct", "qt", "Qt5 settings (Qt apps follow your choice)"),
-    ("qt6ct", "qt", "Qt6 settings"),
-    ("picom", "compositor", "picom compositor"),
-]
+GTK_DESKTOPS = {"gnome", "gnome-flashback", "xfce", "cinnamon", "mate", "budgie", "lxde", "enlightenment"}
+QT_DESKTOPS = {"kde", "lxqt", "eduka"}
+OPENBOX_DESKTOPS = {"openbox", "lxde", "lxqt", "eduka"}
+SELF_COMPOSITED = {"gnome", "kde", "cinnamon", "budgie", "enlightenment"}
+
+
+def packs_catalog():
+    from eduka_customizer.core.config import data_file
+    import json
+    with open(data_file("themes.json"), encoding="utf-8") as fh:
+        return json.load(fh)["packs"]
+
+
+def family(de):
+    """'gtk', 'qt' or 'wm' for a desktop dict (None: no desktop chosen)."""
+    if not de:
+        return None
+    if de["id"] in QT_DESKTOPS:
+        return "qt"
+    if de["id"] in GTK_DESKTOPS:
+        return "gtk"
+    return "wm"
+
+
+def pack_fits(pack, de):
+    """Is a theme pack useful for desktop *de* (a desktops.json entry, or None for any)?"""
+    if de is None:
+        return True
+    target, fam = pack.get("for", "all"), family(de)
+    wayland_only = set(de.get("sessions", {})) == {"wayland"}
+    if target == "all":
+        return True
+    if target == "gtk":
+        return fam in ("gtk", "wm")
+    if target == "qt":
+        return fam == "qt"
+    if target == "qt+gtk":
+        return True
+    if target == "x11-nocomp":
+        return not wayland_only and de["id"] not in SELF_COMPOSITED and not de.get("always_composited")
+    return target == de["id"]
+
+
+def look_options(de):
+    """Which settings of the look apply to desktop *de*."""
+    fam = family(de)
+    did = de["id"] if de else ""
+    return {"gtk": True, "gtk_apps_only": fam == "qt", "lxqt": did in ("lxqt", "eduka") or not de,
+            "xfwm4": did == "xfce" or not de, "openbox": did in OPENBOX_DESKTOPS or not de,
+            "cinnamon": did == "cinnamon" or not de, "marco": did == "mate" or not de,
+            "metacity": did == "gnome-flashback" or not de, "plasma": did == "kde" or not de,
+            "kvantum": fam == "qt" or not de}
+
+
+# Theme packs offered with one click: [(package, kind, name)], all of them (see packs_catalog).
+THEME_PACKS = [(p["package"], p["kind"], p["name"]) for p in packs_catalog()]
 
 
 def _ini(path, section, values):
@@ -104,6 +133,27 @@ class Themes:
         d = self.rootfs / "usr/share/icons"
         return sorted(p.name for p in d.iterdir() if (p / "cursors").is_dir()) if d.is_dir() else []
 
+    def _themes_with(self, sub):
+        d = self.rootfs / "usr/share/themes"
+        return sorted(p.name for p in d.iterdir() if (p / sub).is_dir()) if d.is_dir() else []
+
+    def xfwm4_themes(self):
+        return self._themes_with("xfwm4")
+
+    def openbox_themes(self):
+        return self._themes_with("openbox-3")
+
+    def cinnamon_themes(self):
+        return self._themes_with("cinnamon")
+
+    def marco_themes(self):
+        return self._themes_with("metacity-1")
+
+    def plasma_looks(self):
+        d = self.rootfs / "usr/share/plasma/look-and-feel"
+        return sorted(p.name for p in d.iterdir() if (p / "metadata.json").exists() or
+                      (p / "metadata.desktop").exists()) if d.is_dir() else []
+
     def lxqt_themes(self):
         d = self.rootfs / "usr/share/lxqt/themes"
         return sorted(p.name for p in d.iterdir() if p.is_dir()) if d.is_dir() else []
@@ -111,6 +161,42 @@ class Themes:
     def kvantum_themes(self):
         d = self.rootfs / "usr/share/Kvantum"
         return sorted(p.name for p in d.iterdir() if p.is_dir()) if d.is_dir() else []
+
+    def apply_extra(self, xfwm4="", openbox="", cinnamon="", marco="", plasma="", kvantum=""):
+        """Window decorations and desktop-specific themes (Xfwm4, Openbox, Cinnamon, Marco/Metacity,
+        Plasma global theme, Kvantum)."""
+        from eduka_customizer.core import gsettings
+        for v in (xfwm4, openbox, cinnamon, marco, plasma, kvantum):
+            if v and not SAFE.match(v):
+                raise ValueError("Invalid theme name: {}".format(v))
+        r = self.rootfs
+        if xfwm4:
+            _xml_prop(r / "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml", "theme", xfwm4)
+        if openbox:
+            for rc in (r / "etc/xdg/openbox/rc.xml", r / "etc/xdg/openbox/lxde-rc.xml",
+                       r / "usr/share/lxqt/openbox/rc.xml"):
+                if rc.exists():
+                    text = rc.read_text(errors="replace")
+                    new = re.sub(r"(<theme>\s*<name>)[^<]*(</name>)", lambda m: m.group(1) + openbox + m.group(2),
+                                 text, count=1)
+                    if new != text:
+                        rc.write_text(new)
+        over = {}
+        if cinnamon:
+            over["org.cinnamon.theme"] = {"name": cinnamon}
+        if marco:
+            over["org.mate.Marco.general"] = {"theme": marco}
+            over["org.gnome.metacity.theme"] = {"name": marco}
+        if over:
+            gsettings.write_override(r, "91_eduka-wm-theme", over)
+        if plasma:
+            _ini(r / "etc/xdg/kdeglobals", "KDE", {"LookAndFeelPackage": plasma})
+        if kvantum:
+            _ini(r / "etc/xdg/Kvantum/kvantum.kvconfig", "General", {"theme": kvantum})
+        st = self.project.state.setdefault("themes", {})
+        st.update({k: v for k, v in (("xfwm4", xfwm4), ("openbox", openbox), ("cinnamon", cinnamon),
+                                      ("marco", marco), ("plasma", plasma), ("kvantum", kvantum)) if v})
+        self.project.save()
 
     def current(self):
         p = self.rootfs / "etc/gtk-3.0/settings.ini"

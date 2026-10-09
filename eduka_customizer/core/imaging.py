@@ -21,7 +21,7 @@ def _qt():
         return None
     if gui.QGuiApplication.instance() is None and _app is None:
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-        _app = gui.QGuiApplication(["eduka-customizer"])
+        _app = gui.QGuiApplication(["distroforge"])
     return gui
 
 

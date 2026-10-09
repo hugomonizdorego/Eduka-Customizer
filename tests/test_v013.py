@@ -133,7 +133,7 @@ def test_example_recipe_users_arguments_match():
     import json
     from pathlib import Path
     from eduka_customizer.core.recipe import _args
-    ex = json.loads((Path(__file__).resolve().parents[1] / "examples/edukasaun-school.json").read_text())
+    ex = json.loads((Path(__file__).resolve().parents[1] / "examples/school-edition.json").read_text())
     for step in ex["steps"]:
         if step["action"] != "users":
             continue

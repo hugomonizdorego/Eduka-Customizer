@@ -49,6 +49,9 @@ def hbox(*widgets, stretch_at=None, margins=0, spacing=8):
             lay.addStretch(1)
         if item is None:
             lay.addStretch(1)
+        elif isinstance(item, QLabel) and item.wordWrap():
+            # A wrapping text next to buttons takes the free room instead of a narrow column.
+            lay.addWidget(item, 3)
         elif isinstance(item, QWidget):
             lay.addWidget(item)
         else:
@@ -146,8 +149,15 @@ class Page(QWidget):
         self.layout_.addWidget(w)
         return cards
 
-    def task(self, name, func, done=None):
-        return self.main.run_task(name, func, done)
+    # Names of the tasks of this page that change the image: they wait in Review & Apply.
+    CHANGES = ()
+
+    def task(self, name, func, done=None, queue=None):
+        """Run *func* in the background. A change of the image (queue=True, or a task named in
+        CHANGES) waits in Review & Apply with the other choices, unless the user applies at once."""
+        if queue is None:
+            queue = any(name.startswith(prefix) for prefix in self.CHANGES)
+        return self.main.run_task(name, func, done, queue=queue, page=self)
 
     def build(self):
         pass
@@ -463,7 +473,7 @@ def table(headers):
     return t
 
 
-def fill(t, rows):
+def fill(t, rows, sort=True):
     from eduka_customizer.qt.widgets import QTableWidgetItem
     t.setRowCount(0)
     t.setSortingEnabled(False)
@@ -471,5 +481,5 @@ def fill(t, rows):
         t.insertRow(r)
         for c, value in enumerate(row):
             t.setItem(r, c, QTableWidgetItem(str(value)))
-    t.setSortingEnabled(True)
+    t.setSortingEnabled(sort)
     t.resizeColumnToContents(0)

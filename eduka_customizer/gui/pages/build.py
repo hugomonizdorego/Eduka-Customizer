@@ -1,23 +1,47 @@
 """Build page: compression, cleanup and boot options, then build and test."""
 
-import shutil
-import subprocess
 from pathlib import Path
 
 from eduka_customizer.qt.widgets import QCheckBox, QGridLayout, QLineEdit, QMessageBox, QSpinBox
 
-from eduka_customizer.core import cleanup, qemu
+from eduka_customizer.core import cleanup, isosize, preflight, qemu
 from eduka_customizer.core.isobuild import COMPRESSORS, BuildOptions, build, iso_filename
-from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, label
+from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, fill, hbox, label, table
 
 
 class BuildPage(Page):
-    title = "Build & Test"
-    subtitle = ("Create the Edukasaun OS ISO image (hybrid BIOS/UEFI, writable to USB) and boot it "
-                "in a virtual machine.")
+    title = "Check & Build"
+    nav_title = "Check & Build"
+    subtitle = ("Last step · Check the image, choose the ISO size, build the ISO (BIOS and UEFI, ready for USB "
+                "sticks) and try it in a virtual machine.")
     icon_names = ("media-optical-burn", "media-optical", "drive-optical")
 
     def build(self):
+        c = self.card("Check before building",
+                      "Finds what would make the build fail, the ISO not boot, or private data leak into it.")
+        self.checks = table(["Result", "Check", "Details", "How to fix"])
+        from eduka_customizer.qt.widgets import QHeaderView
+        self.checks.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        self.checks.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.checks.setMinimumHeight(260)
+        self.checks.cellDoubleClicked.connect(self._open_fix)
+        c.add(self.checks)
+        self.check_state = label("Not checked yet.", "muted", wrap=False)
+        self.fix_btn = button("Fix automatically", lambda: self.fix_automatically(None))
+        c.add(hbox(self.check_state, None, button("Deep check (apt-get check)", lambda: self.run_checks(True)),
+                   self.fix_btn, button("Check now", self.run_checks, "primary")))
+        self._results = []
+
+        c = self.card("ISO size",
+                      "Choose how big the ISO may be. Compression is lossless: every file comes back exactly as "
+                      "it was, so a smaller ISO is never a damaged ISO — it only takes longer to build.")
+        self.target = combo(isosize.TARGETS, "none")
+        self.target.currentIndexChanged.connect(lambda _i: self._apply_target())
+        self.size_state = label("Press 'Estimate' to see how big the ISO will be.", "muted")
+        c.add(hbox(label("Target size:"), self.target, button("Estimate", self.estimate_size), None))
+        c.add(self.size_state)
+        self._estimate = None
+
         c = self.card("Image")
         f = c.form()
         self.iso_name = QLineEdit()
@@ -80,7 +104,15 @@ class BuildPage(Page):
         c = self.card("Result")
         self.result = label("No image built yet.")
         c.add(self.result)
-        c.add(hbox(button("Open output folder", self.open_output), None))
+        c.add(hbox(button("Open output folder", self.open_output), None,
+                   button("Keep only the ISO...", lambda: self.main.keep_only_iso(), "danger",
+                          tooltip="Delete the build folders of this project; the ISO stays")))
+
+        c = self.card("Project folder", "Everything of this project is in one folder, each part in its own "
+                                        "sub-folder. You may open them and change files by hand.")
+        self.folders = label("", "muted")
+        c.add(self.folders)
+        c.add(hbox(button("Open project folder", lambda: self._open(self.project.path)), None))
 
         c = self.card("Test in a virtual machine (QEMU)")
         f = c.form()
@@ -117,6 +149,7 @@ class BuildPage(Page):
     def refresh(self):
         if not self.project:
             return
+        self._folders()
         o = BuildOptions.from_project(self.project)
         self.iso_name.setText(o.iso_name)
         self.label_.setText(o.volume_label)
@@ -132,6 +165,9 @@ class BuildPage(Page):
         self.remove_di.setChecked(o.remove_installer)
         self.reuse.setChecked(False)
         self.sha512.setChecked("sha512" in o.checksums)
+        self.target.blockSignals(True)
+        self.target.setCurrentIndex(max(0, self.target.findData(str(o.target_size))))
+        self.target.blockSignals(False)
         for k, cb in self.clean.items():
             cb.setChecked(bool(o.cleanup.get(k, cleanup.OPTIONS[k][1])))
         last = self.project.state.get("last_iso")
@@ -159,6 +195,7 @@ class BuildPage(Page):
         o.reuse_squashfs = self.reuse.isChecked()
         o.checksums = ["sha256", "sha512", "md5"] if self.sha512.isChecked() else ["sha256"]
         o.cleanup = {k: cb.isChecked() for k, cb in self.clean.items()}
+        o.target_size = self.target.currentData()
         return o
 
     def start_build(self):
@@ -169,15 +206,136 @@ class BuildPage(Page):
             self.main.live.stop()
             self.main.live = None
         opts = self.options()
-        proj = self.project
         self.project.state["identity"]["volume_label"] = opts.volume_label
         self.project.save()
+        self.run_checks(then_build=opts)
+
+    def _build(self, opts):
+        proj = self.project
 
         def done(out):
             self.test_iso.setText(str(out))
+            self.main.built_iso = str(out)
             self.refresh()
-            QMessageBox.information(self, "ISO ready", "Your Edukasaun OS image is ready:\n{}".format(out))
+            QMessageBox.information(self, "ISO ready", "Your ISO image is ready:\n{}\n\nTry it with 'Boot ISO' below. "
+                                    "When you are happy with it, 'Keep only the ISO' frees the disk space of the "
+                                    "build folders.".format(out))
         self.task("Build ISO", lambda t: build(proj, opts, t.set_progress, t.set_stage), done)
+
+    # Checks -----------------------------------------------------------------------
+    MARKS = {"ok": "✔ OK", "info": "ℹ Info", "warn": "⚠ Warning", "fail": "✘ Problem"}
+
+    def run_checks(self, deep=False, then_build=None):
+        proj = self.project
+        if not proj:
+            return
+
+        def done(results):
+            self._show_checks(results)
+            if then_build is None:
+                return
+            if not preflight.summary(results)[0]:
+                self._build(then_build)
+                return
+            self._ask_fix(results, then_build)
+        self.task("Check the image", lambda t: preflight.run(proj, deep=deep), done)
+
+    def _ask_fix(self, results, then_build=None):
+        """Problems found: fix them automatically, by hand, or build anyway."""
+        problems = [x for x in results if x.level == "fail"]
+        auto = [x for x in problems if x.fix]
+        lines = []
+        for x in problems:
+            how = "automatic fix: " + x.fix if x.fix else "fix by hand on the page '{}'".format(x.title)
+            lines.append("• {} — {}\n    → {}".format(x.title, x.detail, how))
+        box = QMessageBox(QMessageBox.Icon.Warning, "Before building",
+                          "{} problem(s) would break the ISO. {} of them can be fixed automatically.\n\n{}".format(
+                              len(problems), len(auto), "\n\n".join(lines)), parent=self)
+        fix_btn = box.addButton("Fix automatically", QMessageBox.ButtonRole.AcceptRole) if auto else None
+        box.addButton("I will fix it myself", QMessageBox.ButtonRole.RejectRole)
+        anyway = box.addButton("Build anyway", QMessageBox.ButtonRole.DestructiveRole) if then_build else None
+        box.exec()
+        clicked = box.clickedButton()
+        if fix_btn is not None and clicked is fix_btn:
+            self.fix_automatically(then_build)
+        elif anyway is not None and clicked is anyway:
+            self._build(then_build)
+
+    def fix_automatically(self, then_build=None):
+        proj = self.project
+        results = [x for x in self._results if x.level in ("fail", "warn") and x.fix]
+        if not results:
+            QMessageBox.information(self, "Fix automatically", "Nothing here can be fixed automatically. "
+                                    "Double-click a problem to open the page that fixes it.")
+            return
+
+        def work(t):
+            done, failed = preflight.auto_fix(proj, results, t.set_stage)
+            return done, failed, preflight.run(proj)
+
+        def done(out):
+            fixed, failed, again = out
+            self._show_checks(again)
+            msg = "Fixed:\n• " + "\n• ".join(fixed) if fixed else "Nothing was fixed."
+            if failed:
+                msg += "\n\nCould not fix:\n• " + "\n• ".join("{}: {}".format(l, e) for l, e in failed)
+            left = preflight.summary(again)[0]
+            if not left and then_build is not None:
+                if QMessageBox.question(self, "Fix automatically", msg + "\n\nNo problems left. Build the ISO now?") \
+                        == QMessageBox.StandardButton.Yes:
+                    self._build(then_build)
+                return
+            if left:
+                msg += "\n\n{} problem(s) left: double-click them to open the page that fixes them.".format(left)
+            QMessageBox.information(self, "Fix automatically", msg)
+        self.task("Fix the problems", work, done)
+
+    def _show_checks(self, results):
+        self._results = results
+        order = {lvl: i for i, lvl in enumerate(reversed(preflight.LEVELS))}
+        results = sorted(results, key=lambda x: order[x.level])
+        self._results = results
+        fill(self.checks, [(self.MARKS[x.level], x.title, x.detail,
+                            ("Automatic: " + x.fix) if x.fix else ("By hand (double-click)" if x.page and
+                                                                  x.level in ("warn", "fail") else ""))
+                           for x in results])
+        self.checks.setSortingEnabled(False)
+        self.checks.resizeColumnToContents(0)
+        self.checks.resizeColumnToContents(1)
+        fails, warns = preflight.summary(results)
+        self.fix_btn.setEnabled(any(x.fix for x in results))
+        self.check_state.setText("{} problem(s), {} warning(s){}".format(
+            fails, warns, " — ready to build" if not fails else " — fix the problems before building"))
+
+    def _open_fix(self, row, _col):
+        if 0 <= row < len(self._results) and self._results[row].page:
+            self.main.go(self._results[row].page)
+
+    # ISO size ---------------------------------------------------------------------
+    def estimate_size(self):
+        proj = self.project
+
+        def done(result):
+            self._estimate, self._savers = result
+            self._apply_target()
+        self.task("Estimate the ISO size", lambda t: (isosize.estimate(proj), isosize.savers(proj)), done)
+
+    def _apply_target(self):
+        if not self._estimate:
+            self.size_state.setText("Press 'Estimate' to see how big the ISO will be for this target.")
+            return
+        p = isosize.plan(self._estimate, self.target.currentData())
+        self.comp.setCurrentIndex(max(0, self.comp.findData(p["compression"])))
+        self._levels()
+        if p["level"]:
+            self.level.setValue(p["level"])
+        text = isosize.describe(p, self._savers)
+        if not p["reachable"]:
+            for key, _t, _b in self._savers:
+                if key in self.clean:
+                    self.clean[key].setChecked(True)
+            text += " The size savers are ticked below (Clean-up); press Estimate again after a build."
+        self.size_state.setText(text)
 
     def apt_install(self):
         names = self.apt_line.text().split()
@@ -196,11 +354,22 @@ class BuildPage(Page):
             self.test_iso.setText(str(out))
         self.task("Rebuild boot files", lambda t: quick_build(proj, opts, t.set_progress, t.set_stage), done)
 
+    def _open(self, path):
+        from eduka_customizer.gui.opener import open_url
+        open_url(path)
+
+    def _folders(self):
+        from eduka_customizer.core.projectfiles import FOLDERS
+        rows = []
+        for name, text, by_hand in FOLDERS:
+            if (self.project.path / name).exists():
+                rows.append("<b>{}/</b> — {}{}".format(name, text, "" if by_hand else " <i>(made by DistroForge)</i>"))
+        self.folders.setText("{}<br>{}".format(self.project.path, "<br>".join(rows)))
+
     def open_output(self):
-        opener = shutil.which("xdg-open")
-        if opener and self.project:
-            subprocess.Popen([opener, str(self.project.output)], start_new_session=True,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if self.project:
+            from eduka_customizer.gui.opener import open_url
+            open_url(self.project.output)
 
     def test(self):
         iso = self.test_iso.text() or self.project.state.get("last_iso")

@@ -16,7 +16,7 @@ from eduka_customizer.qt.widgets import (QCheckBox, QGridLayout, QLineEdit, QLis
 
 from eduka_customizer.core import desktop as dsk
 from eduka_customizer.core.config import settings
-from eduka_customizer.core.flatpak import EDUCATION_PICKS
+from eduka_customizer.core.flathub import CATEGORIES, FEATURED
 from eduka_customizer.gui.pages.appearance import IMAGES, ColorButton
 from eduka_customizer.gui.widgets import Card, DropZone, FilePicker, ImagePreview, Page, button, combo, hbox, label
 
@@ -46,9 +46,9 @@ APP_GROUPS = [
 
 class WizardPage(Page):
     title = "Quick Wizard"
-    nav_title = "Quick Wizard ✨"
-    subtitle = ("Answer a few questions and Eduka-Customizer builds your distribution: source, "
-                "identity, desktop, look, applications and branding — then Finish.")
+    nav_title = "Quick Wizard"
+    subtitle = ("The fast way: answer a few questions on one page after the other, then press Finish. Every step "
+                "can be fine-tuned afterwards.")
     icon_names = ("tools-wizard", "system-run", "applications-system")
     needs_rootfs = False
 
@@ -82,7 +82,7 @@ class WizardPage(Page):
         self.folder.setText(os.path.join(settings().get("general", "projects_dir"), "my-distro"))
         f.addRow("Project folder:", self.folder)
         self.src_kind = combo([("current", "Keep the system of the open project"),
-                               ("iso", "Debian or Edukasaun OS live ISO"),
+                               ("iso", "Debian or Debian-based live ISO"),
                                ("bootstrap", "New Debian base (build from scratch)")])
         f.addRow("Source:", self.src_kind)
         self.iso = FilePicker("ISO image", "ISO images (*.iso)")
@@ -92,7 +92,7 @@ class WizardPage(Page):
         self.src_note = label("", "muted")
         c.add(self.src_note)
         c.add(label("Recommended source: the Debian live <b>standard</b> ISO (no desktop, minimal). Any Debian "
-                    "live ISO, Edukasaun OS or a Debian derivative such as LMDE works too.", "muted"))
+                    "live ISO or a Debian derivative such as LMDE works too.", "muted"))
         c = self._card(lay, "What is your distribution for?",
                        "Fills the next steps with recommendations (desktop, login screen, look, applications). "
                        "Change anything you like afterwards, or choose 'Other' to decide everything yourself.")
@@ -101,16 +101,25 @@ class WizardPage(Page):
                                 for p in profiles.catalog()], "other")
         self.w_purpose.currentIndexChanged.connect(lambda _i: self._apply_purpose())
         c.add(self.w_purpose)
+        self.w_isoed = combo([(e["id"], "{} — {}".format(e["name"], e["description"]))
+                              for e in profiles.iso_editions()], "full_apps")
+        self.w_isoed.currentIndexChanged.connect(lambda _i: self._apply_purpose())
+        c.add(label("ISO edition", "cardTitle"))
+        c.add(self.w_isoed)
 
     def _identity(self, lay):
         c = self._card(lay, "Name your distribution")
         f = c.form()
-        self.w_name = QLineEdit("Edukasaun OS")
-        self.w_id = QLineEdit("edukasaun")
+        self.w_name = QLineEdit()
+        self.w_name.setPlaceholderText("e.g. My Linux")
+        self.w_id = QLineEdit()
+        self.w_id.setPlaceholderText("e.g. mylinux")
         self.w_version = QLineEdit("1.0")
         self.w_codename = QLineEdit("Kameli")
-        self.w_home = QLineEdit("https://edukasaun.org")
-        self.w_host = QLineEdit("edukasaun")
+        self.w_home = QLineEdit()
+        self.w_home.setPlaceholderText("https://...")
+        self.w_host = QLineEdit()
+        self.w_host.setPlaceholderText("e.g. mylinux")
         self.w_user = QLineEdit("live")
         for text, w in (("Name:", self.w_name), ("ID:", self.w_id), ("Version:", self.w_version),
                         ("Codename:", self.w_codename), ("Home page:", self.w_home),
@@ -170,9 +179,12 @@ class WizardPage(Page):
         f = c.form()
         self.w_de = combo([("", "No desktop — keep what the ISO has (or a server)")] +
                           [(d["id"], "{} — {}".format(d["name"], d["description"]))
-                           for d in dsk.catalog()["desktops"]], "eduka")
+                           for d in dsk.catalog()["desktops"]], "")
         self.w_de.currentIndexChanged.connect(self._de_changed)
         f.addRow("Desktop:", self.w_de)
+        self.w_deed = combo([(e["id"], "{} — {}".format(e["name"], e["description"])) for e in dsk.editions()],
+                            "full")
+        f.addRow("Edition:", self.w_deed)
         self.w_type = combo([])
         f.addRow("Session:", self.w_type)
         self.w_comp = combo([])
@@ -238,12 +250,12 @@ class WizardPage(Page):
         c = self._card(lay, "Flatpak apps from Flathub")
         self.w_flat = QListWidget()
         self.w_flat.setMinimumHeight(160)
-        for app_id, name, summary in EDUCATION_PICKS:
-            it = QListWidgetItem("{} — {}".format(name, summary))
+        titles = dict(CATEGORIES)
+        for app_id, name, summary, cat in FEATURED:
+            it = QListWidgetItem("{} — {}  ({})".format(name, summary, titles.get(cat, cat)))
             it.setData(Qt.ItemDataRole.UserRole, app_id)
             it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            it.setCheckState(Qt.CheckState.Checked if app_id in ("org.kde.gcompris", "org.geogebra.GeoGebra")
-                             else Qt.CheckState.Unchecked)
+            it.setCheckState(Qt.CheckState.Unchecked)
             self.w_flat.addItem(it)
         c.add(self.w_flat)
         self.w_flat_mode = combo([("firstboot", "Install on first boot (smaller ISO)"),
@@ -258,7 +270,7 @@ class WizardPage(Page):
         self.w_brand.setChecked(True)
         self.w_keyring = QCheckBox("Create my own APT signing key and <id>-archive-keyring package")
         self.w_email = QLineEdit()
-        self.w_email.setPlaceholderText("archive e-mail, e.g. archive@edukasaun.org")
+        self.w_email.setPlaceholderText("archive e-mail, e.g. archive@example.org")
         self.w_grubname = QCheckBox("Show my distribution name in the GRUB menu")
         self.w_grubname.setChecked(True)
         for w in (self.w_brand, self.w_grubname, self.w_keyring, self.w_email):
@@ -280,6 +292,8 @@ class WizardPage(Page):
         """Pre-fill desktop, login screen, look and applications from the chosen purpose."""
         from eduka_customizer.core import profiles
         p = profiles.get(self.w_purpose.currentData())
+        ed = profiles.iso_edition(self.w_isoed.currentData())
+        self.w_deed.setCurrentIndex(max(0, self.w_deed.findData(ed["desktop_edition"])))
         if p["id"] == "other":
             return
         self.w_de.setCurrentIndex(max(0, self.w_de.findData(p.get("desktop") or "")))
@@ -297,12 +311,15 @@ class WizardPage(Page):
         self.w_darkmode.setChecked(bool(p.get("dark")))
         for cb, _pkgs in self.w_groups:
             cb.setChecked(False)
-        self.w_more.setText(" ".join(p.get("packages", [])))
+        minimal = ed["id"] == "minimal"
+        self.w_more.setText(" ".join(p.get("minimal_packages", []) if minimal else p.get("packages", [])))
+        flats = p.get("flatpaks", []) if ed["id"] == "full_apps" else []
         for i in range(self.w_flat.count()):
             it = self.w_flat.item(i)
-            it.setCheckState(Qt.CheckState.Checked if it.data(Qt.ItemDataRole.UserRole) in p.get("flatpaks", [])
+            it.setCheckState(Qt.CheckState.Checked if it.data(Qt.ItemDataRole.UserRole) in flats
                              else Qt.CheckState.Unchecked)
-        self.w_ply.setCurrentIndex(max(0, self.w_ply.findData("generate" if p.get("plymouth") else "keep")))
+        self.w_ply.setCurrentIndex(max(0, self.w_ply.findData("generate" if p.get("plymouth") and not minimal
+                                                              else "keep")))
 
     def _need_system(self):
         if self.project and self.project.has_rootfs():
@@ -408,7 +425,7 @@ class WizardPage(Page):
         i = self.stack.currentIndex()
         parts = []
         for n, s in enumerate(STEPS):
-            parts.append("<b style='color:#00a879'>{}. {}</b>".format(n + 1, s) if n == i else
+            parts.append("<b style='color:#2f6fde'>{}. {}</b>".format(n + 1, s) if n == i else
                          "{}. {}".format(n + 1, s))
         self.steps_bar.setText("  ›  ".join(parts))
         self.back.setEnabled(i > 0)
@@ -444,7 +461,7 @@ class WizardPage(Page):
         if step == 1:
             import re
             if not re.match(r"^[a-z0-9][a-z0-9-]{1,30}$", self.w_id.text().strip()):
-                return "The ID must be lower case letters, digits and '-' (e.g. edukasaun)."
+                return "The ID must be lower case letters, digits and '-' (e.g. mylinux)."
             if not self.w_name.text().strip():
                 return "Enter a name."
             from eduka_customizer.core.users import check_username
@@ -488,7 +505,7 @@ class WizardPage(Page):
             steps.append({"action": "apt-remove", "packages": list(self.w_remove_apps)})
         if de:
             steps.append({"action": "desktop", "id": de, "dm": self.w_dm.currentData(),
-                          "remove_others": self.w_remove.isChecked()})
+                          "remove_others": self.w_remove.isChecked(), "edition": self.w_deed.currentData()})
             if self.w_type.currentData():
                 steps.append({"action": "session-type", "desktop": de, "type": self.w_type.currentData()})
             if self.w_comp.currentData():
@@ -581,6 +598,8 @@ class WizardPage(Page):
                     result = build(proj, BuildOptions.from_project(proj), t.set_progress, t.set_stage)
                 else:
                     recipe.run_step(proj, step, proj.path)
+            # The wizard did every step: all menus are open for fine-tuning.
+            proj.mark_all_steps()
             return result
 
         def done(out):

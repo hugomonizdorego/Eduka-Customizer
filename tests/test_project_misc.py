@@ -104,7 +104,7 @@ def test_catalog_and_sessions(project):
 def test_lightdm_conf(project):
     dm = DesktopManager(project)
     dm._lightdm_conf({"user-session": "edukasaun-desktop"})
-    text = (project.rootfs / "etc/lightdm/lightdm.conf.d/50-edukasaun.conf").read_text()
+    text = (project.rootfs / "etc/lightdm/lightdm.conf.d/50-eduka-customizer.conf").read_text()
     assert "[Seat:*]" in text and "user-session = edukasaun-desktop" in text
 
 
@@ -153,7 +153,7 @@ def test_identity_files(project, monkeypatch):
     osr = (project.rootfs / "etc/os-release").read_text()
     assert "ID=edukasaun" in osr and "ID_LIKE=debian" in osr and "VERSION_CODENAME=trixie" in osr
     assert (project.rootfs / "etc/hostname").read_text() == "edukasaun\n"
-    assert 'LIVE_USERNAME="live"' in (project.rootfs / "etc/live/config.conf.d/50-edukasaun.conf").read_text()
+    assert 'LIVE_USERNAME="live"' in (project.rootfs / "etc/live/config.conf.d/50-eduka-customizer.conf").read_text()
     with pytest.raises(ValueError):
         b.set_hostname("Bad_Host")
 

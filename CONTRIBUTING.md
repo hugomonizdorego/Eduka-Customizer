@@ -1,6 +1,6 @@
-# Contributing to Eduka-Customizer
+# Contributing to DistroForge
 
-Thank you for helping Edukasaun OS!
+Thank you for helping DistroForge!
 
 ## Development setup
 
@@ -20,13 +20,14 @@ eduka_customizer/core/   logic without any GUI code (usable from the CLI and rec
 eduka_customizer/gui/    PyQt6 interface; pages/ has one file per sidebar page
 data/                    desktops.json, exclude.list, config, launchers, polkit, desktop file
 tests/                   pytest unit tests (fake root filesystems, no root required)
+tools/make_guide.py      writes the PDF user guides in docs/ from docs/screenshots
 examples/                recipes and hook scripts
 debian/                  Debian packaging (3.0 native)
 ```
 
 ## Rules
 
-* Keep the scope: Debian stable/testing/sid and Edukasaun OS only.
+* Keep the scope: Debian stable/testing/sid and Debian-based distributions only (never Ubuntu-based).
 * New features go into `core/` first (with a test), then get a GUI page or
   card and, when useful, a CLI command and a recipe action.
 * Long operations run through `MainWindow.run_task` so the GUI never freezes.

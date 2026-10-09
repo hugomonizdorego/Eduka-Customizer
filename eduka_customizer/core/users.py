@@ -23,7 +23,7 @@ HOSTNAME = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$")
 RESERVED = {"root", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail", "news", "uucp",
             "proxy", "www-data", "backup", "list", "irc", "nobody", "systemd-network", "messagebus",
             "sshd", "polkitd", "lightdm", "sddm", "gdm", "avahi", "colord", "pulse", "rtkit"}
-LIVE_CONF = "etc/live/config.conf.d/50-edukasaun.conf"
+LIVE_CONF = "etc/live/config.conf.d/50-eduka-customizer.conf"
 LIVE_SCRIPT = "live/config/1999-eduka-password"
 # Suggested live user for new images: simple to remember and to type.
 SUGGESTED_USER = ("live", "Live")
@@ -118,7 +118,7 @@ class Users:
         if bad:
             raise ValueError("Invalid group name(s): {}".format(", ".join(bad)))
         fullname = _clean_text(fullname) or username
-        lines = ["# Live user, written by Eduka-Customizer (Users page)"]
+        lines = ["# Live user, written by DistroForge (Users page)"]
         if hostname:
             lines.append('LIVE_HOSTNAME="{}"'.format(hostname))
         lines += ['LIVE_USERNAME="{}"'.format(username), 'LIVE_USER_FULLNAME="{}"'.format(fullname),
@@ -257,7 +257,7 @@ class Users:
 
 
 LIVE_PASSWORD = """#!/bin/sh
-# Live user password, written by Eduka-Customizer (Users page).
+# Live user password, written by DistroForge (Users page).
 # Runs after live-config created the live user.
 [ -e /var/lib/live/config/eduka-password ] && exit 0
 for f in /etc/live/config.conf /etc/live/config.conf.d/*.conf; do [ -r "$f" ] && . "$f"; done

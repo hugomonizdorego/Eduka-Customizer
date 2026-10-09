@@ -8,16 +8,16 @@ from eduka_customizer.qt.widgets import (QCheckBox, QLineEdit, QListWidget, QLis
 
 from eduka_customizer.core import bootedit, bootloader
 from eduka_customizer.core.language import Language
+from eduka_customizer.gui.pages.grubdesign import GrubDesignCards
 from eduka_customizer.gui.widgets import FilePicker, Page, button, combo, hbox, label
 
 
-class BootMenuPage(Page):
+class BootMenuPage(GrubDesignCards, Page):
     title = "Boot Menu of the ISO"
     nav_title = "Boot Menu"
-    subtitle = ("What you see when the ISO starts: GRUB for UEFI, ISOLINUX for BIOS. Change the title, "
-                "timeout, kernel options and background, or edit grub.cfg, isolinux.cfg and the GRUB file "
-                "inside the EFI image directly. Edits are kept for every build and can be applied to the "
-                "ISO right away.")
+    subtitle = ("Step 8 · The menu shown when the ISO starts (GRUB for UEFI, ISOLINUX for BIOS): title, timeout, "
+                "kernel options, background, a GRUB theme and the menu entries. Experts can edit the boot files "
+                "directly.")
     icon_names = ("grub-customizer", "system-reboot", "media-optical")
 
     def build(self):
@@ -44,7 +44,9 @@ class BootMenuPage(Page):
                    button("Kernels...", lambda: self.main.go("KernelPage")), None,
                    button("Apply menu settings", self.apply_settings, "primary")))
 
-        c = self.card("Edit boot files")
+        self.build_grub_design()
+
+        c = self.card("Edit boot files (experts)")
         split = QSplitter()
         self.files = QListWidget()
         self.files.setMinimumWidth(260)
@@ -78,7 +80,8 @@ class BootMenuPage(Page):
             return
         p = self.project
         boot = p.state.get("boot", {})
-        self.boot_title.setText(boot.get("title") or p.state["identity"].get("name", "Edukasaun OS"))
+        self.boot_title.setText(boot.get("title") or p.state["identity"].get("name") or "")
+        self.boot_title.setPlaceholderText(p.display_name())
         self.timeout.setValue(int(boot.get("timeout", 10)))
         self.params.setText(boot.get("extra_params", "quiet splash"))
         from eduka_customizer.core.cleanup import kernels
@@ -92,6 +95,7 @@ class BootMenuPage(Page):
         entries = Language(p).boot_entries()
         self.lang_info.setText("Language submenu: " + ", ".join(t for t, _ in entries) if entries
                                else "No language submenu (choose more languages on the Language page).")
+        self.refresh_grub_design()
         keep = self._key()
         self.files.blockSignals(True)
         self.files.clear()
@@ -135,7 +139,7 @@ class BootMenuPage(Page):
         if splash:
             boot["splash"] = splash
         build = p.state.setdefault("build", {})
-        build.update({"title": boot["title"] or p.state["identity"].get("name", "Edukasaun OS"),
+        build.update({"title": boot["title"] or p.state["identity"].get("name") or p.display_name(),
                       "timeout": boot["timeout"], "boot_params": boot["extra_params"]})
         p.save()
         if p.has_isotree():

@@ -44,7 +44,7 @@ def require(*programs):
     """Raise a helpful error when host tools are missing."""
     missing = [p for p in programs if not which(p)]
     if missing:
-        raise RuntimeError("Missing host tools: {}. Run 'eduka-customizer doctor' "
+        raise RuntimeError("Missing host tools: {}. Run 'distroforge doctor' "
                            "to see which Debian packages provide them.".format(", ".join(missing)))
 
 

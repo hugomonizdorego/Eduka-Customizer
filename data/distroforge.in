@@ -1,0 +1,5 @@
+#!/bin/sh
+# DistroForge launcher
+export DISTROFORGE_DATA="${DISTROFORGE_DATA:-@DATADIR@}"
+export PYTHONPATH="@LIBDIR@${PYTHONPATH:+:$PYTHONPATH}"
+exec /usr/bin/python3 -m eduka_customizer "$@"

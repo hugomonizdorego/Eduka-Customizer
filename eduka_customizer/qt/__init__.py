@@ -1,7 +1,7 @@
 """Qt binding selection: PyQt6 when available, PyQt5 otherwise.
 
 PyQt5 (5.11+) accepts the scoped enum names used by PyQt6, so the GUI code
-is written once for both. PyQt5 keeps Eduka-Customizer installable on older
+is written once for both. PyQt5 keeps DistroForge installable on older
 Ubuntu releases that have no PyQt6.
 """
 

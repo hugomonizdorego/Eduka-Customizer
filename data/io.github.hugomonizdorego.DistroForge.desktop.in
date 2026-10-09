@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=DistroForge
+GenericName=Live ISO Builder
+GenericName[id]=Pembuat ISO Live
+Comment=Build your own Debian-based distribution as a live ISO image
+Comment[id]=Buat distribusi berbasis Debian Anda sendiri sebagai image ISO live
+Comment[pt]=Crie a sua própria distribuição baseada em Debian como imagem ISO live
+Exec=@PREFIX@/bin/distroforge-pkexec %f
+Icon=distroforge
+Terminal=false
+Categories=System;Settings;Development;
+Keywords=iso;remaster;live;debian;distro;distribution;builder;customizer;calamares;
+MimeType=application/x-cd-image;application/x-iso9660-image;
+StartupNotify=true
+StartupWMClass=distroforge

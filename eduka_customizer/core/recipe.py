@@ -1,9 +1,9 @@
 """Recipes: replayable JSON descriptions of a customization.
 
-A recipe makes an Edukasaun OS build reproducible (and usable in CI):
+A recipe makes a build reproducible (and usable in CI):
 
     {
-      "name": "Edukasaun OS 1.0 school edition",
+      "name": "My Linux 1.0 school edition",
       "steps": [
         {"action": "sources", "suite": "stable", "backports": true},
         {"action": "apt-install", "packages": ["gcompris-qt", "libreoffice"]},
@@ -72,9 +72,48 @@ def run_step(project, step, base, build=True):
             fp.set_firstboot(step.get("apps", []))
         else:
             fp.install(step.get("apps", []))
+    elif action == "sounds":
+        from eduka_customizer.core.sounds import Sounds
+        snd = Sounds(project)
+        if step.get("theme"):
+            project.state.setdefault("sounds", {})["theme"] = step["theme"]
+        for ev, f in (step.get("files") or {}).items():
+            snd.set_sound(ev, _path(base, f))
+        if step.get("folder"):
+            snd.add_folder(_path(base, step["folder"]))
+        snd.apply(step.get("theme"), boot=step.get("boot", True), login=step.get("login", True),
+                  shutdown=step.get("shutdown", True), event_sounds=step.get("event_sounds", True))
+    elif action == "welcome":
+        from eduka_customizer.core import welcome as wl
+        d = wl.design(project)
+        if step.get("file"):
+            import json as _json
+            d.update(_json.loads(_path(base, step["file"]).read_text()))
+        d.update({k: v for k, v in step.items() if k not in ("action", "file")})
+        if d.get("logo"):
+            d["logo"] = str(_path(base, d["logo"]))
+        for pg in d.get("pages", []):
+            if pg.get("image"):
+                pg["image"] = str(_path(base, pg["image"]))
+        wl.Welcome(project).apply(d)
+    elif action == "grub-theme":
+        from eduka_customizer.core.grubtheme import GrubThemes
+        g = GrubThemes(project)
+        name, _w, _i = g.add(_path(base, step["source"]), installed_system=step.get("installed", False))
+        g.use(name, step.get("installed", False))
+    elif action == "boot-loader":
+        from eduka_customizer.core.bootchoice import BootChoice
+        b = BootChoice(project)
+        if step.get("settings"):
+            b.configure(step["id"], dict(b.settings(step["id"]), **step["settings"]), write=False)
+        b.use(step["id"], timeout=step.get("timeout"))
+    elif action == "replace-app":
+        from eduka_customizer.core.replace import Replacer
+        Replacer(project).replace(step["role"], step["package"], step.get("remove", []))
     elif action == "desktop":
         DesktopManager(project).install(step["id"], dm_id=step.get("dm"),
-                                        remove_others=step.get("remove_others", False))
+                                        remove_others=step.get("remove_others", False),
+                                        edition=step.get("edition", "full"))
     elif action == "branding":
         from eduka_customizer.core.distrobrand import BrandingSpec, DistroBranding
         spec = BrandingSpec.from_project(project)
@@ -199,7 +238,7 @@ def run_step(project, step, base, build=True):
                 b.ensure_plymouth()
             theme = Plymouth(project).install(_path(base, step["import"]))
         elif step.get("logo"):
-            theme = b.generate_plymouth(step.get("name", "edukasaun"), _path(base, step["logo"]),
+            theme = b.generate_plymouth(step.get("name", project.os_id()), _path(base, step["logo"]),
                                         step.get("background", "#0b3d2e"), step.get("color", "#00a879"))
         if theme:
             b.set_plymouth(theme)
@@ -268,7 +307,7 @@ def export(project):
         steps.append({"action": "flatpak", "apps": st["flatpak"]["firstboot"], "firstboot": True})
     steps.append({"action": "boot", **st.get("boot", {})})
     steps.append({"action": "build", "options": st.get("build", {})})
-    return {"name": st.get("name", "Edukasaun OS"), "base": st.get("source", {}).get("label", ""),
+    return {"name": project.display_name(), "base": st.get("source", {}).get("label", ""),
             "steps": steps}
 
 

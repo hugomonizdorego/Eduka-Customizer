@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>DistroForge</vendor>
+  <vendor_url>https://github.com/hugomonizdorego/Eduka-Customizer</vendor_url>
+  <icon_name>distroforge</icon_name>
+  <action id="io.github.hugomonizdorego.DistroForge.pkexec">
+    <description>Run DistroForge</description>
+    <message>DistroForge needs administrator rights to mount, chroot and build ISO images</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@PREFIX@/bin/distroforge-pkexec</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>

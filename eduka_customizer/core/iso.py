@@ -47,10 +47,10 @@ def inspect(iso):
     entries = [e.lstrip("/").lower() for e in list_root(iso)]
     if "casper" in entries:
         raise InvalidISO("This is an Ubuntu (casper) image. Ubuntu and its derivatives are not "
-                         "supported - use a Debian or Edukasaun OS live ISO.")
+                         "supported - use a Debian or Debian-based live ISO.")
     if "live" not in entries:
         raise InvalidISO("No /live directory: this is not a Debian live image. Use a Debian live "
-                         "ISO (debian-live-*.iso) or an Edukasaun OS ISO, or bootstrap a new base.")
+                         "ISO (debian-live-*.iso) or a Debian-based live ISO, or bootstrap a new base.")
     return {"volume_id": iso_volume_id(iso), "entries": entries}
 
 

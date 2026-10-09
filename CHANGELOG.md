@@ -1,5 +1,149 @@
 # Changelog
 
+## 0.9.0 Beta — 2026-10-08
+
+The first beta on the way to 1.0. The Debian version is `1:0.9.0~beta`: the epoch keeps upgrades from
+0.17 Alpha working.
+
+### New
+* **Boot loaders of installed systems** (Kernel & Boot → Boot Loader, CLI `boot-loader
+  list|show|set|install|remove|use`, recipe `boot-loader` with `settings`): GRUB 2, GRUB 2 with Secure
+  Boot, systemd-boot, rEFInd, EFISTUB and Syslinux/EXTLINUX, each with its own settings. GRUB,
+  systemd-boot and rEFInd are installed by Calamares' bootloader module; EFISTUB and Syslinux by
+  `shellprocess@distroforge-bootloader`, which runs `/usr/sbin/distroforge-bootloader` in the new
+  system and adds the settings of systemd-boot and rEFInd. Fallbacks (Syslinux on UEFI → EFISTUB or
+  GRUB, EFISTUB on BIOS → Syslinux or GRUB, encrypted or unsupported /boot → GRUB) keep installations
+  from failing; kernel and initramfs hooks keep EFISTUB and Syslinux up to date. Removing a boot loader
+  never removes the one in use or unrelated packages. Tested with QEMU (SeaBIOS: MBR and GPT; OVMF).
+* **Keep only the ISO** after the build (closing the window, Check & Build, `clean --keep-iso`): the
+  build folders are deleted, the ISO and its checksums stay; never while something is mounted, never
+  files DistroForge did not make. README.txt in every project folder.
+* **Send feedback**: bugs, errors, ideas and questions with files, screenshots and (optionally) logs,
+  sent over HTTPS to the developers; kept and sent later without internet. Error messages offer it.
+
+### Changed
+* 13 steps: System Sounds and Welcome Screen are tabs of Look & Feel; GRUB Design is part of Boot Menu;
+  the GRUB settings of installed systems moved from Kernel to Boot Loader; Settings and About share one
+  menu. Review & Apply shows the tab of each change.
+* New slate and blue colors in light and dark mode.
+* One user guide, in English.
+
+### Fixed
+* Opening links, the user guide and folders failed with *No such file or directory: 'runuser'* when
+  started through pkexec (runuser is in /usr/sbin); every opener now uses full paths and falls back.
+* The boot loader table no longer sorts away from its descriptions.
+
+## 0.17.0 Alpha — 2026-10-08
+
+### Changed
+* **New name: DistroForge** (was Eduka-Customizer). Package `distroforge`, command `distroforge`,
+  settings `/etc/distroforge/distroforge.conf`, data `/usr/share/distroforge`, logs
+  `/tmp/distroforge/`. The package replaces `eduka-customizer`; the commands `eduka-customizer` and
+  `eduka-customizer-pkexec` and the old settings file keep working. File names inside built images
+  stay the same, so older projects build as before.
+* **Step 14 Review & Apply**: changes chosen in steps 2–13 wait in one list; tick each, go back and
+  change it, remove it or reorder, then apply them all (Settings can switch back to applying at once).
+  Check & Build is step 15.
+* Clearer texts on every page, in dialogs and in `distroforge --help` (commands listed by step).
+* Nothing is preset for one distribution any more: the school example is
+  `examples/school-edition.json` with a neutral name.
+
+### New
+* **Fix automatically or by hand**: a *How to fix* column in Check & Build and in the installer check;
+  *Fix automatically* (`check --fix`) installs missing packages and host tools, repairs dpkg, removes a
+  leftover policy-rc.d, releases mounts and corrects Calamares settings, then checks again. Building
+  with problems left asks *Fix automatically*, *I will fix it myself* or *Build anyway*.
+* **ISO size targets**: smallest, 100 MB, 300 MB, 500 MB, 700 MB, 1 GB, 2 GB, 4.4 GB or none, with an
+  estimate from a compressed sample of the system (`build --target-size`). New lossless size savers:
+  documentation (license files stay), manual pages, unused translations.
+* **About page** and `distroforge about`: license, credits, the license of every component, trademark
+  notes, PDF user guides, PayPal and Facebook links; a *Support DistroForge* button in the sidebar.
+* **PDF user guides** in Indonesian and English (`docs/DistroForge-Panduan.pdf`,
+  `docs/DistroForge-Guide.pdf`, made by `tools/make_guide.py`), installed in
+  `/usr/share/distroforge/guide/` (minimal systems drop /usr/share/doc).
+* A warning when the distribution name uses a trademark (Debian, Ubuntu, ...).
+
+### Fixed
+* *"grub needs /usr/sbin/grub-install in the image"* is no longer reported when Calamares installs GRUB
+  itself (bootloader-config, its own commands or grub packages in the ISO pool), as on Debian live ISOs.
+
+## 0.16.0 Alpha — 2026-10-08
+
+### New
+* **System Sounds** (step 10): boot, login, logout, shutdown, error, warning, information, question,
+  messages, e-mail, complete, bell, devices, power, battery, trash, screenshot, volume and camera
+  sounds as a freedesktop sound theme, the default of every desktop (gsettings only for schemas in the
+  image, GTK, Xfce, KDE); boot/shutdown sounds via a systemd service, login sound via autostart; files
+  matched to events by name; MP3/FLAC converted with ffmpeg. CLI `sounds`, recipe `sounds`.
+* **Welcome Screen** (step 11): four designed pages (title, rich text, logo, picture, colors, buttons
+  for websites, programs or the installer), a live preview, shown after login until unticked, only
+  live, only installed or only from the menu. A small GTK program in the image. CLI `welcome`.
+* **Identity & Branding from the ISO**: fields and artwork start from the extracted ISO.
+* **Editions in each desktop's words** with the Debian description of the package.
+* **Flathub by category** for every kind of distribution (API, otherwise AppStream via flatpak).
+* **Kernel terminal** for third-party repositories; repositories stay only with their kernel.
+* **Look & Feel per desktop**: themes.json with compatibility; window themes for Xfwm4, Openbox,
+  Cinnamon, Marco/Metacity, Plasma global theme and Kvantum.
+* **Calamares**: text slides; `calamares_check` (also in Check & Build and `calamares check`).
+* **GRUB Design**: third-party GRUB themes checked and refused when incompatible, menu designer,
+  boot loader of installed systems (GRUB, GRUB + Secure Boot, systemd-boot, rEFInd). CLI
+  `grub-theme`, `boot-loader`.
+* **Modern look**: gradient sidebar, pill tabs, cards, *Step N of 14* with a progress bar.
+
+### Changed
+* Replace apps applies to everyone (desktop settings and /etc/skel too).
+* Distro Branding keeps the ISO's Calamares branding component and EFI id.
+
+### Fixed
+* Changing the product name no longer changes `bootloaderEntryName` when the EFI folder depends on it
+  (Debian's signed GRUB would not boot).
+* Quotes in names no longer break Calamares branding or slides.
+
+## 0.15.0 Alpha — 2026-10-08
+
+### Changed
+* **A builder for every Debian-based distribution.** Eduka-Customizer is no
+  longer made only for Edukasaun OS: new projects start without a name, ID,
+  host name, home page or codename, and every fallback comes from the image's
+  own `os-release` (ISO file name, volume label, boot menu title, xorriso
+  publisher, branding). The Education purpose recommends Xfce; Eduka-Desktop
+  stays in the list of desktops. Configuration files in the image are called
+  `*-eduka-customizer*` (old `*-edukasaun*` files are renamed when a project
+  is opened). `[edukasaun]` in the settings is now `[eduka_desktop]`.
+* **Menus merged into 12 steps** with tabs: Start, Repositories, Identity &
+  Branding, Users, Language, Desktop, Software (Packages, Flatpak apps,
+  Replace apps), Kernel & Boot, Look & Feel (Themes & Icons, Wallpaper &
+  Login, Plymouth), Installer, Advanced (Terminal & Live, Package Workshop),
+  Check & Build.
+* **Step by step.** A step opens when the one before it is done (*Done — next
+  step*, ✔ in the sidebar). Settings → *Free navigation (expert mode)* opens
+  every menu; the Quick Wizard opens every step when it finishes; projects
+  from older versions keep every step open.
+
+### New
+* **Desktop editions**: Mini, Compact, Full and Full with apps for every desktop
+  and window manager (GUI, Quick Wizard, `desktop install --edition`, recipes).
+* **Debian-only desktop list**: GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt,
+  LXDE, Budgie, GNOME Flashback, Enlightenment, Eduka-Desktop; Openbox, i3,
+  Fluxbox, IceWM, awesome, JWM, herbstluftwm, bspwm, dwm, spectrwm, Sway, labwc,
+  Wayfire, Hyprland. Native compositors Metacity and Enlightenment's added.
+* **ISO editions**: Minimal, Full, Full with recommended apps in *What is your
+  distribution for?*, the Quick Wizard and `purpose apply --edition`.
+* **Replace apps**: replace the default browser, mail, word processor,
+  spreadsheet, editor, file manager, terminal, image viewer, video and music
+  player, PDF viewer, archive manager or calculator (`data/apps.json`); sets
+  `/etc/xdg/mimeapps.list` and `update-alternatives`; CLI `apps`; recipe
+  action `replace-app`.
+* **Check & Build**: checks before every build (`core/preflight.py`, CLI
+  `check [--deep]`, `build --skip-checks`).
+* `examples/my-distro.json`: a general Debian-based distribution.
+
+### Fixed
+* Removing an application that a metapackage depends on
+  (`task-gnome-desktop`, `kde-standard`, ...) no longer lets `autoremove`
+  remove the whole desktop: what the metapackage installed is marked manual
+  first.
+
 ## 0.14.0 Alpha — 2026-10-07
 
 ### New

@@ -1,0 +1,172 @@
+{
+  "name": "School Linux 1.0 - school edition with Eduka-Desktop",
+  "comment": "A school edition with Eduka-Desktop. Apply with: sudo distroforge -p PROJECT recipe apply school-edition.json",
+  "steps": [
+    {
+      "action": "sources",
+      "suite": "stable",
+      "backports": false
+    },
+    {
+      "action": "apt-upgrade"
+    },
+    {
+      "action": "identity",
+      "name": "School Linux",
+      "version": "1.0",
+      "codename": "Lafaek",
+      "id": "schoollinux",
+      "hostname": "schoollinux",
+      "live_user": "live",
+      "live_fullname": "Live",
+      "volume_label": "SCHOOL_LINUX_1_0"
+    },
+    {
+      "action": "users",
+      "live": {
+        "username": "live",
+        "fullname": "Live",
+        "password_mode": "none"
+      }
+    },
+    {
+      "action": "desktop",
+      "id": "eduka",
+      "dm": "lightdm",
+      "edition": "compact"
+    },
+    {
+      "action": "eduka-desktop",
+      "install": false,
+      "panel": {
+        "height": 44,
+        "theme_style": "Eduka-Default-Theme",
+        "menu_label": "Menu"
+      },
+      "desktop": {
+        "layout": "Grid"
+      }
+    },
+    {
+      "action": "session-type",
+      "desktop": "eduka",
+      "type": "x11"
+    },
+    {
+      "action": "compositor",
+      "id": "picom",
+      "preset": "shadows"
+    },
+    {
+      "action": "themes",
+      "packs": [
+        "papirus-icon-theme",
+        "arc-theme"
+      ],
+      "icons": "Papirus",
+      "gtk": "Arc"
+    },
+    {
+      "action": "apt-install",
+      "packages": [
+        "calamares-settings-debian",
+        "libreoffice",
+        "libreoffice-l10n-pt",
+        "firefox-esr",
+        "vlc",
+        "gimp",
+        "orca"
+      ]
+    },
+    {
+      "action": "flatpak",
+      "apps": [
+        "org.kde.gcompris",
+        "org.geogebra.GeoGebra",
+        "org.stellarium.Stellarium"
+      ],
+      "firstboot": true
+    },
+    {
+      "action": "boot",
+      "extra_params": "quiet splash",
+      "timeout": 10
+    },
+    {
+      "action": "language",
+      "default": "pt_PT.UTF-8",
+      "extra": [
+        "en_US.UTF-8",
+        "id_ID.UTF-8"
+      ],
+      "timezone": "Asia/Dili",
+      "keyboard": "pt",
+      "packs": true,
+      "boot_menu": [
+        "pt_PT.UTF-8",
+        "en_US.UTF-8",
+        "id_ID.UTF-8"
+      ]
+    },
+    {
+      "action": "branding",
+      "comment": "put logo.png and wallpaper.png next to this recipe",
+      "logo": "logo.png",
+      "wallpaper": "wallpaper.png",
+      "grub_name": true,
+      "keyring": false
+    },
+    {
+      "action": "calamares",
+      "install": true,
+      "users": {
+        "autologin": false,
+        "root_password": false,
+        "min_length": 6,
+        "weak": true
+      },
+      "partition": {
+        "fs": "ext4",
+        "filesystems": [
+          "ext4",
+          "btrfs"
+        ],
+        "swap": [
+          "none",
+          "file"
+        ],
+        "initial_swap": "file",
+        "efi_size": "512MiB"
+      },
+      "requirements": {
+        "storage": 15,
+        "ram": 2,
+        "internet": false,
+        "power": false
+      },
+      "remove_packages": [
+        "live-boot",
+        "live-config",
+        "live-config-systemd",
+        "live-tools",
+        "calamares",
+        "calamares-settings-debian"
+      ]
+    },
+    {
+      "action": "kernel",
+      "firmware": true,
+      "grub": {
+        "GRUB_TIMEOUT": "3",
+        "GRUB_CMDLINE_LINUX_DEFAULT": "quiet splash"
+      }
+    },
+    {
+      "action": "build",
+      "options": {
+        "compression": "zstd",
+        "level": 15
+      }
+    }
+  ]
+}

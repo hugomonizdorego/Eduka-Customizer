@@ -1,0 +1,375 @@
+#!/bin/sh
+# distroforge-bootloader - set up the boot loader chosen in DistroForge.
+#
+# Written into the image by DistroForge (GPL-3.0-or-later). It runs:
+#   install   in the new system, from the Calamares installer
+#             (shellprocess@distroforge-bootloader), after the disks are mounted;
+#   update    from the kernel and initramfs hooks, after every kernel update;
+#   show      prints what is set up.
+# Its settings are in /etc/distroforge-bootloader.conf. When the chosen boot
+# loader cannot work on a computer (Syslinux on a UEFI computer, EFISTUB on a BIOS
+# computer, an encrypted /boot ...) the next one that works is used, GRUB last,
+# so the installation does not fail.
+
+set -u
+
+CONF=/etc/distroforge-bootloader.conf
+LOADER=grub
+TIMEOUT=5
+CMDLINE="quiet splash"
+LABEL=""
+EFI_ID=""
+SDBOOT_DEFAULT=newest
+SDBOOT_EDITOR=no
+SDBOOT_CONSOLE=keep
+REFIND_RESOLUTION=""
+REFIND_TEXTONLY=no
+REFIND_HIDE_TOOLS=no
+SYSLINUX_TITLE=""
+SYSLINUX_GRAPHICAL=yes
+INSTALLED=0
+ACTIVE=""
+# shellcheck disable=SC1090
+[ -r "$CONF" ] && . "$CONF"
+
+say() { echo "distroforge-bootloader: $*"; }
+die() { echo "distroforge-bootloader: ERROR: $*" >&2; exit 1; }
+
+os_value() {
+    # os_value KEY DEFAULT: a value of /etc/os-release
+    v=$(sed -n "s/^$1=//p" /etc/os-release 2>/dev/null | head -n1 | sed 's/^"//; s/"$//')
+    echo "${v:-$2}"
+}
+os_name() { os_value PRETTY_NAME "$(os_value NAME Linux)"; }
+os_id() { os_value ID linux; }
+efi_id() { echo "${EFI_ID:-$(os_id)}"; }
+uefi() { [ -d /sys/firmware/efi ]; }
+
+esp_dir() {
+    for d in /boot/efi /efi /boot; do
+        if mountpoint -q "$d" 2>/dev/null && [ "$(findmnt -no FSTYPE "$d")" = vfat ]; then
+            echo "$d"
+            return 0
+        fi
+    done
+    return 1
+}
+
+newest_kernel() {
+    ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's|^/boot/vmlinuz-||' | sort -V | tail -n1
+}
+
+kernels_newest_first() {
+    ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's|^/boot/vmlinuz-||' | sort -rV
+}
+
+# The device of a mount point (btrfs shows /dev/sda2[/@]).
+dev_of() { findmnt -no SOURCE "$1" 2>/dev/null | head -n1 | sed 's/\[.*\]$//'; }
+
+# The whole disk a device is on (also through LUKS and LVM).
+disk_of() {
+    lsblk -srno NAME,TYPE "$1" 2>/dev/null | awk '$2 == "disk" || $2 == "loop" { print "/dev/" $1; exit }'
+}
+
+partnum_of() {
+    cat "/sys/class/block/$(basename "$(readlink -f "$1")")/partition" 2>/dev/null
+}
+
+# Kernel options that find the root file system.
+root_options() {
+    uuid=$(findmnt -no UUID / 2>/dev/null)
+    [ -n "$uuid" ] || uuid=$(blkid -s UUID -o value "$(dev_of /)" 2>/dev/null)
+    [ -n "$uuid" ] || die "cannot find the UUID of the root file system"
+    opts="root=UUID=$uuid ro"
+    fsroot=$(findmnt -no FSROOT / 2>/dev/null)
+    if [ "$(findmnt -no FSTYPE /)" = btrfs ] && [ -n "$fsroot" ] && [ "$fsroot" != / ]; then
+        opts="$opts rootflags=subvol=${fsroot#/}"
+    fi
+    echo "$opts"
+}
+
+set_conf() {
+    # set_conf KEY VALUE (VALUE is a simple word)
+    if grep -q "^$1=" "$CONF" 2>/dev/null; then
+        sed -i "s|^$1=.*|$1=$2|" "$CONF"
+    else
+        echo "$1=$2" >> "$CONF"
+    fi
+}
+
+# EFISTUB --------------------------------------------------------------------------------
+efistub_files() {
+    esp=$(esp_dir) || die "no EFI system partition is mounted"
+    k=$(newest_kernel)
+    [ -n "$k" ] || die "no kernel in /boot"
+    dir="$esp/EFI/$(efi_id)"
+    mkdir -p "$dir"
+    cp -f "/boot/vmlinuz-$k" "$dir/vmlinuz.efi" || die "cannot copy the kernel to $dir"
+    if [ -e "/boot/initrd.img-$k" ]; then
+        cp -f "/boot/initrd.img-$k" "$dir/initrd.img" || die "cannot copy the initrd to $dir"
+    else
+        rm -f "$dir/initrd.img"
+    fi
+    say "kernel $k copied to $dir"
+}
+
+efistub_install() {
+    uefi || { say "EFISTUB needs a UEFI computer"; return 2; }
+    command -v efibootmgr >/dev/null 2>&1 || { say "efibootmgr is missing"; return 2; }
+    esp=$(esp_dir) || { say "no EFI system partition"; return 2; }
+    efistub_files
+    part=$(dev_of "$esp")
+    disk=$(disk_of "$part")
+    num=$(partnum_of "$part")
+    [ -n "$disk" ] && [ -n "$num" ] || { say "cannot find the disk of $part"; return 2; }
+    label="${LABEL:-$(os_name)}"
+    id=$(efi_id)
+    # Remove an older entry with the same name.
+    efibootmgr 2>/dev/null | while IFS= read -r line; do
+        case "$line" in
+            Boot[0-9A-F][0-9A-F][0-9A-F][0-9A-F]*)
+                n=$(echo "$line" | cut -c5-8)
+                title=$(echo "$line" | cut -c10- | sed 's/^ //; s/\t.*//')
+                [ "$title" = "$label" ] && efibootmgr -q -b "$n" -B
+                ;;
+        esac
+    done
+    initrd=""
+    [ -e "$esp/EFI/$id/initrd.img" ] && initrd=" initrd=\\EFI\\$id\\initrd.img"
+    efibootmgr -q -c -d "$disk" -p "$num" -L "$label" -l "\\EFI\\$id\\vmlinuz.efi" \
+        -u "$(root_options) $CMDLINE$initrd" || { say "efibootmgr failed"; return 1; }
+    say "UEFI entry '$label' starts the kernel directly (EFISTUB)"
+    ACTIVE=efistub
+    return 0
+}
+
+# The kernel options without quiet and splash (for recovery entries).
+recovery_options() {
+    for w in $CMDLINE; do
+        case "$w" in quiet|splash) ;; *) printf ' %s' "$w" ;; esac
+    done
+}
+
+# Syslinux / EXTLINUX ---------------------------------------------------------------------
+syslinux_config() {
+    if mountpoint -q /boot; then prefix=""; else prefix=/boot; fi
+    t=$((TIMEOUT * 10))
+    [ "$t" -gt 0 ] || t=1
+    ui=menu.c32
+    [ "$SYSLINUX_GRAPHICAL" = yes ] && ui=vesamenu.c32
+    name=$(os_name)
+    root=$(root_options)
+    first=1
+    {
+        echo "# Written by distroforge-bootloader; it is written again after every kernel update."
+        echo "# Change /etc/distroforge-bootloader.conf and run: distroforge-bootloader update"
+        echo "UI $ui"
+        echo "PROMPT 0"
+        echo "TIMEOUT $t"
+        echo "MENU TITLE ${SYSLINUX_TITLE:-$name}"
+        echo "DEFAULT linux"
+        for k in $(kernels_newest_first); do
+            if [ "$first" = 1 ]; then lbl=linux; text="$name"; else lbl="linux-$k"; text="$name ($k)"; fi
+            echo
+            echo "LABEL $lbl"
+            echo "  MENU LABEL $text"
+            echo "  LINUX $prefix/vmlinuz-$k"
+            [ -e "/boot/initrd.img-$k" ] && echo "  INITRD $prefix/initrd.img-$k"
+            echo "  APPEND $root $CMDLINE"
+            if [ "$first" = 1 ]; then
+                echo
+                echo "LABEL recovery"
+                echo "  MENU LABEL $name (recovery mode)"
+                echo "  LINUX $prefix/vmlinuz-$k"
+                [ -e "/boot/initrd.img-$k" ] && echo "  INITRD $prefix/initrd.img-$k"
+                echo "  APPEND $root single$(recovery_options)"
+            fi
+            first=0
+        done
+    } > /boot/syslinux/syslinux.cfg.new && mv /boot/syslinux/syslinux.cfg.new /boot/syslinux/syslinux.cfg
+}
+
+syslinux_install() {
+    uefi && { say "Syslinux/EXTLINUX needs a BIOS computer"; return 2; }
+    command -v extlinux >/dev/null 2>&1 || { say "extlinux is missing"; return 2; }
+    if mountpoint -q /boot; then mp=/boot; else mp=/; fi
+    dev=$(dev_of "$mp")
+    case "$(lsblk -no TYPE "$dev" 2>/dev/null | head -n1)" in
+        crypt|lvm) say "/boot is encrypted or on LVM: Syslinux cannot read it"; return 3 ;;
+    esac
+    case "$(findmnt -no FSTYPE "$mp")" in
+        ext2|ext3|ext4|vfat) ;;
+        *) say "Syslinux cannot read $(findmnt -no FSTYPE "$mp") (only ext2/3/4 and FAT)"; return 3 ;;
+    esac
+    disk=$(disk_of "$dev")
+    num=$(partnum_of "$dev")
+    [ -n "$disk" ] && [ -n "$num" ] || { say "cannot find the disk of $dev"; return 2; }
+    mods=/usr/lib/syslinux/modules/bios
+    mbr=/usr/lib/syslinux/mbr
+    [ -d "$mods" ] && [ -d "$mbr" ] || { say "syslinux-common is missing"; return 2; }
+    mkdir -p /boot/syslinux
+    extlinux --install /boot/syslinux || { say "extlinux --install failed"; return 1; }
+    for m in ldlinux.c32 libcom32.c32 libutil.c32 menu.c32 vesamenu.c32; do
+        [ -e "$mods/$m" ] && cp -f "$mods/$m" /boot/syslinux/
+    done
+    syslinux_config
+    # The partition table type (sfdisk reads it itself; lsblk needs udev).
+    pt=$(sfdisk -d "$disk" 2>/dev/null | sed -n 's/^label: //p')
+    [ -n "$pt" ] || pt=$(blkid -p -s PTTYPE -o value "$disk" 2>/dev/null)
+    # Mark the partition first: writing the table can rewrite the boot code.
+    if [ "$pt" = gpt ]; then
+        sfdisk --part-attrs "$disk" "$num" LegacyBIOSBootable >/dev/null 2>&1 || say "could not mark partition $num bootable"
+        dd bs=440 count=1 conv=notrunc if="$mbr/gptmbr.bin" of="$disk" 2>/dev/null || return 1
+    else
+        sfdisk --activate "$disk" "$num" >/dev/null 2>&1 || say "could not mark partition $num active"
+        dd bs=440 count=1 conv=notrunc if="$mbr/mbr.bin" of="$disk" 2>/dev/null || return 1
+    fi
+    sync
+    say "Syslinux/EXTLINUX installed on $disk (partition $num)"
+    ACTIVE=syslinux
+    return 0
+}
+
+# GRUB, the last resort -------------------------------------------------------------------
+grub_install() {
+    command -v grub-install >/dev/null 2>&1 || { say "GRUB is not installed either"; return 2; }
+    if uefi; then
+        esp=$(esp_dir) || { say "no EFI system partition"; return 2; }
+        grub-install --target=x86_64-efi --efi-directory="$esp" --bootloader-id="$(efi_id)" --recheck || return 1
+    else
+        if mountpoint -q /boot; then dev=$(dev_of /boot); else dev=$(dev_of /); fi
+        disk=$(disk_of "$dev")
+        [ -n "$disk" ] || { say "cannot find the disk of $dev"; return 2; }
+        grub-install --target=i386-pc --recheck "$disk" || return 1
+    fi
+    command -v update-grub >/dev/null 2>&1 && update-grub
+    say "GRUB installed"
+    ACTIVE=grub
+    return 0
+}
+
+# systemd-boot and rEFInd: Calamares installs them, the settings are added here --------------
+add_options() {
+    # add_options LINE: LINE with the words of CMDLINE it does not have yet
+    line=$1
+    for w in $CMDLINE; do
+        case " $line " in *" $w "*) ;; *) line="$line $w" ;; esac
+    done
+    echo "$line"
+}
+
+sdboot_configure() {
+    esp=$(bootctl --print-esp-path 2>/dev/null) || esp=$(esp_dir) || return 0
+    [ -d "$esp/loader" ] || { say "systemd-boot is not on $esp"; return 0; }
+    {
+        echo "timeout $TIMEOUT"
+        echo "editor $SDBOOT_EDITOR"
+        echo "console-mode $SDBOOT_CONSOLE"
+        [ "$SDBOOT_DEFAULT" = saved ] && echo "default @saved"
+    } > "$esp/loader/loader.conf"
+    for f in "$esp"/loader/entries/*.conf; do
+        [ -e "$f" ] || continue
+        old=$(sed -n 's/^options[[:space:]]*//p' "$f" | head -n1)
+        new=$(add_options "$old")
+        [ "$old" = "$new" ] || sed -i "s|^options.*|options $new|" "$f"
+    done
+    if [ -e /etc/kernel/cmdline ]; then
+        add_options "$(cat /etc/kernel/cmdline)" > /etc/kernel/cmdline.new && mv /etc/kernel/cmdline.new /etc/kernel/cmdline
+    fi
+    ACTIVE=systemd-boot
+    say "systemd-boot settings written to $esp/loader/loader.conf"
+}
+
+refind_set() {
+    # refind_set FILE KEY VALUE: one active "KEY VALUE" line
+    sed -i "/^[[:space:]]*$2[[:space:]]/d; /^[[:space:]]*$2\$/d" "$1"
+    echo "$2${3:+ $3}" >> "$1"
+}
+
+refind_configure() {
+    esp=$(esp_dir) || return 0
+    conf=""
+    for c in "$esp/EFI/refind/refind.conf" "$esp/EFI/BOOT/refind.conf"; do
+        [ -e "$c" ] && conf=$c && break
+    done
+    [ -n "$conf" ] || { say "rEFInd is not on $esp"; return 0; }
+    refind_set "$conf" timeout "$TIMEOUT"
+    [ -n "$REFIND_RESOLUTION" ] && refind_set "$conf" resolution "$REFIND_RESOLUTION"
+    [ "$REFIND_TEXTONLY" = yes ] && refind_set "$conf" textonly ""
+    [ "$REFIND_HIDE_TOOLS" = yes ] && refind_set "$conf" showtools ""
+    if [ -e /boot/refind_linux.conf ]; then
+        tmp=/boot/refind_linux.conf.new
+        : > "$tmp"
+        while IFS= read -r line; do
+            case "$line" in
+                \"*\"*\"*\"*)
+                    title=$(echo "$line" | cut -d'"' -f2)
+                    opts=$(echo "$line" | cut -d'"' -f4)
+                    case "$opts" in *single*) ;; *) opts=$(add_options "$opts") ;; esac
+                    printf '"%s" "%s"\n' "$title" "$opts" >> "$tmp"
+                    ;;
+                *) echo "$line" >> "$tmp" ;;
+            esac
+        done < /boot/refind_linux.conf
+        mv "$tmp" /boot/refind_linux.conf
+    else
+        root=$(root_options)
+        printf '"Boot with standard options" "%s %s"\n"Boot to single-user mode" "%s single"\n' \
+            "$root" "$CMDLINE" "$root" > /boot/refind_linux.conf
+    fi
+    ACTIVE=refind
+    say "rEFInd settings written to $conf"
+}
+
+# Commands ------------------------------------------------------------------------------------
+try_chain() {
+    for l in "$@"; do
+        case "$l" in
+            efistub) efistub_install ;;
+            syslinux) syslinux_install ;;
+            grub) grub_install ;;
+        esac
+        rc=$?
+        [ "$rc" = 0 ] && return 0
+        [ "$rc" = 1 ] && die "$l could not be installed (see the messages above)"
+    done
+    die "no boot loader could be installed on this computer (tried: $*)"
+}
+
+do_install() {
+    case "$LOADER" in
+        efistub) try_chain efistub syslinux grub ;;
+        syslinux) try_chain syslinux efistub grub ;;
+        systemd-boot) uefi && sdboot_configure ;;
+        refind) uefi && refind_configure ;;
+        *) ;;
+    esac
+    [ -w "$CONF" ] || touch "$CONF"
+    set_conf INSTALLED 1
+    set_conf ACTIVE "${ACTIVE:-$LOADER}"
+    say "done (${ACTIVE:-$LOADER})"
+}
+
+do_update() {
+    [ "$INSTALLED" = 1 ] || exit 0
+    case "$ACTIVE" in
+        efistub) efistub_files ;;
+        syslinux) [ -d /boot/syslinux ] && syslinux_config ;;
+        *) ;;
+    esac
+}
+
+case "${1:-}" in
+    install) do_install ;;
+    update) do_update ;;
+    show)
+        echo "chosen: $LOADER"
+        echo "installed: $INSTALLED${ACTIVE:+ ($ACTIVE)}"
+        echo "timeout: $TIMEOUT"
+        echo "kernel options: $CMDLINE"
+        ;;
+    *)
+        echo "Usage: distroforge-bootloader install|update|show" >&2
+        exit 2
+        ;;
+esac

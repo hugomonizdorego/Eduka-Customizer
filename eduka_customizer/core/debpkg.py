@@ -1,6 +1,6 @@
 """Build binary .deb packages from a small Debian source tree.
 
-The trees written by Eduka-Customizer are valid Debian source packages
+The trees written by DistroForge are valid Debian source packages
 (debian/control, changelog, copyright, rules, install, maintainer scripts),
 so they can also be built with dpkg-buildpackage and published in a real
 repository later. For speed and to avoid needing debhelper on the host,
@@ -181,7 +181,7 @@ def _merge(src, dst):
 
 
 def bump_version(version, tag):
-    """1.0+edukasaun3 -> 1.0+edukasaun4 ; 1.0 -> 1.0+edukasaun1"""
+    """1.0+mylinux3 -> 1.0+mylinux4 ; 1.0 -> 1.0+mylinux1"""
     m = re.match(r"^(.*\+{})(\d+)$".format(re.escape(tag)), version)
     if m:
         return "{}{}".format(m.group(1), int(m.group(2)) + 1)

@@ -1,4 +1,4 @@
-"""Snapshot the running Edukasaun OS / Debian system (remastersys style).
+"""Snapshot the running Debian-based system (remastersys style).
 
 The running system is copied with rsync into the project's root
 filesystem, without personal data unless "backup" mode is chosen, and

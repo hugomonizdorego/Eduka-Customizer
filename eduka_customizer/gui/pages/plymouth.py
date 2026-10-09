@@ -12,12 +12,12 @@ from eduka_customizer.gui.widgets import FilePicker, ImagePreview, Page, button,
 
 
 class PlymouthPage(Page):
-    title = "Plymouth Boot Splash"
-    nav_title = "Plymouth"
-    subtitle = ("The animation shown while the system starts and shuts down. Install themes from a "
-                ".deb, .zip, .tar.* archive, a folder or Debian's packages, preview them in a window, "
-                "apply or remove them. The initramfs is rebuilt during the next ISO build.")
+    title = "Boot Splash (Plymouth)"
+    nav_title = "Boot Splash"
+    subtitle = ("Step 9 · The animation shown while the computer starts and shuts down: install a theme, preview "
+                "it, use it, or make one from your logo. Your changes wait in Review & Apply (step 12).")
     icon_names = ("preferences-desktop-screensaver", "plymouth", "video-display")
+    CHANGES = ('Apply Plymouth theme ', 'Create Plymouth theme', 'Install Plymouth', 'Plymouth settings', 'Remove Plymouth theme ')
 
     def build(self):
         c = self.card("Installed themes")
@@ -53,7 +53,7 @@ class PlymouthPage(Page):
                       "A simple, fast theme: your logo fading in on a colored background with a progress "
                       "bar, a message line and a password prompt for encrypted disks.")
         f = c.form()
-        self.gen_name = QLineEdit("edukasaun")
+        self.gen_name = QLineEdit("my-splash")
         f.addRow("Name:", self.gen_name)
         self.gen_logo = FilePicker("Logo", "PNG images (*.png)")
         self.gen_prev = ImagePreview(160, 90)

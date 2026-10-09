@@ -1,4 +1,4 @@
-"""Command line interface: eduka-customizer <command> [options]."""
+"""Command line interface: distroforge <command> [options]."""
 
 import argparse
 import json
@@ -24,7 +24,7 @@ def _project(args, create=False):
 def _locked(args):
     p = _project(args)
     p.lock()
-    logmod.add_file_handler(p.logs / "eduka-customizer.log")
+    logmod.add_file_handler(p.logs / "distroforge.log")
     return p
 
 
@@ -40,7 +40,7 @@ def cmd_new(args):
     from eduka_customizer.core.project import Project
     p = Project.create(args.path or args.project or os.getcwd(), name=args.name)
     p.lock()
-    logmod.add_file_handler(p.logs / "eduka-customizer.log")
+    logmod.add_file_handler(p.logs / "distroforge.log")
     if args.iso:
         from eduka_customizer.core import iso
         info = iso.extract(p, args.iso)
@@ -77,7 +77,7 @@ def cmd_shell(args):
     if not p.has_rootfs():
         log.error("This project has no root filesystem")
         return 1
-    print("Entering the Edukasaun OS image. Type 'exit' to leave.")
+    print("Entering the image. Type 'exit' to leave.")
     print("Everything you change here is saved to the next ISO build.")
     rc = Chroot(p.rootfs).interactive(args.command or None)
     p.mark_initramfs_dirty()
@@ -179,12 +179,15 @@ def cmd_desktop(args):
     from eduka_customizer.core import desktop
     if args.action == "catalog":
         for d in desktop.catalog()["desktops"]:
-            print("{:10} {:4} {:22} {}".format(d["id"], d["kind"], d["name"], d["description"]))
+            print("{:15} {:4} {:22} {}".format(d["id"], d["kind"], d["name"], d["description"]))
+        print("\nEditions (--edition):")
+        for e in desktop.editions():
+            print("  {:10} {}".format(e["id"], e["description"]))
         return 0
     p = _locked(args)
     dm = desktop.DesktopManager(p)
     if args.action == "install":
-        dm.install(args.name, dm_id=args.dm, remove_others=args.remove_others)
+        dm.install(args.name, dm_id=args.dm, remove_others=args.remove_others, edition=args.edition)
     elif args.action == "session":
         dm.set_default_session(args.name)
     elif args.action == "dm":
@@ -302,7 +305,7 @@ def cmd_workshop(args):
 
 
 def cmd_themes(args):
-    from eduka_customizer.core.themes import THEME_PACKS, Themes
+    from eduka_customizer.core.themes import Themes, packs_catalog
     p = _locked(args)
     th = Themes(p)
     if args.action == "list":
@@ -310,7 +313,7 @@ def cmd_themes(args):
         print("Icons:  ", ", ".join(th.icon_themes()))
         print("Cursors:", ", ".join(th.cursor_themes()))
         print("Current:", th.current())
-        print("Packs:  ", ", ".join(p for p, _k, _t in THEME_PACKS))
+        print("Packs:  ", ", ".join(p["package"] for p in packs_catalog()))
     elif args.action == "apply":
         th.apply(args.gtk or "", args.icons or "", args.cursor or "", args.font or "", args.dark)
     elif args.action == "packs":
@@ -358,12 +361,20 @@ def cmd_language(args):
 
 def cmd_calamares(args):
     from eduka_customizer.core.calamares import Calamares
-    p = _locked(args)
+    p = _project(args) if args.action in ("show", "check") else _locked(args)
     c = Calamares(p)
     # Only 'set' takes a module name; for the others the first word is already a value.
     values = ([args.module] if args.module and args.action != "set" else []) + args.values
     if args.action == "install":
         c.install()
+    elif args.action == "check":
+        from eduka_customizer.core import calamares_check as cc
+        res = cc.check(p)
+        for level, where, msg in res:
+            print("{:5} {:48} {}".format({"ok": "ok", "warn": "WARN", "fail": "FAIL"}[level], where, msg))
+        fails, warns = cc.summary(res)
+        print("\n{} problem(s), {} warning(s)".format(fails, warns))
+        return 1 if fails else 0
     elif args.action == "show":
         print(json.dumps(c.summary(), indent=2))
         print("Branding:", c.branding_name(), "| modules:", " ".join(c.modules()))
@@ -492,6 +503,199 @@ def cmd_wallpapers(args):
     return 0
 
 
+def cmd_about(args):
+    from eduka_customizer import AUTHOR, DONATE_URL, FACEBOOK_URL, HOMEPAGE, LICENSE, OLD_NAME
+    from eduka_customizer.gui.pages.about import COMPONENTS
+    print("{} {}  (formerly {})".format(APP_NAME, VERSION_LABEL, OLD_NAME))
+    print("Free and open source software: {}. It comes with ABSOLUTELY NO WARRANTY.".format(LICENSE))
+    print("Made by {} and contributors. Project page: {}".format(AUTHOR, HOMEPAGE))
+    print("Support the project: {}   Facebook: {}".format(DONATE_URL, FACEBOOK_URL))
+    print("\nComponents and their licenses:")
+    for name, use, lic, _home in COMPONENTS:
+        print("  {:26} {:22} {}".format(name, lic, use))
+    print("\nDebian is a registered trademark of Software in the Public Interest, Inc. {} is not affiliated with "
+          "Debian.".format(APP_NAME))
+    return 0
+
+
+def cmd_sounds(args):
+    from eduka_customizer.core import sounds
+    if args.action == "events":
+        for ev, text, group, _std in sounds.EVENTS:
+            print("{:22} {:10} {}".format(ev, group, text))
+        return 0
+    p = _project(args) if args.action in ("show", "themes") else _locked(args)
+    s = sounds.Sounds(p)
+    if args.theme:
+        p.state.setdefault("sounds", {})["theme"] = args.theme
+    if args.action == "themes":
+        for tid, name in sounds.installed_themes(p.rootfs):
+            print("{:20} {}".format(tid, name))
+    elif args.action == "show":
+        st = s.state()
+        print("Theme:", st["theme"])
+        for ev, _t, _g, _s in sounds.EVENTS:
+            print("  {:22} {}".format(ev, st["files"].get(ev, "-")))
+    elif args.action == "set":
+        if len(args.items) != 2:
+            raise SystemExit("Use: sounds set EVENT FILE")
+        print(s.set_sound(args.items[0], args.items[1]))
+    elif args.action == "add":
+        for item in args.items:
+            if Path(item).is_dir():
+                for ev, name in s.add_folder(item).items():
+                    print("{} -> {}".format(name, ev))
+            else:
+                ev = sounds.match_event(item)
+                if not ev:
+                    raise SystemExit("Cannot tell the event of {}: use 'sounds set EVENT FILE'".format(item))
+                s.set_sound(ev, item)
+                print("{} -> {}".format(item, ev))
+    elif args.action == "clear":
+        for ev in args.items:
+            s.remove_sound(ev)
+    elif args.action == "apply":
+        s.apply(args.theme or None, boot=not args.no_boot, login=not args.no_login,
+                shutdown=not args.no_shutdown, event_sounds=not args.no_event_sounds)
+    elif args.action == "remove":
+        s.remove()
+    return 0
+
+
+def cmd_welcome(args):
+    import json
+    from eduka_customizer.core import welcome
+    p = _project(args) if args.action in ("show", "export") else _locked(args)
+    w = welcome.Welcome(p)
+    if args.action == "show":
+        d = welcome.design(p)
+        print("Title: {}  ({}, shown: {})".format(d["title"], "in the image" if w.installed() else "not installed",
+                                                 d["show"]))
+        for n, page in enumerate(d["pages"], 1):
+            print("  {}. {}{}".format(n, page.get("title", ""), "" if page.get("enabled", True) else " (off)"))
+    elif args.action == "export":
+        text = json.dumps(welcome.design(p), indent=2, ensure_ascii=False)
+        if args.file:
+            Path(args.file).write_text(text + "\n")
+        else:
+            print(text)
+    elif args.action == "import":
+        if not args.file:
+            raise SystemExit("Use: welcome import FILE.json")
+        d = welcome.design(p)
+        d.update(json.loads(Path(args.file).read_text()))
+        w.save(d)
+    elif args.action == "apply":
+        w.apply()
+    elif args.action == "remove":
+        w.remove()
+    return 0
+
+
+def cmd_grub_theme(args):
+    from eduka_customizer.core import grubtheme
+    p = _project(args) if args.action in ("list", "check") else _locked(args)
+    g = grubtheme.GrubThemes(p)
+    if args.action == "list":
+        for name in g.installed():
+            print(("* " if name == g.current() else "  ") + name)
+    elif args.action == "check":
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            try:
+                d = grubtheme.unpack(args.item, Path(tmp) / "t")
+            except grubtheme.ThemeRejected as e:
+                raise SystemExit(str(e))
+            problems, warnings, info = grubtheme.check(d)
+        for x in problems:
+            print("FAIL ", x)
+        for x in warnings:
+            print("WARN ", x)
+        print("Compatible" if not problems else "Not compatible", info)
+        return 1 if problems else 0
+    elif args.action == "add":
+        try:
+            name, warnings, _info = g.add(args.item, installed_system=args.installed)
+        except grubtheme.ThemeRejected as e:
+            raise SystemExit(str(e))
+        g.use(name, args.installed)
+        print("GRUB theme in use:", name, *warnings)
+    elif args.action == "use":
+        g.use(args.item, args.installed)
+    elif args.action == "remove":
+        g.remove()
+    return 0
+
+
+def cmd_boot_loader(args):
+    from eduka_customizer.core import bootchoice
+    p = _project(args) if args.action in ("list", "show") else _locked(args)
+    b = bootchoice.BootChoice(p)
+    cur = b.current()
+    if args.action == "list":
+        for lid, name, fw, desc, usable, reason, inimg in b.options():
+            print("{} {:16} {:9} {:28} {}".format("*" if lid == cur else (" " if usable else "-"), lid,
+                                                 "installed" if inimg else "", fw,
+                                                 desc if usable else "not available: " + reason))
+        print("\n* = used by the installer. Settings: boot-loader show ID; boot-loader set ID KEY=VALUE ...")
+        return 0
+    lid = args.item or (cur if args.action in ("show", "set") else None)
+    if not lid:
+        raise SystemExit("Use: boot-loader {} {}".format(args.action, "|".join(bootchoice.BY_ID)))
+    try:
+        if args.action == "show":
+            lo = bootchoice.loader("grub" if lid == "grub-secureboot" else lid)
+            values = b.settings(lo.id)
+            print("{} ({}){}".format(lo.name, lo.firmware, " — used by the installer" if lid == cur else ""))
+            for key, text, kind, _d, choices in lo.fields:
+                extra = " [{}]".format("|".join(c for c, _t in choices)) if choices else ""
+                print("  {:20} {!s:24} {}{}".format(key, values.get(key), text, extra))
+            for level, text in b.check() if lid == cur else []:
+                print("  {:5} {}".format(level, text))
+        elif args.action == "set":
+            values = b.settings(lid)
+            for item in args.values:
+                k, sep, v = item.partition("=")
+                if not sep:
+                    raise SystemExit("Use KEY=VALUE, for example TIMEOUT=3")
+                values[k.upper()] = v
+            b.configure(lid, values)
+            print("Saved.")
+        elif args.action == "install":
+            b.install(lid)
+        elif args.action == "remove":
+            print("Removed:", " ".join(b.remove(lid)) or "nothing")
+        else:
+            b.use(lid)
+    except (ValueError, KeyError, RuntimeError) as e:
+        raise SystemExit(str(e).strip("'\""))
+    return 0
+
+
+def cmd_apps(args):
+    from eduka_customizer.core import replace
+    if args.action == "roles":
+        for r in replace.roles():
+            print("{:12} {:16} {}".format(r["id"], r["name"], " ".join(r["candidates"])))
+        return 0
+    p = _locked(args) if args.action == "replace" else _project(args)
+    if args.action == "status":
+        for row in replace.status(p.rootfs):
+            print("{:12} {:16} installed: {:30} default: {}".format(row["role"], row["name"],
+                                                                   " ".join(row["installed"]) or "-",
+                                                                   row["default"] or "-"))
+        return 0
+    if not args.role or not args.package:
+        raise SystemExit("Use: apps replace ROLE PACKAGE [--remove-old | --remove PKG ...]")
+    remove = list(args.remove or [])
+    if args.remove_old:
+        remove += [x for x in next(r for r in replace.status(p.rootfs) if r["role"] == args.role)["installed"]
+                   if x != args.package]
+    replace.Replacer(p).replace(args.role, args.package, remove)
+    print("Default {}: {}{}".format(args.role, args.package, " (removed {})".format(" ".join(remove)) if remove else ""))
+    return 0
+
+
 def cmd_purpose(args):
     from eduka_customizer.core import profiles
     if args.action == "list":
@@ -501,12 +705,12 @@ def cmd_purpose(args):
     if not args.id:
         raise SystemExit("Name a purpose: " + ", ".join(pr["id"] for pr in profiles.catalog()))
     if args.action == "show":
-        for key, text, _step in profiles.recommendations(args.id):
+        for key, text, _step in profiles.recommendations(args.id, args.edition):
             print("{:12} {}".format(key, text))
         return 0
     p = _locked(args)
     keys = set(args.only.split(",")) if args.only else None
-    print("Applied:", ", ".join(profiles.apply(p, args.id, keys)))
+    print("Applied:", ", ".join(profiles.apply(p, args.id, keys, edition=args.edition)))
     return 0
 
 
@@ -576,14 +780,52 @@ def cmd_bootmenu(args):
     return 0
 
 
+def _print_checks(results):
+    marks = {"ok": "  ok ", "info": " info", "warn": " WARN", "fail": " FAIL"}
+    for x in results:
+        print("{}  {:28} {}{}".format(marks[x.level], x.title, x.detail,
+                                     "  [--fix: {}]".format(x.fix) if x.fix else ""))
+
+
+def cmd_check(args):
+    from eduka_customizer.core import preflight
+    p = _project(args)
+    results = preflight.run(p, deep=args.deep)
+    if args.fix:
+        done, failed = preflight.auto_fix(p, results, print)
+        for label in done:
+            print("fixed  ", label)
+        for label, err in failed:
+            print("FAILED ", label, "-", err)
+        results = preflight.run(p, deep=args.deep)
+    _print_checks(results)
+    fails, warns = preflight.summary(results)
+    print("\n{} problem(s), {} warning(s){}".format(fails, warns, ": ready to build" if not fails else ""))
+    return 1 if fails else 0
+
+
 def cmd_build(args):
+    from eduka_customizer.core import preflight
     from eduka_customizer.core.isobuild import BuildOptions, build
     p = _locked(args)
+    if not args.skip_checks:
+        results = preflight.run(p)
+        if preflight.summary(results)[0]:
+            _print_checks([x for x in results if x.level in ("fail", "warn")])
+            raise SystemExit("Fix the problems above first: 'check --fix' fixes what it can (or build with "
+                             "--skip-checks).")
     opts = BuildOptions.from_project(p)
     for name in ("compression", "level", "volume_label", "iso_name", "boot_mode", "initramfs"):
         v = getattr(args, name, None)
         if v is not None:
             setattr(opts, name, v)
+    if args.target_size:
+        from eduka_customizer.core import isosize
+        est = isosize.estimate(p)
+        plan = isosize.plan(est, args.target_size)
+        print(isosize.describe(plan, isosize.savers(p)))
+        opts.compression, opts.level, opts.target_size = plan["compression"], plan["level"] or opts.level, \
+            args.target_size
     if args.reuse_squashfs:
         opts.reuse_squashfs = True
     if args.keep_installer:
@@ -638,6 +880,20 @@ def cmd_clean(args):
     unmount_all(p.path)
     if args.unmount_only:
         return 0
+    if args.keep_iso:
+        from eduka_customizer.core import projectfiles
+        isos = [f.name for f in projectfiles.iso_files(p) if f.suffix == ".iso"]
+        if not isos:
+            raise SystemExit("There is no finished ISO in {}".format(p.output))
+        if not args.yes:
+            answer = input("Delete everything of {} but {}? [y/N] ".format(p.path, ", ".join(isos)))
+            if answer.strip().lower() not in ("y", "yes"):
+                return 1
+        isos, own = projectfiles.keep_only_iso(p, lambda text: print(text))
+        print("Only the ISO is left:", " ".join(str(f) for f in isos if f.suffix == ".iso"))
+        if own:
+            print("Your own files stayed:", ", ".join(own))
+        return 0
     if args.all:
         for d in (p.rootfs, p.isodir, p.cache, p.bootdir):
             if d.exists():
@@ -656,7 +912,7 @@ def cmd_doctor(args):
     print("Host system: {}".format(host["distro"].summary()))
     if not host["supported"]:
         print("  Note: fine as a build computer. Only 'snapshot this computer' needs Debian or "
-              "Edukasaun OS.")
+              "a Debian-based system.")
     print("Root: {}   KVM: {}".format("yes" if host["root"] else "no", "yes" if host["kvm"] else "no"))
     for r in doctor.check():
         print("  [{}] {:52} {:24} {}".format("ok" if r["ok"] else ("!!" if r["required"] else "--"),
@@ -681,13 +937,36 @@ def cmd_download(args):
 
 
 def build_parser():
-    ap = argparse.ArgumentParser(prog="eduka-customizer",
-                                 description="{} {} - ISO builder for Edukasaun OS (Debian stable, "
-                                             "testing and sid).".format(APP_NAME, VERSION_LABEL))
+    ap = argparse.ArgumentParser(
+        prog="distroforge", formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="{} {} - build your own Debian-based Linux distribution as a live ISO image\n"
+                    "(from Debian stable, testing, sid or a Debian derivative such as LMDE).".format(
+                        APP_NAME, VERSION_LABEL),
+        epilog="""The commands in the order of the work (most need sudo):
+
+  1  Start            new, download, info
+  2  Repositories     sources
+  3  Identity         brand identity, branding
+  4  Users            users
+  5  Language         language
+  6  Desktop          desktop, eduka-desktop, purpose
+  7  Software         apt, flatpak, apps
+  8  Kernel & Boot    kernel, boot-loader, bootmenu, grub-theme
+  9  Look & Feel      themes, assets, wallpapers, plymouth, sounds, welcome
+ 10  Installer        calamares
+ 11  Advanced         shell, run, hook, live, workshop, recipe
+ 12  Review & Apply   (only in the window: the commands apply at once)
+ 13  Check & Build    check [--fix], build [--target-size 500], test, clean --keep-iso
+
+Other: gui (the window), doctor (tools of this computer), clean, about.
+Help for one command: distroforge COMMAND --help""")
     ap.add_argument("-p", "--project", help="project directory (default: current directory)")
     ap.add_argument("-D", "--debug", action="store_true", help="show debug messages")
     ap.add_argument("-V", "--version", action="version", version="{} {}".format(APP_NAME, VERSION_LABEL))
-    sub = ap.add_subparsers(dest="command")
+    sub = ap.add_subparsers(dest="command", metavar="COMMAND")
+
+    s = sub.add_parser("about", help="version, license, credits and how to support the project")
+    s.set_defaults(func=cmd_about)
 
     s = sub.add_parser("gui", help="start the graphical interface (default)")
     s.add_argument("target", nargs="?", help="project folder or ISO image to open")
@@ -695,9 +974,9 @@ def build_parser():
 
     s = sub.add_parser("new", help="create a project from an ISO, a new Debian base or this system")
     s.add_argument("path", nargs="?", default=None)
-    s.add_argument("--name", default="Edukasaun OS")
+    s.add_argument("--name", default="", help="name of the project (the distribution is named on the Identity page)")
     g = s.add_mutually_exclusive_group()
-    g.add_argument("--iso", help="Debian or Edukasaun OS live ISO")
+    g.add_argument("--iso", help="Debian or Debian-based live ISO")
     g.add_argument("--bootstrap", choices=["stable", "testing", "sid"])
     g.add_argument("--snapshot", choices=["dist", "backup"], help="copy the running system")
     s.add_argument("--arch", default="amd64")
@@ -754,6 +1033,8 @@ def build_parser():
     s.add_argument("--preset", choices=["light", "shadows", "glass", "off"], default="shadows",
                    help="picom effects for compositor")
     s.add_argument("--remove-others", action="store_true")
+    s.add_argument("--edition", choices=["mini", "compact", "full", "full_apps"], default="full",
+                   help="install: Mini, Compact, Full or Full with apps")
     s.set_defaults(func=cmd_desktop)
 
     s = sub.add_parser("eduka-desktop", help="build and install Eduka-Desktop")
@@ -813,7 +1094,7 @@ def build_parser():
     s.set_defaults(func=cmd_language)
 
     s = sub.add_parser("calamares", help="edit the Calamares installer")
-    s.add_argument("action", choices=["show", "install", "set", "branding", "slides", "users", "partition",
+    s.add_argument("action", choices=["show", "check", "install", "set", "branding", "slides", "users", "partition",
                                       "live-password"])
     s.add_argument("module", nargs="?", help="for set: settings or a module name (users, partition, ...)")
     s.add_argument("values", nargs="*", help="KEY=VALUE (YAML values) or files")
@@ -839,10 +1120,48 @@ def build_parser():
     s.add_argument("items", nargs="*")
     s.set_defaults(func=cmd_wallpapers)
 
+    s = sub.add_parser("sounds", help="system sounds: boot, login, logout, shutdown, errors, notifications")
+    s.add_argument("action", choices=["events", "themes", "show", "set", "add", "clear", "apply", "remove"])
+    s.add_argument("items", nargs="*", help="set: EVENT FILE; add: files or folders; clear: EVENTS")
+    s.add_argument("--theme", help="sound theme name (default: the distribution ID)")
+    s.add_argument("--no-boot", action="store_true")
+    s.add_argument("--no-login", action="store_true")
+    s.add_argument("--no-shutdown", action="store_true")
+    s.add_argument("--no-event-sounds", action="store_true")
+    s.set_defaults(func=cmd_sounds)
+
+    s = sub.add_parser("welcome", help="welcome screen with four pages shown after login")
+    s.add_argument("action", choices=["show", "export", "import", "apply", "remove"])
+    s.add_argument("file", nargs="?", help="export/import: a JSON design")
+    s.set_defaults(func=cmd_welcome)
+
+    s = sub.add_parser("grub-theme", help="third-party GRUB themes for the boot menu (checked first)")
+    s.add_argument("action", choices=["list", "check", "add", "use", "remove"])
+    s.add_argument("item", nargs="?", help="theme folder or archive (check, add) or theme name (use)")
+    s.add_argument("--installed", action="store_true", help="also for installed systems")
+    s.set_defaults(func=cmd_grub_theme)
+
+    s = sub.add_parser("boot-loader", help="boot loaders of installed systems: GRUB, systemd-boot, rEFInd, EFISTUB, "
+                                           "Syslinux (install, remove, use, settings)")
+    s.add_argument("action", choices=["list", "show", "set", "install", "remove", "use"])
+    s.add_argument("item", nargs="?", help="grub, grub-secureboot, systemd-boot, refind, efistub or syslinux")
+    s.add_argument("values", nargs="*", help="for set: KEY=VALUE, for example TIMEOUT=3 CMDLINE='quiet splash'")
+    s.set_defaults(func=cmd_boot_loader)
+
+    s = sub.add_parser("apps", help="replace the default applications (browser, mail, editor, terminal, ...)")
+    s.add_argument("action", choices=["roles", "status", "replace"])
+    s.add_argument("role", nargs="?", help="browser, mail, office, editor, files, terminal, ...")
+    s.add_argument("package", nargs="?", help="the Debian package that becomes the default")
+    s.add_argument("--remove", nargs="*", help="packages to remove")
+    s.add_argument("--remove-old", action="store_true", help="remove the other installed programs of this kind")
+    s.set_defaults(func=cmd_apps)
+
     s = sub.add_parser("purpose", help="what the distribution is for, and its recommendations")
     s.add_argument("action", choices=["list", "show", "apply"])
     s.add_argument("id", nargs="?", help="education, server, professional, home or other")
     s.add_argument("--only", help="apply only these recommendations, e.g. desktop,apps")
+    s.add_argument("--edition", choices=["minimal", "full", "full_apps"], default="full",
+                   help="ISO edition: minimal, full or full with recommended apps")
     s.set_defaults(func=cmd_purpose)
 
     s = sub.add_parser("users", help="live user and accounts in the image (with or without password)")
@@ -884,7 +1203,14 @@ def build_parser():
     s.add_argument("--reuse-squashfs", action="store_true")
     s.add_argument("--keep-installer", action="store_true",
                    help="keep Debian-Installer boot entries")
+    s.add_argument("--skip-checks", action="store_true", help="build even when the checks find problems")
+    s.add_argument("--target-size", help="ISO size: smallest, none, or megabytes such as 100, 300, 500, 700")
     s.set_defaults(func=cmd_build)
+
+    s = sub.add_parser("check", help="check the image before building (what would break the ISO)")
+    s.add_argument("--deep", action="store_true", help="also run apt-get check inside the image")
+    s.add_argument("--fix", action="store_true", help="fix automatically what can be fixed, then check again")
+    s.set_defaults(func=cmd_check)
 
     s = sub.add_parser("test", help="boot the ISO in QEMU")
     s.add_argument("--iso")
@@ -909,6 +1235,9 @@ def build_parser():
     s = sub.add_parser("clean", help="unmount everything and remove caches")
     s.add_argument("--unmount-only", action="store_true")
     s.add_argument("--all", action="store_true", help="also remove rootfs and ISO tree")
+    s.add_argument("--keep-iso", action="store_true",
+                   help="when the ISO is finished: delete everything of the project but the ISO")
+    s.add_argument("-y", "--yes", action="store_true", help="do not ask before --keep-iso deletes")
     s.set_defaults(func=cmd_clean)
 
     s = sub.add_parser("doctor", help="check host tools")

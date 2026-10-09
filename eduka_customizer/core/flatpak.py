@@ -15,33 +15,8 @@ FIRSTBOOT_LIST = "etc/eduka-customizer/flatpak-firstboot.list"
 FIRSTBOOT_SCRIPT = "usr/libexec/eduka-flatpak-firstboot"
 FIRSTBOOT_UNIT = "etc/systemd/system/eduka-flatpak-firstboot.service"
 
-# Curated educational picks for Edukasaun OS (Flathub application IDs).
-EDUCATION_PICKS = [
-    ("org.kde.gcompris", "GCompris", "Educational activities for children"),
-    ("org.tuxpaint.Tuxpaint", "Tux Paint", "Drawing program for children"),
-    ("org.geogebra.GeoGebra", "GeoGebra", "Dynamic mathematics"),
-    ("org.stellarium.Stellarium", "Stellarium", "Planetarium"),
-    ("org.kde.kalzium", "Kalzium", "Periodic table of elements"),
-    ("org.kde.marble", "Marble", "Virtual globe and atlas"),
-    ("org.kde.kturtle", "KTurtle", "Learn programming with Logo"),
-    ("org.kde.ktouch", "KTouch", "Touch typing tutor"),
-    ("org.kde.kgeography", "KGeography", "Geography learning tool"),
-    ("org.kde.parley", "Parley", "Vocabulary trainer"),
-    ("org.kde.kbruch", "KBruch", "Practice fractions"),
-    ("org.kde.minuet", "Minuet", "Music education"),
-    ("net.ankiweb.Anki", "Anki", "Flashcards"),
-    ("org.libreoffice.LibreOffice", "LibreOffice", "Office suite"),
-    ("org.inkscape.Inkscape", "Inkscape", "Vector graphics"),
-    ("org.gimp.GIMP", "GIMP", "Image editor"),
-    ("org.kde.krita", "Krita", "Digital painting"),
-    ("org.audacityteam.Audacity", "Audacity", "Audio editor"),
-    ("org.videolan.VLC", "VLC", "Media player"),
-    ("org.mozilla.firefox", "Firefox", "Web browser"),
-    ("org.zotero.Zotero", "Zotero", "Research assistant"),
-]
-
 FIRSTBOOT_SH = """#!/bin/sh
-# Installs Flatpak applications chosen in Eduka-Customizer on first boot.
+# Installs Flatpak applications chosen in DistroForge on first boot.
 set -u
 LIST=/{list}
 [ -s "$LIST" ] || exit 0
@@ -60,7 +35,7 @@ exit 0
 """
 
 FIRSTBOOT_SERVICE = """[Unit]
-Description=Install Flatpak applications selected for Edukasaun OS
+Description=Install the Flatpak applications chosen for this system
 Wants=network-online.target
 After=network-online.target
 ConditionPathExists=/{list}
@@ -205,7 +180,7 @@ def search_flathub(term, timeout=20):
     body = json.dumps({"query": term, "filters": []}).encode()
     req = urllib.request.Request(api + "/search", data=body, method="POST",
                                  headers={"Content-Type": "application/json",
-                                          "User-Agent": "Eduka-Customizer"})
+                                          "User-Agent": "DistroForge"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode())
     hits = data.get("hits", data if isinstance(data, list) else [])
