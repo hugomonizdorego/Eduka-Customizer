@@ -1,4 +1,4 @@
-# Panduan singkat DistroForge 0.9 Beta
+# Panduan singkat DistroForge 0.9.5 Beta
 
 > Panduan lengkap bergambar (PDF, bahasa Inggris): [DistroForge-Guide.pdf](DistroForge-Guide.pdf).
 > Setelah dipasang: `/usr/share/distroforge/guide/` atau tombol *User guide* di **Settings & About → About**.
@@ -26,7 +26,7 @@ langsung dibangun, dan semua langkah di sidebar terbuka untuk penyesuaian.
 Paket siap pakai untuk dicoba (Debian 13, Ubuntu 24.04 dan turunannya):
 
 ```sh
-sudo apt install ./release/distroforge_0.9.0~beta_all.deb
+sudo apt install ./release/distroforge_0.9.5~beta_all.deb
 ```
 
 Atau build sendiri:
@@ -34,9 +34,21 @@ Atau build sendiri:
 ```sh
 sudo apt install debhelper python3-pytest dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../distroforge_0.9.0~beta_all.deb
+sudo apt install ../distroforge_0.9.5~beta_all.deb
 distroforge doctor        # cek alat yang dibutuhkan
 ```
+
+## Baru di 0.9.5 Beta
+
+* **Init system**: systemd, SysVinit, OpenRC atau runit (Kernel & Boot → Init System), kompatibel dengan
+  kernel, live-boot, bootloader dan Calamares. s6 dan GNU Shepherd dijelaskan alasannya, tidak ditawarkan.
+* **Devuan** dan turunannya didukung (sumber APT Devuan, bootstrap Devuan).
+* **Desktop**: login screen, session type dan compositor otomatis mengikuti desktop yang dipilih
+  (rekomendasi, tetap bisa diubah); Eduka-Desktop digabung ke daftar desktop; satu tombol saja.
+* **Pratinjau**: coba perubahan yang menunggu di live session dulu, lalu simpan atau buang.
+* Terminal kernel menerima seluruh instruksi sekaligus; live session diperbaiki; kompresi menyesuaikan
+  CPU/RAM komputer; sidebar terang/gelap dan 6 warna aksen.
+* Perbaikan: error *Invalid hostname: localhost.localdomain*.
 
 ## Baru di 0.9 Beta
 

@@ -12,7 +12,7 @@ from eduka_customizer.core import log as logmod
 from eduka_customizer import qt as qtmod
 from eduka_customizer.core.config import reload, settings
 from eduka_customizer.gui.widgets import fill, table
-from eduka_customizer.gui.widgets import Page, button, hbox, label
+from eduka_customizer.gui.widgets import Page, button, combo, hbox, label
 
 FIELDS = [
     ("general", "projects_dir", "Projects folder"),
@@ -56,6 +56,12 @@ class SettingsPage(Page):
         self.apply_now = QCheckBox("Apply every change at once (expert mode) instead of collecting the changes in "
                                    "Review & Apply")
         f.addRow("", self.apply_now)
+        from eduka_customizer.gui import style
+        self.sidebar = combo([("dark", "Dark sidebar"), ("light", "Light sidebar")])
+        self.accent = combo([(k, v[0]) for k, v in style.ACCENTS.items()])
+        f.addRow("Look of the window:", hbox(self.sidebar, label("Accent color"), self.accent, None))
+        self.sidebar.currentIndexChanged.connect(lambda _i: self._preview_style())
+        self.accent.currentIndexChanged.connect(lambda _i: self._preview_style())
         c.add(label("ISO name fields: {id} {name} {version} {codename} {suite} {debian} {arch} {date}", "muted"))
         c.add(hbox(None, button("Save settings", self.save, "primary")))
 
@@ -91,6 +97,12 @@ class SettingsPage(Page):
         self.oldstable.setChecked(cfg.getbool("debian", "allow_oldstable"))
         self.free_nav.setChecked(cfg.getbool("general", "free_navigation"))
         self.apply_now.setChecked(cfg.get("general", "apply_mode") == "now")
+        from eduka_customizer.gui import style
+        side, acc = style.options()
+        for w, v in ((self.sidebar, side), (self.accent, acc)):
+            w.blockSignals(True)
+            w.setCurrentIndex(max(0, w.findData(v)))
+            w.blockSignals(False)
         host = doctor.host_info()
         text = "This computer: {}.".format(host["distro"].summary())
         if not host["supported"]:
@@ -140,6 +152,10 @@ class SettingsPage(Page):
         QMessageBox.information(self, "Bug report", "Created:\n{}\n\nAttach this file to your bug "
                                                     "report.".format(name))
 
+    def _preview_style(self):
+        """Show the chosen look at once (it is kept with Save settings)."""
+        self.main.apply_style(self.sidebar.currentData(), self.accent.currentData())
+
     def save(self):
         cfg = settings()
         for (section, key), e in self.edits.items():
@@ -147,6 +163,8 @@ class SettingsPage(Page):
         cfg.set("debian", "allow_oldstable", "yes" if self.oldstable.isChecked() else "no")
         cfg.set("general", "free_navigation", "yes" if self.free_nav.isChecked() else "no")
         cfg.set("general", "apply_mode", "now" if self.apply_now.isChecked() else "review")
+        cfg.set("general", "sidebar", self.sidebar.currentData())
+        cfg.set("general", "accent", self.accent.currentData())
         try:
             cfg.save()
         except OSError as e:

@@ -50,7 +50,8 @@ class BuildOptions:
     secure_boot: bool = True
     checksums: list = field(default_factory=lambda: ["sha256"])
     cleanup: dict = field(default_factory=cleanup.defaults)
-    processors: int = 0
+    processors: int = 0              # 0: chosen by the resources plan
+    resources: str = "balanced"      # balanced | full | light (see resources.MODES)
     target_size: str = "none"        # none | smallest | megabytes (see isosize.TARGETS)
 
     @classmethod
@@ -146,8 +147,11 @@ def squashfs_args(opts, arch):
         args += ["-Xdict-size", "100%"]
     if comp == "lz4":
         args += ["-Xhc"]
-    if opts.processors:
-        args += ["-processors", str(opts.processors)]
+    from eduka_customizer.core import resources
+    p = resources.plan(getattr(opts, "resources", "balanced"), comp, opts.level)
+    args += ["-processors", str(opts.processors or p["processors"])]
+    if p["mem_mb"]:
+        args += ["-mem", "{}M".format(p["mem_mb"])]
     return args
 
 
@@ -314,7 +318,10 @@ class Builder:
         args = ["mksquashfs", p.rootfs, target, "-noappend", "-wildcards",
                 "-ef", data_file("exclude.list"), "-e", "boot/efi"]
         args += squashfs_args(self.opts, p.distro.arch)
-        runner.run(args, progress=self.progress)
+        from eduka_customizer.core import resources
+        rp = resources.plan(self.opts.resources, self.opts.compression, self.opts.level)
+        log.info("Compression: %s", rp["text"])
+        runner.run(resources.wrap(args, rp), progress=self.progress)
         log.info("filesystem.squashfs: %.2f GiB", target.stat().st_size / 1024 ** 3)
 
     def tree_checksums(self):

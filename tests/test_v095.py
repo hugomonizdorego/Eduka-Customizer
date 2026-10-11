@@ -271,3 +271,17 @@ def test_gui_preview_keep_and_discard(project):
     res = subprocess.run([sys.executable, "-c", GUI_PREVIEW, str(project.path)], capture_output=True, text=True,
                          env=env, timeout=180)
     assert res.returncode == 0, res.stderr[-3000:]
+
+
+def test_resources_plan():
+    from eduka_customizer.core import resources
+    big = {"cores": 8, "mem_total": 16 << 30, "mem_available": 12 << 30}
+    full, bal, light = (resources.plan(m, "zstd", 15, big) for m in ("full", "balanced", "light"))
+    assert full["processors"] == 8 and bal["processors"] == 6 and light["processors"] == 4
+    assert resources.plan("balanced", "xz", 0, big)["processors"] == 7
+    assert light["nice"] == 19 and full["nice"] == 0 and bal["mem_mb"] <= 8192
+    small = {"cores": 2, "mem_total": 2 << 30, "mem_available": 1 << 30}
+    p = resources.plan("balanced", "zstd", 15, small)
+    assert p["processors"] == 1 and p["mem_mb"] >= 256
+    cmd = resources.wrap(["mksquashfs", "a", "b"], light)
+    assert cmd[-3:] == ["mksquashfs", "a", "b"] and cmd[0] in ("nice", "ionice", "mksquashfs")

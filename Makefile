@@ -1,5 +1,5 @@
 # DistroForge - live ISO builder for Debian-based distributions
-VERSION   = 0.9.0~beta
+VERSION   = 0.9.5~beta
 PYTHON   ?= python3
 DESTDIR  ?=
 PREFIX   ?= /usr

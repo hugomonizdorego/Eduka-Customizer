@@ -838,6 +838,8 @@ def cmd_build(args):
         v = getattr(args, name, None)
         if v is not None:
             setattr(opts, name, v)
+    if args.resources:
+        opts.resources = args.resources
     if args.target_size:
         from eduka_customizer.core import isosize
         est = isosize.estimate(p)
@@ -1230,6 +1232,8 @@ Help for one command: distroforge COMMAND --help""")
                    help="keep Debian-Installer boot entries")
     s.add_argument("--skip-checks", action="store_true", help="build even when the checks find problems")
     s.add_argument("--target-size", help="ISO size: smallest, none, or megabytes such as 100, 300, 500, 700")
+    s.add_argument("--resources", choices=["balanced", "full", "light"],
+                   help="how much of this computer compressing may use (default: balanced)")
     s.set_defaults(func=cmd_build)
 
     s = sub.add_parser("check", help="check the image before building (what would break the ISO)")

@@ -26,6 +26,9 @@ DEFAULTS = {
         "free_navigation": "no",
         # review: changes wait in Review & Apply (recommended); now: every change is applied at once.
         "apply_mode": "review",
+        # The look of the window: sidebar dark | light; accent blue | teal | purple | orange | green | graphite.
+        "sidebar": "dark",
+        "accent": "blue",
     },
     "debian": {
         # Codenames change with every Debian release; update them here.

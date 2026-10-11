@@ -1,4 +1,4 @@
-.TH DISTROFORGE 1 "October 2026" "DistroForge 0.9 Beta" "DistroForge"
+.TH DISTROFORGE 1 "October 2026" "DistroForge 0.9.5 Beta" "DistroForge"
 .SH NAME
 distroforge \- ISO builder and customizer for Debian-based distributions
 .SH SYNOPSIS
@@ -122,6 +122,9 @@ Welcome screen with four pages shown after login (design as JSON).
 .TP
 .B grub-theme list|check|add|use|remove [THEME] [\-\-installed]
 Third-party GRUB themes; incompatible themes are refused with the reasons.
+.TP
+.B init list|use [systemd|sysvinit|openrc|runit]
+The init system of the image, with everything that has to change with it.
 .TP
 .B boot-loader list|show|set|install|remove|use [ID] [KEY=VALUE...]
 Boot loaders of installed systems: grub, grub-secureboot, systemd-boot, refind, efistub,

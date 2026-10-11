@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.9.5 Beta — 2026-10-11
+
+### Fixed
+* *Apply all changes* failed with `Invalid hostname: localhost.localdomain` (the host name many ISOs ship).
+  Full names (`pc.example.org`) are accepted, `localhost.*` becomes the distribution ID, and the identity
+  is checked when it is chosen, so applying cannot fail on it later.
+* Live session: D-Bus got no machine id (builds leave it empty), Xephyr found no X authority under pkexec,
+  old Xephyr did not know `-resizeable`, a missing language broke Qt, and a desktop that ended at once left
+  an empty window. All handled, with a clear message and the log when something still fails.
+
+### New
+* **Init System** (Kernel & Boot, CLI `init`, recipe `init-system`): systemd, SysVinit, OpenRC or runit.
+  Switching installs elogind, the matching live-config backend and Debian's orphan init scripts, writes init
+  scripts for DistroForge's own services and gives Calamares the matching services module and machineid
+  settings. GNOME keeps systemd; s6 and GNU Shepherd are listed with the reason.
+* **Devuan** and its derivatives (Refracta, Exe, Gnuinos, ...): detected, `devuan.sources` for
+  deb.devuan.org/merged, a new Devuan base can be bootstrapped (`new --bootstrap stable --devuan`).
+* **Desktop**: the login screen, session type and compositor follow the chosen desktop ("recommended"),
+  and can still be changed; Eduka-Desktop is one of the desktops; one button for all of it.
+* **Kernel terminal**: paste the whole instructions of a kernel's web site at once.
+* **Preview**: try the waiting changes in the live session (an overlay on the project), then keep or
+  throw them away — from Review & Apply or Terminal & Live.
+* **Compression and this computer**: balanced (default), full speed or light; cores, memory and priority
+  are chosen from the computer (`build --resources`).
+* **Look**: light or dark sidebar and six accent colors (Settings).
+
 ## 0.9.0 Beta — 2026-10-08
 
 The first beta on the way to 1.0. The Debian version is `1:0.9.0~beta`: the epoch keeps upgrades from

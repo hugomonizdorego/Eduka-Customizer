@@ -36,6 +36,9 @@ EN = {
                       "Parrot OS, Deepin, SparkyLinux, BunsenLabs, Q4OS)",
                       "a new Debian base system (stable, testing or sid) made with mmdebstrap/debootstrap",
                       "a copy of this computer (snapshot)"]),
+            "Devuan (Debian without systemd) and its derivatives, such as Refracta, Exe GNU/Linux and Gnuinos, "
+            "work too: DistroForge then writes Devuan's repositories (deb.devuan.org) and can bootstrap a new "
+            "Devuan base.",
             "Ubuntu-based ISOs (Ubuntu, Linux Mint's Ubuntu edition, Pop!_OS, elementary OS, Zorin OS) are not "
             "supported: {app} is made for Debian-based distributions. {app} itself installs on Debian, Debian "
             "derivatives and Ubuntu.",
@@ -47,7 +50,7 @@ EN = {
         ]),
         ("Installing and starting", [
             "Install the .deb package (it pulls in every tool it needs):",
-            ("code", "sudo apt install ./distroforge_0.9.0~beta_all.deb"),
+            ("code", "sudo apt install ./distroforge_0.9.5~beta_all.deb"),
             "Start it from the application menu (<b>DistroForge</b>) or a terminal:",
             ("code", "distroforge            # the window (asks for the admin password)\n"
                      "sudo distroforge --help  # command line"),
@@ -79,15 +82,26 @@ EN = {
         ]),
         ("Steps 6 and 7 · Desktop and Software", [
             "Choose a desktop (GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, Budgie, ...) or a window manager and "
-            "its edition under the names the desktop itself uses. Set the login screen and default session too.",
+            "its edition under the names the desktop itself uses. The login screen, X11 or Wayland and the compositor "
+            "follow the chosen desktop (marked 'recommended'); change them if you like. Eduka-Desktop is one of "
+            "the desktops: its source and its defaults for new users show when it is chosen. One button adds "
+            "everything to Review & Apply.",
             ("img", "06-desktop-editions.png", "Desktops and editions"),
             "<b>Software</b>: search, install and remove Debian packages; add Flathub applications by category; and "
             "replace the default applications (browser, mail, editor, terminal, ...) for all users.",
             ("img", "07-software-packages.png", "Packages"),
         ]),
         ("Step 8 · Kernel & Boot", [
-            "Three tabs: <b>Kernel</b> (Debian, backports or third-party kernels, firmware, drivers), <b>Boot "
-            "Loader</b> (what installed computers start with) and <b>Boot Menu</b> (the menu of the ISO itself).",
+            "Four tabs: <b>Kernel</b> (Debian, backports or third-party kernels, firmware, drivers), <b>Boot "
+            "Loader</b> (what installed computers start with), <b>Init System</b> and <b>Boot Menu</b> (the menu "
+            "of the ISO itself).",
+            "<b>Kernel terminal.</b> Copy the whole instructions from a kernel's web site and paste them into the "
+            "terminal at once; 'sudo' and prompts are taken out, missing tools are installed and 'apt update' runs "
+            "by itself. The kernels of the new repository are listed below it.",
+            "<b>Init System.</b> systemd (Debian's default), SysVinit (Devuan's default), OpenRC or runit. "
+            "Switching also installs elogind for desktop logins, the right live-config backend and init scripts, "
+            "and tells the Calamares installer. GNOME needs systemd. s6 and GNU Shepherd are explained but cannot "
+            "start a Debian system.",
             "<b>Boot Loader.</b> Install the boot loaders you want into the image, remove the others, choose the "
             "one the installer puts on computers (<b>Use for installed systems</b>) and set it up below:",
             ("list", ["<b>GRUB 2</b> — BIOS and UEFI, menus, themes, other operating systems. Recommended. Settings: "
@@ -129,6 +143,9 @@ EN = {
             "JSON recipes and the package workshop to change files of installed Debian packages.",
         ]),
         ("Step 12 · Review & Apply", [
+            "<b>Try them first (preview)</b> applies the waiting changes to a temporary copy of the project. "
+            "Start the live session (Advanced → Terminal & Live) to look at them, then <b>Keep them: apply for "
+            "real</b> or <b>Throw the preview away</b> — the project is then exactly as before.",
             "Changes from steps 2 to 11 <b>do not</b> change the image right away. They all wait in the Review & "
             "Apply list. The blue button at the top shows how many are waiting.",
             ("list", ["Tick every change you are sure about.",
@@ -154,6 +171,9 @@ EN = {
             "method.",
             "Squashfs compression is <b>lossless</b>: every file comes back exactly as it was. A smaller ISO is "
             "never a damaged ISO, it only takes longer to build (xz is smallest and slowest, lz4 fastest).",
+            "<b>This computer</b> sets how much of the computer compressing may use: <b>Balanced</b> (one core stays "
+            "free for you, lower priority, the default), <b>Full speed</b> (every core) or <b>Light</b> (half the "
+            "cores at low priority). The cores and memory are taken from the computer itself.",
             "When the target is too small, {app} suggests safe size savers: documentation, manual pages, unused "
             "translations, APT lists and old kernels. License files always stay. Removing applications you do "
             "not need helps most.",

@@ -347,11 +347,11 @@ class MainWindow(QMainWindow):
             a.triggered.connect(lambda _=False, n=i: self.nav.setCurrentRow(n))
             self.addAction(a)
 
-    def apply_style(self):
+    def apply_style(self, sidebar=None, accent=None):
         from eduka_customizer.qt.widgets import QApplication
         app = QApplication.instance()
         app.setPalette(style.palette(self.dark))
-        app.setStyleSheet(style.stylesheet(self.dark))
+        app.setStyleSheet(style.stylesheet(self.dark, sidebar, accent))
         self.theme_btn.setText("Light mode" if self.dark else "Dark mode")
 
     def toggle_theme(self):

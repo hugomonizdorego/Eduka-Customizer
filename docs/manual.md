@@ -1,6 +1,6 @@
 # DistroForge manual
 
-Version 0.9 Beta. DistroForge builds live ISO images of any Debian-based
+Version 0.9.5 Beta. DistroForge builds live ISO images of any Debian-based
 distribution; nothing is preset for a particular distribution. It was called
 Eduka-Customizer until 0.17 Alpha. The user guide with pictures is `docs/DistroForge-Guide.pdf`,
 installed in
@@ -57,7 +57,7 @@ as tabs:
 | 5. Language | |
 | 6. Desktop | |
 | 7. Software | Packages, Flatpak apps, Replace apps |
-| 8. Kernel & Boot | Kernel, Boot Loader, Boot Menu |
+| 8. Kernel & Boot | Kernel, Boot Loader, Init System, Boot Menu |
 | 9. Look & Feel | Themes & Icons, Wallpaper & Login, Plymouth, System Sounds, Welcome Screen |
 | 10. Installer | Calamares |
 | 11. Advanced | Terminal & Live, Package Workshop |
@@ -368,6 +368,16 @@ computers it works on, whether it is installed in the image and which one the in
   options set here.
 * LILO and BURG are listed but cannot be chosen: they are no longer developed and not in Debian.
 
+### 8. Kernel & Boot → Init System
+systemd (Debian's default), SysVinit (Devuan's default), OpenRC or runit (CLI `init list|use`, recipe
+`init-system`). Switching installs the init system with `--allow-remove-essential` for that one change,
+elogind and libpam-elogind (desktop sessions), the matching live-config backend (live-config-sysvinit or
+live-config-systemd) and, on Debian, orphan-sysvinit-scripts; it writes `/etc/init.d` scripts for
+DistroForge's own services (boot sounds, Flatpak on first boot) and sets the installer: services-systemd,
+services-openrc or none, and `machineid.conf` without systemd. GNOME needs systemd and blocks the others;
+systemd-boot needs kernel-install from systemd. s6 and GNU Shepherd are listed with the reason they cannot
+start a Debian system.
+
 ### 8. Kernel & Boot → Boot Menu
 * Menu settings: title, timeout, kernel options (e.g. `quiet splash`,
   `toram`, `nomodeset`), kernel version and background image.
@@ -529,6 +539,14 @@ Prefer Distro Branding for identity changes: it needs no hold, so security
 updates keep flowing.
 
 ### 12. Review & Apply
+
+**Try them first (preview)** puts an overlay file system on the project, applies the waiting changes to
+it and leaves them there: start the live session (Terminal & Live) to look at them. *Keep them* ends the
+preview and applies the same changes for real; *Throw the preview away* ends it and the project is
+exactly as before. Builds wait until the preview has ended; a preview left by a crash is ended when the
+project is opened.
+
+### 12. Review & Apply (list)
 Changes chosen in steps 2 to 11 (install a desktop, packages, a theme, the
 sounds, the welcome screen, the installer settings, ...) do not change the
 image at once: they wait in the Review & Apply list. The green button in the

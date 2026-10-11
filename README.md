@@ -1,4 +1,4 @@
-# DistroForge 0.9 Beta
+# DistroForge 0.9.5 Beta
 
 **DistroForge** (formerly *Eduka-Customizer*) builds live ISO images of **your
 own Debian-based distribution**. It takes a Debian live image (or a Debian
@@ -24,6 +24,19 @@ Ubuntu-based** computers.
 
 **Support the project:** [Donate with PayPal](https://paypal.me/hugocenturion0311) ·
 [Facebook](https://facebook.com/hugomonizdorego)
+
+## New in 0.9.5 Beta
+
+* **Init systems**: systemd, SysVinit, OpenRC or runit (Kernel & Boot → Init System), compatible with the
+  kernel, live-boot, every boot loader and Calamares. s6 and GNU Shepherd are explained, not offered.
+* **Devuan** and its derivatives as a source, with Devuan repositories and a Devuan bootstrap.
+* **Desktop**: login screen, session type and compositor follow the chosen desktop (recommended, still
+  changeable); Eduka-Desktop is one of the desktops; one button.
+* **Preview**: try the waiting changes in the live session before applying them.
+* **Kernel terminal** takes the whole pasted instructions; **live session** fixed (D-Bus machine id,
+  X authority, clear errors); **compression** uses the cores and memory of this computer
+  (balanced, full, light); **light or dark sidebar** and six accent colors.
+* Fixed: *Invalid hostname: localhost.localdomain* when applying the identity.
 
 ## New in 0.9 Beta
 
@@ -205,11 +218,11 @@ All screenshots, including every Quick Wizard step: [docs/screenshots](docs/scre
 On Debian 12/13, a Debian derivative, Ubuntu 22.04/24.04 or an Ubuntu-based system:
 
 ```sh
-sudo apt install ./release/distroforge_0.9.0~beta_all.deb   # ready-made package
+sudo apt install ./release/distroforge_0.9.5~beta_all.deb   # ready-made package
 # or build it yourself:
 sudo apt install debhelper python3-pytest python3-yaml dpkg-dev
 dpkg-buildpackage -us -uc -b
-sudo apt install ../distroforge_0.9.0~beta_all.deb
+sudo apt install ../distroforge_0.9.5~beta_all.deb
 ```
 
 Or run it from the source tree:
@@ -275,6 +288,7 @@ sudo distroforge grub-theme add ~/Downloads/Vimix-grub.tar.xz --installed   # re
 sudo distroforge boot-loader list                 # grub, grub-secureboot, systemd-boot, refind, efistub, syslinux
 sudo distroforge boot-loader set systemd-boot TIMEOUT=3 SDBOOT_DEFAULT=saved
 sudo distroforge boot-loader use systemd-boot     # installs it into the image and tells Calamares
+sudo distroforge init use sysvinit               # or openrc, runit, systemd
 sudo distroforge check --fix                      # check, fix what can be fixed, check again
 sudo distroforge build --target-size 700          # smallest, 100, 300, 500, 700, 1000, ..., none
 distroforge test --firmware uefi
@@ -299,7 +313,7 @@ command away: `sudo distroforge desktop install eduka`. Or apply a recipe:
 
 **DistroForge** (sebelumnya Eduka-Customizer) adalah pembangun ISO untuk **semua distribusi
 berbasis Debian** (Debian stable, testing, sid dan turunannya seperti LMDE, MX Linux, Kali —
-bukan berbasis Ubuntu). **Eduka-Desktop** tetap tersedia sebagai salah satu desktop. Versi 0.9 Beta:
+bukan berbasis Ubuntu). **Eduka-Desktop** tetap tersedia sebagai salah satu desktop. Versi 0.9.5 Beta: init system alternatif (SysVinit, OpenRC, runit), dukungan Devuan, desktop dengan login screen/session/compositor otomatis, pratinjau perubahan di live session, terminal kernel yang menerima seluruh instruksi, tema sidebar terang/gelap. Versi 0.9 Beta:
 
 * **Bootloader untuk sistem terpasang** — pasang/hapus GRUB 2, GRUB Secure Boot, systemd-boot,
   rEFInd, EFISTUB dan Syslinux/EXTLINUX, pilih yang dipakai installer, dan atur masing-masing
@@ -310,7 +324,7 @@ bukan berbasis Ubuntu). **Eduka-Desktop** tetap tersedia sebagai salah satu desk
 * **Kirim masukan** — laporan bug, error, ide atau pertanyaan dengan lampiran langsung ke developer.
 * **Warna baru** (slate dan biru), perbaikan error `runuser`.
 
-Paket siap pasang: `release/distroforge_0.9.0~beta_all.deb`. Panduan PDF (bahasa Inggris):
+Paket siap pasang: `release/distroforge_0.9.5~beta_all.deb`. Panduan PDF (bahasa Inggris):
 [docs/DistroForge-Guide.pdf](docs/DistroForge-Guide.pdf). Log error: `/tmp/distroforge/`.
 
 ## Support

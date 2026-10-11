@@ -58,6 +58,13 @@ class BuildPage(Page):
         self.comp.currentIndexChanged.connect(self._levels)
         self.level = QSpinBox()
         f.addRow("Compression:", hbox(self.comp, label("Level"), self.level))
+        from eduka_customizer.core import resources
+        self.resources = combo(resources.MODES, "balanced")
+        f.addRow("This computer:", self.resources)
+        self.res_text = label("", "muted")
+        f.addRow("", self.res_text)
+        self.resources.currentIndexChanged.connect(lambda _i: self._res_text())
+        self.level.valueChanged.connect(lambda _v: self._res_text())
         self.boot_mode = combo([("auto", "Automatic"), ("replay", "Keep boot setup of the source ISO"),
                                 ("generate", "Generate new boot menu (GRUB + ISOLINUX)")])
         f.addRow("Boot loader:", self.boot_mode)
@@ -135,12 +142,18 @@ class BuildPage(Page):
         c.add(hbox(button("Reset test disk", self.reset_disk), None,
                    button("Boot ISO", self.test, "primary", ("media-playback-start",))))
 
+    def _res_text(self):
+        from eduka_customizer.core import resources
+        self.res_text.setText(resources.plan(self.resources.currentData(), self.comp.currentData(),
+                                             self.level.value())["text"])
+
     def _levels(self):
         lo, hi, default, flag = COMPRESSORS[self.comp.currentData()]
         self.level.setEnabled(bool(flag))
         self.level.setRange(lo, max(lo, hi))
         if flag:
             self.level.setValue(default)
+        self._res_text()
 
     def _preview(self):
         if self.project:
@@ -153,6 +166,7 @@ class BuildPage(Page):
         o = BuildOptions.from_project(self.project)
         self.iso_name.setText(o.iso_name)
         self.label_.setText(o.volume_label)
+        self.resources.setCurrentIndex(max(0, self.resources.findData(o.resources)))
         i = self.comp.findData(o.compression)
         self.comp.setCurrentIndex(max(0, i))
         self._levels()
@@ -196,6 +210,7 @@ class BuildPage(Page):
         o.checksums = ["sha256", "sha512", "md5"] if self.sha512.isChecked() else ["sha256"]
         o.cleanup = {k: cb.isChecked() for k, cb in self.clean.items()}
         o.target_size = self.target.currentData()
+        o.resources = self.resources.currentData()
         return o
 
     def start_build(self):

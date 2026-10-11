@@ -1,3 +1,23 @@
+distroforge (1:0.9.5~beta) unstable; urgency=medium
+
+  * Fixed: 'Apply all changes' failed with "Invalid hostname:
+    localhost.localdomain". Full host names are accepted, localhost.* becomes
+    the distribution ID, and the identity is checked before it waits.
+  * Init System tab: systemd, SysVinit, OpenRC or runit, working with the
+    kernel, live-boot, every boot loader and Calamares (elogind, live-config
+    backend, init scripts, services module). s6 and Shepherd explained.
+  * Devuan and its derivatives: detection, devuan.sources, Devuan bootstrap.
+  * Desktop: login screen, session type and compositor follow the chosen
+    desktop; Eduka-Desktop is one of the desktops; one button.
+  * Kernel terminal takes whole pasted instructions.
+  * Live session: machine id for D-Bus, X authority under pkexec, clear errors.
+  * Preview: try the waiting changes in the live session before applying.
+  * Compression uses the cores and memory of the computer (balanced, full,
+    light).
+  * Light or dark sidebar and six accent colors.
+
+ -- Hugo Moniz do Rego <hugomonizdorego@users.noreply.github.com>  Sun, 11 Oct 2026 10:00:00 +0000
+
 distroforge (1:0.9.0~beta) unstable; urgency=medium
 
   * First beta, on the way to 1.0. The epoch keeps upgrades from 0.17 Alpha

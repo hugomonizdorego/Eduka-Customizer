@@ -48,7 +48,9 @@ def test_squashfs_args():
     assert isobuild.squashfs_args(o, "amd64")[:4] == ["-comp", "xz", "-b", "1M"]
     assert "-Xbcj" in isobuild.squashfs_args(o, "amd64")
     o = isobuild.BuildOptions(compression="zstd", level=99)
-    assert isobuild.squashfs_args(o, "amd64")[-1] == "22"
+    args = isobuild.squashfs_args(o, "amd64")
+    assert args[args.index("-Xcompression-level") + 1] == "22"
+    assert "-processors" in args
     assert isobuild.sanitize_label("Edukasaun OS 1.0 (Kameli) amd64 longer label") == "Edukasaun OS 1.0 _Kameli_ amd64 "[:32]
 
 
