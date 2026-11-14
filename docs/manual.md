@@ -96,7 +96,7 @@ Every step has a bar at the bottom: **Back** goes to the step before, **Next** m
 
 Most changes do not change the system at once: they wait in **Review & Apply** (step 10), so you can check them first. The blue button at the top shows how many wait.
 
-A step opens after the one before it is done. Experts can open every step at any time: **Settings → Open every menu at any time**.
+A step opens after the one before it is done. Experts can open every step at any time: **Settings → Free navigation**.
 
 
 ## 5. Step 2 · System

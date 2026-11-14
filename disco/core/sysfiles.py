@@ -142,6 +142,7 @@ def set_face(project, image):
     imaging.write_png(image, target, (256, 256), fit="cover")
     target.chmod(0o644)
     shared = Path(project.rootfs) / "usr/share/pixmaps/{}-user.png".format(project.os_id())
+    shared.parent.mkdir(parents=True, exist_ok=True)   # minimal systems have no pixmaps folder
     shutil.copy2(target, shared)
     from disco.core.branding import _ini_set
     if (Path(project.rootfs) / "usr/sbin/lightdm-gtk-greeter").exists():

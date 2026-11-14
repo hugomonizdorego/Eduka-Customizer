@@ -37,6 +37,35 @@ def demo_project(path):
         f = r / rel
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(text)
+    # Services and programs after login for the Startup step
+    units = {"NetworkManager.service": ("Network Manager", "multi-user.target", True),
+             "ssh.service": ("OpenBSD Secure Shell server", "multi-user.target", True),
+             "cups.service": ("CUPS Scheduler", "multi-user.target", True),
+             "bluetooth.service": ("Bluetooth service", "bluetooth.target", True),
+             "avahi-daemon.service": ("Avahi mDNS/DNS-SD Stack", "multi-user.target", False),
+             "ModemManager.service": ("Modem Manager", "multi-user.target", False),
+             "unattended-upgrades.service": ("Unattended Upgrades Shutdown", "multi-user.target", True),
+             "apt-daily.timer": ("Daily apt download activities", "timers.target", True),
+             "fstrim.timer": ("Discard unused filesystem blocks once a week", "timers.target", True),
+             "dbus.service": ("D-Bus System Message Bus", "multi-user.target", True),
+             "lightdm.service": ("Light Display Manager", "graphical.target", True)}
+    for name, (desc, target, on) in units.items():
+        f = r / "lib/systemd/system" / name
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text("[Unit]\nDescription={}\n[Install]\nWantedBy={}\n".format(desc, target))
+        if on:
+            d = r / "etc/systemd/system" / (target + ".wants")
+            d.mkdir(parents=True, exist_ok=True)
+            (d / name).symlink_to("/lib/systemd/system/" + name)
+    auto = r / "etc/xdg/autostart"
+    auto.mkdir(parents=True, exist_ok=True)
+    for file, name, cmd, extra in (("nm-applet.desktop", "Network", "nm-applet", ""),
+                                   ("blueman.desktop", "Blueman Applet", "blueman-applet", ""),
+                                   ("print-applet.desktop", "Print Queue Applet", "system-config-printer-applet",
+                                    "Hidden=true\n"),
+                                   ("xfce4-power-manager.desktop", "Power Manager", "xfce4-power-manager",
+                                    "OnlyShowIn=XFCE;\n")):
+        (auto / file).write_text("[Desktop Entry]\nType=Application\nName={}\nExec={}\n{}".format(name, cmd, extra))
     p.state["purpose"] = "home"
     p.state["identity"].update({"name": "My Linux", "id": "mylinux", "version": "1.0", "codename": "Aurora",
                                 "home_url": "https://mylinux.example.org", "hostname": "mylinux"})

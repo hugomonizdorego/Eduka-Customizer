@@ -306,6 +306,9 @@ class ProjectPage(Page):
 
     def _done(self, info):
         from disco.core import permissions
+        # A new system: its steps start again (Continue must not jump to Build of the old one).
+        self.project.state["steps_done"] = []
+        self.project.save()
         permissions.share_user_folders(self.project)
         self.main.update_state()
         self.refresh()

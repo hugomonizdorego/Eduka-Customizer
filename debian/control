@@ -53,33 +53,24 @@ Recommends: mmdebstrap | debootstrap,
 Suggests: live-build, devuan-keyring, calamares-settings-debian
 Replaces: distroforge (<< 1:0.9.6~), eduka-customizer (<< 0.18~)
 Breaks: distroforge (<< 1:0.9.6~), eduka-customizer (<< 0.18~)
-Description: Distro Custom: build your own Debian or Devuan distribution
- D!sco (Distro Custom) builds your own distribution from Debian (stable,
- testing, sid) or Devuan, with Debian's own tools: debootstrap or mmdebstrap,
- chroot, squashfs, xorriso and, if you like, live-build. No Ubuntu parts
- (no casper, no PPAs) are used.
+Description: Distro Custom: customize a Debian live ISO into your own distribution
+ D!sco (Distro Custom) turns a Debian or Devuan live ISO into your own
+ distribution, step by step: open the ISO, change what you like, press
+ Finish. It uses Debian's own tools only (live-boot, squashfs, xorriso,
+ mmdebstrap or debootstrap, chroot, Calamares, optionally live-build);
+ nothing of Ubuntu is used (no casper, no PPAs).
  .
- It builds for PCs (64-bit and 32-bit), 64-bit ARM computers with UEFI,
- the Raspberry Pi (1, Zero, 2, 3, 4, 400 and 5) and RISC-V. Bases for other
- processors are made on this computer through qemu-user. PCs and UEFI
- machines get a hybrid live ISO (BIOS and UEFI); boards get an SD-card image
- laid out like Debian's own Raspberry Pi images.
+ It starts with a Welcome page, then Start (extract an ISO or continue a
+ project), then eleven steps with Back, Next and Finish: System, Software,
+ Startup, Branding, Look & Feel, Boot, Installer, Files & Terminal, Review &
+ Apply and Build. Pictures are set with one click (Set as default, Apply),
+ services and programs after login are switched on or off with a tick, and
+ the folders of a project can be changed without administrator rights.
  .
- The Builder page holds the whole distribution: a preset, the name, the
- platform, Debian or Devuan release, desktop (GNOME, KDE Plasma, Xfce,
- Cinnamon, MATE, LXQt, LXDE, Budgie, Enlightenment, Eduka-Desktop, i3, Sway,
- labwc and more), init system (systemd, SysVinit, OpenRC, runit), installer
- (Calamares, none or your own packages), package lists with tick boxes and
- an application catalog, and the steps: Prepare, Build base, Install
- packages, Overlay & scripts, Make image, or Build all.
- .
- Every part can be refined: repositories, identity and the files of
- /etc (os-release, lsb-release, issue, hostname, motd), users, language,
- kernel, boot loaders, boot menu, Plymouth, wallpaper and login screen,
- themes, sounds, a welcome screen, the bash prompt, browser policies, a PDF
- about your system on every desktop, and the Calamares installer. Checks
- before building stop what would break the image, and it can be tested in
- QEMU.
+ PCs get a hybrid live ISO (BIOS and UEFI); the Raspberry Pi gets an SD-card
+ image laid out like Debian's own. ARM64 and RISC-V systems are made through
+ qemu-user. Checks before building stop what would break the image, and it
+ can be tested in QEMU.
  .
  D!sco was called DistroForge (0.9 Beta) and Eduka-Customizer (up to 0.17
  Alpha); the old commands keep working.
