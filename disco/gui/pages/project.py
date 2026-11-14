@@ -96,12 +96,15 @@ class ProjectPage(Page):
         # Bootstrap ----------------------------------------------------------------
         t = QWidget()
         v = QVBoxLayout(t)
-        v.addWidget(label("Create a minimal Debian system with mmdebstrap and add your desktop "
-                          "afterwards. The boot menu is generated (BIOS + UEFI, Secure Boot when "
-                          "shim-signed is installed).", "muted"))
+        v.addWidget(label("Create a minimal Debian or Devuan system with mmdebstrap and add your desktop "
+                          "afterwards, for a PC, an ARM64 machine, a Raspberry Pi or RISC-V (other processors "
+                          "run through qemu-user). The Builder (step 1) does the same with presets and package "
+                          "lists.", "muted"))
         self.bs_family = combo([("debian", "Debian (systemd)"), ("devuan", "Devuan (no systemd: sysvinit)")])
-        self.bs_suite = combo([("stable", "Stable"), ("testing", "Testing"), ("sid", "Unstable (sid / ceres)")])
-        self.bs_arch = combo(["amd64", "i386", "arm64"])
+        self.bs_suite = combo([("stable", "Stable"), ("testing", "Testing"), ("sid", "Unstable (sid / ceres)"),
+                               ("oldstable", "Oldstable")])
+        from disco.core import platforms
+        self.bs_arch = combo([(p.id, "{} ({})".format(p.name, p.arch)) for p in platforms.PLATFORMS])
         self.bs_variant = combo([("important", "Important (recommended)"), ("standard", "Standard"),
                                  ("minbase", "Minimal")])
         v.addWidget(hbox(self.bs_family, self.bs_suite, self.bs_arch, self.bs_variant))
@@ -270,11 +273,11 @@ class ProjectPage(Page):
             return
         from disco.core import bootstrap
         proj, lang = self.project, self._language()
-        suite, arch, variant = self.bs_suite.currentData(), self.bs_arch.currentData(), self.bs_variant.currentData()
+        suite, plat, variant = self.bs_suite.currentData(), self.bs_arch.currentData(), self.bs_variant.currentData()
         devuan = self.bs_family.currentData() == "devuan"
 
         def work(t):
-            info = bootstrap.bootstrap(proj, suite, arch, variant, devuan=devuan)
+            info = bootstrap.bootstrap(proj, suite, None, variant, devuan=devuan, platform_id=plat)
             apply_language(proj, lang)
             return info
         self.task("Bootstrap {} {}".format("Devuan" if devuan else "Debian", suite), work, self._done)
