@@ -38,3 +38,16 @@ elementary+ (GPL-3) icon themes.
 | Review & Apply | review.svg | gnome-todo |
 | About | about.svg | system-help |
 | Settings | settings.svg | preferences-system (utilities-tweak-tool) |
+
+## Icons made for D!sco
+
+These menu icons were drawn for D!sco in the same flat style, licensed like
+D!sco itself (GPL-3.0-or-later):
+
+| Menu | File |
+|---|---|
+| Builder | builder.svg |
+| Raspberry Pi | board.svg |
+| System files | sysfiles.svg |
+| Terminal & Browser | shellbrowser.svg |
+| Desktop document | readme.svg |

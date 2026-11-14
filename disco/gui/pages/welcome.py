@@ -180,8 +180,8 @@ class Preview(QFrame):
 class WelcomePage(Page):
     title = "Welcome Screen"
     nav_title = "Welcome Screen"
-    subtitle = ("Step 9 · Four pages users see after logging in: your logo, text, pictures and buttons to a "
-                "website, a program or the installer. Your changes wait in Review & Apply (step 12).")
+    subtitle = ("Four pages users see after logging in: your logo, text, pictures and buttons to a "
+                "website, a program or the installer. Your changes wait in Review & Apply.")
     icon_names = ("system-help", "help-about")
     CHANGES = ('Welcome screen', 'Remove the welcome screen')
 

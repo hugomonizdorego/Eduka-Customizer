@@ -15,8 +15,8 @@ KINDS = {"icons": "Icons", "gtk": "GTK theme", "cursor": "Cursor", "font": "Font
 class ThemesPage(Page):
     title = "Themes & Icons"
     nav_title = "Themes & Icons"
-    subtitle = ("Step 9 · The default theme, icons, mouse cursor and font. Only what fits your desktop is "
-                "listed. Drop your own themes and fonts here. Your changes wait in Review & Apply (step 12).")
+    subtitle = ("The default theme, icons, mouse cursor and font. Only what fits your desktop is "
+                "listed. Drop your own themes and fonts here. Your changes wait in Review & Apply.")
     icon_names = ("preferences-desktop-icons", "preferences-desktop-theme")
     CHANGES = ('Apply look', 'Install theme packs')
 
@@ -98,8 +98,8 @@ class ThemesPage(Page):
             return
         th = Themes(self.project)
         de = self._desktop()
-        self.for_desktop.setText("Showing what fits <b>{}</b> (step 6. Desktop).".format(de["name"]) if de else
-                                 "No desktop chosen yet (step 6. Desktop): every pack is listed.")
+        self.for_desktop.setText("Showing what fits <b>{}</b> (Desktop & Apps → Desktop).".format(de["name"]) if de else
+                                 "No desktop chosen yet (Desktop & Apps → Desktop): every pack is listed.")
         ticked = {self.packs.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.packs.count())
                   if self.packs.item(i).checkState() == Qt.CheckState.Checked}
         self.packs.clear()

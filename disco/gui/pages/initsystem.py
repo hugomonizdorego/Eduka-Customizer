@@ -11,10 +11,10 @@ from disco.gui.widgets import Page, button, fill, hbox, label, table
 class InitSystemPage(Page):
     title = "Init System"
     nav_title = "Init System"
-    subtitle = ("Step 8 · The first program the kernel starts, which then starts everything else. Debian uses "
+    subtitle = ("The first program the kernel starts, which then starts everything else. Debian uses "
                 "systemd; Devuan and its derivatives use SysVinit, OpenRC or runit. Every choice works with the "
                 "kernel, live-boot, the boot loaders and the Calamares installer. Your change waits in Review & "
-                "Apply (step 12).")
+                "Apply.")
     icon_names = ("preferences-system-services", "system-run")
     CHANGES = ("Use init system",)
 

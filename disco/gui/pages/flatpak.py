@@ -16,7 +16,7 @@ from disco.gui.widgets import Page, button, combo, hbox, label
 class FlatpakPage(Page):
     title = "Flatpak apps"
     nav_title = "Flatpak apps"
-    subtitle = ("Step 7 · Applications from Flathub by category. Install them into the ISO, or on the first "
+    subtitle = ("Applications from Flathub by category. Install them into the ISO, or on the first "
                 "start of an installed computer to keep the ISO small. Your changes wait in Review & Apply (step "
                 "12).")
     icon_names = ("flatpak-discover", "applications-other", "system-software-update")

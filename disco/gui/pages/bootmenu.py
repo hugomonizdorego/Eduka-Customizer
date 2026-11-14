@@ -15,7 +15,7 @@ from disco.gui.widgets import FilePicker, Page, button, combo, hbox, label
 class BootMenuPage(GrubDesignCards, Page):
     title = "Boot Menu of the ISO"
     nav_title = "Boot Menu"
-    subtitle = ("Step 8 · The menu shown when the ISO starts (GRUB for UEFI, ISOLINUX for BIOS): title, timeout, "
+    subtitle = ("The menu shown when the ISO starts (GRUB for UEFI, ISOLINUX for BIOS): title, timeout, "
                 "kernel options, background, a GRUB theme and the menu entries. Experts can edit the boot files "
                 "directly.")
     icon_names = ("grub-customizer", "system-reboot", "media-optical")

@@ -28,7 +28,7 @@ FIELDS = {
     "mirror": "",                # "" = the mirror on the Settings page
     "profile": "",               # a purpose from profiles.json (recommended apps)
 }
-SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._+-]{0,59}$")
+SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._+,:()/!-]{0,79}$")
 
 
 def builtin_dir():
@@ -68,7 +68,7 @@ def normalize(data):
         raise ValueError("method must be disco or live-build")
     name = data.get("name") or builder["distro_name"]
     if not SAFE_NAME.match(name):
-        raise ValueError("Preset names use letters, digits, spaces and . _ + - (60 at most)")
+        raise ValueError("Preset names use letters, digits, spaces and . _ + - , : ( ) / ! (80 at most)")
     lists = data.get("lists") or {}
     if not isinstance(lists, dict):
         raise ValueError("lists must be an object")

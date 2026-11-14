@@ -137,9 +137,16 @@ class Project:
         self.state = merged
 
     # Steps of the build (step by step navigation) ---------------------------
+    # 0.11 merged the menus into ten steps: what was done in the old menus still counts.
+    OLD_STEPS = {"system": ("sources", "identity", "users", "language"), "software": ("desktop", "software"),
+                 "branding": ("identity", "look")}
+
     def step_done(self, key):
         done = self.state.get("steps_done", [])
-        return "*" in done or key in done
+        if "*" in done or key in done:
+            return True
+        old = self.OLD_STEPS.get(key)
+        return bool(old) and all(k in done for k in old)
 
     def mark_step(self, key, done=True):
         steps = [k for k in self.state.setdefault("steps_done", []) if k != key]

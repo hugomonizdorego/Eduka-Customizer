@@ -63,7 +63,8 @@ def iso_files(project):
     out = Path(project.output)
     if not out.is_dir():
         return []
-    isos = sorted(out.glob("*.iso"))
+    # ISO images, and the SD-card images of boards (.img, .img.xz)
+    isos = sorted(list(out.glob("*.iso")) + list(out.glob("*.img")) + list(out.glob("*.img.xz")))
     files = list(isos)
     for iso in isos:
         files += [Path(str(iso) + ext) for ext in CHECKSUMS if Path(str(iso) + ext).exists()]
@@ -80,8 +81,9 @@ def keep_only_iso(project, progress=None):
     from disco.core.chroot import Chroot, mounts_under, unmount_all
     root = Path(project.path).resolve()
     keep = iso_files(project)
-    if not [f for f in keep if f.suffix == ".iso"]:
-        raise RuntimeError("There is no finished ISO in {}: nothing was deleted".format(project.output))
+    if not [f for f in keep if f.suffix in (".iso", ".img", ".xz")]:
+        raise RuntimeError("There is no finished ISO or SD-card image in {}: nothing was deleted".format(
+            project.output))
     if not (root / "project.json").is_file() or len(root.parts) < 3:
         raise RuntimeError("{} is not a project folder: nothing was deleted".format(root))
     Chroot(project.rootfs).force_release()

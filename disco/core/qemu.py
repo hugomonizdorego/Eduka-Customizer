@@ -144,11 +144,10 @@ def start(project, iso=None, **kw):
     if not iso or not Path(iso).exists():
         raise RuntimeError("No ISO or SD-card image to test. Build one first.")
     arch = project.state.get("distro", {}).get("arch") or "amd64"
+    from disco.core import platforms
+    if arch == "armel" or platforms.of_project(project).id == "rpi-armel":
+        raise RuntimeError("QEMU cannot start ARMv6 Raspberry Pi images (Pi 1, Zero): test this one on the board")
     if arch in ("arm64", "armhf"):
-        if arch == "armhf" and Path(iso).suffix != ".iso":
-            from disco.core import platforms
-            if platforms.of_project(project).id == "rpi-armel":
-                raise RuntimeError("QEMU cannot start ARMv6 Raspberry Pi images: test this one on the board")
         cmd = arm_command(project, iso, arch, **kw)
     elif arch in ("amd64", "i386"):
         if Path(iso).suffix != ".iso":

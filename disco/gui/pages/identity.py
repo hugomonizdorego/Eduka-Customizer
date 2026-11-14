@@ -9,7 +9,7 @@ from disco.gui.widgets import Page, button, hbox, label
 class IdentityPage(Page):
     title = "Identity"
     nav_title = "Identity"
-    subtitle = ("Step 3 · What your distribution is called: name, version, links, computer name and ISO label. "
+    subtitle = ("What your distribution is called: name, version, links, computer name and ISO label. "
                 "The fields start with what the ISO says about itself. Your changes wait in Review & Apply (step "
                 "12).")
     icon_names = ("preferences-desktop-personal", "user-info")

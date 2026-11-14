@@ -41,12 +41,22 @@ def cmd_new(args):
     p = Project.create(args.path or args.project or os.getcwd(), name=args.name)
     p.lock()
     logmod.add_file_handler(p.logs / "disco.log")
+    if args.preset:
+        from disco.core import presets
+        presets.apply(p, presets.find(args.preset))
+        log.info("Preset %s: run 'disco build-all' to build it", args.preset)
+    if args.platform:
+        p.state.setdefault("builder", {})["platform"] = args.platform
+        p.save()
     if args.iso:
         from disco.core import iso
         info = iso.extract(p, args.iso)
     elif args.bootstrap:
         from disco.core import bootstrap
-        info = bootstrap.bootstrap(p, args.bootstrap, args.arch, args.variant, devuan=args.devuan)
+        plat = args.platform or (p.state.get("builder", {}).get("platform") if args.preset else None)
+        fam = p.state.get("builder", {}).get("family") if args.preset else None
+        info = bootstrap.bootstrap(p, args.bootstrap, args.arch, args.variant, devuan=args.devuan or fam == "devuan",
+                                   platform_id=plat)
     elif args.snapshot:
         from disco.core import snapshot
         info = snapshot.snapshot(p, args.snapshot)
@@ -55,6 +65,145 @@ def cmd_new(args):
         return 0
     p.save()
     log.info("Project ready: %s", info.summary())
+    return 0
+
+
+def cmd_platforms(args):
+    from disco.core import platforms
+    print("{:12} {:8} {:4} {}".format("ID", "ARCH", "OUT", "FOR"))
+    for pl in platforms.PLATFORMS:
+        print("{:12} {:8} {:4} {}{}".format(pl.id, pl.arch, pl.output, pl.name,
+                                             " (experimental)" if pl.experimental else ""))
+    print("\nThis computer: {}. Other processors run through qemu-user (qemu-user-static, binfmt-support)."
+          .format(platforms.host_arch()))
+    for arch, why in platforms.NOT_OFFERED.items():
+        print("Not offered: {} - {}".format(arch, why))
+    return 0
+
+
+def cmd_presets(args):
+    import json
+    from disco.core import presets
+    if args.action == "list":
+        for name, path, builtin in presets.available():
+            print("{} {}".format("*" if builtin else " ", name))
+        print("\n* comes with D!sco. Use: disco presets apply \"NAME\" (in a project folder)")
+        return 0
+    if args.action == "show":
+        print(json.dumps(presets.load(args.file) if args.file else presets.find(args.name), indent=1))
+        return 0
+    if args.action == "delete":
+        print("Deleted", presets.delete(args.name))
+        return 0
+    p = _locked(args)
+    if args.action == "apply":
+        presets.apply(p, presets.load(args.file) if args.file else presets.find(args.name))
+        print("Preset applied. Next: disco build-all")
+    elif args.action in ("save", "export"):
+        preset = presets.from_project(p, args.name, args.description)
+        print("Saved", presets.save(preset, args.file if args.action == "export" else None))
+    return 0
+
+
+def cmd_builder(args):
+    from disco.core.pipeline import Pipeline
+    from disco.core.presets import FIELDS, normalize
+    p = _locked(args)
+    b = p.state.setdefault("builder", {})
+    changed = False
+    for key in FIELDS:
+        v = getattr(args, key, None)
+        if v is not None:
+            b[key] = "" if (key == "desktop" and v == "none") else v
+            changed = True
+    if changed:
+        p.state["builder"] = normalize({"name": "x", "builder": b})["builder"]
+        p.save()
+    for key, value in Pipeline(p).builder.items():
+        print("{:12} {}".format(key, value))
+    return 0
+
+
+def cmd_lists(args):
+    from disco.core.pkglists import Lists, catalog
+    if args.action == "catalog":
+        for cat in catalog():
+            print("\n{}".format(cat["name"]))
+            for pkg, name, desc in cat["apps"]:
+                print("  {:24} {} - {}".format(pkg, name, desc))
+        return 0
+    p = _locked(args) if args.action != "show" else _project(args)
+    lists = Lists(p)
+    if args.action == "show":
+        for l in lists.all():
+            print("[{}] {:32} {}".format("x" if lists.is_on(l) else " ", l.name, " ".join(l.packages())))
+        if not lists.all():
+            print("No package lists yet: 'disco step prepare' writes the first ones.")
+        return 0
+    if args.action == "new":
+        print("Created", lists.create(args.list, args.packages).name)
+        return 0
+    if args.action == "install":
+        installed, skipped = lists.install()
+        print("Installed: {}".format(" ".join(installed) or "nothing new"))
+        if skipped:
+            print("Skipped (not in the repositories): {}".format(" ".join(skipped)))
+        return 0
+    pl = lists.get(args.list)
+    if args.action == "add":
+        lists.add(pl, args.packages)
+    elif args.action == "remove":
+        lists.remove(pl, args.packages)
+    elif args.action in ("on", "off"):
+        lists.set_on(pl, args.action == "on")
+    elif args.action == "delete":
+        lists.delete(pl)
+        print("Deleted", pl.name)
+        return 0
+    print("{}: {}".format(pl.name, " ".join(pl.packages())))
+    return 0
+
+
+def _pipeline(p):
+    from disco.core.pipeline import Pipeline
+    return Pipeline(p, progress=None, stage=lambda text: print("==", text, flush=True))
+
+
+def cmd_step(args):
+    p = _locked(args)
+    result = _pipeline(p).run(args.name)
+    if args.name == "prepare":
+        for problem in result or []:
+            print("! " + problem)
+        print("Ready." if not result else "Fix the problems above, then run the next step (base).")
+    elif result:
+        print(result)
+    return 0
+
+
+def cmd_build_all(args):
+    p = _locked(args)
+    out = _pipeline(p).build_all(rebuild_base=args.rebuild_base)
+    print(out)
+    from disco.core import platforms
+    if platforms.of_project(p).output == "img":
+        from disco.core import imgbuild
+        print("Write it to an SD card: " + imgbuild.flash_command(out))
+    return 0
+
+
+def cmd_live_build(args):
+    from disco.core import livebuild
+    p = _locked(args)
+    if args.action == "export":
+        d = livebuild.write_config(p)
+        print("live-build configuration: {}\nBuild it yourself with: cd {} && sudo lb config && sudo lb build"
+              .format(d, d))
+        return 0
+    ok, why = livebuild.usable()
+    if not ok:
+        raise SystemExit(why)
+    print(livebuild.build(p))
     return 0
 
 
@@ -826,9 +975,18 @@ def cmd_check(args):
 
 
 def cmd_build(args):
-    from disco.core import preflight
+    from disco.core import platforms, preflight
     from disco.core.isobuild import BuildOptions, build
     p = _locked(args)
+    if platforms.of_project(p).output == "img":
+        from disco.core import imgbuild
+        opts = imgbuild.ImageOptions.from_project(p)
+        if args.target_size and str(args.target_size).isdigit():
+            opts.size_mb = int(args.target_size)
+        out = imgbuild.build(p, opts)
+        print(out)
+        print("Write it to an SD card: " + imgbuild.flash_command(out))
+        return 0
     if not args.skip_checks:
         results = preflight.run(p)
         if preflight.summary(results)[0]:
@@ -907,7 +1065,7 @@ def cmd_clean(args):
         return 0
     if args.keep_iso:
         from disco.core import projectfiles
-        isos = [f.name for f in projectfiles.iso_files(p) if f.suffix == ".iso"]
+        isos = [f.name for f in projectfiles.iso_files(p) if f.suffix in (".iso", ".img", ".xz")]
         if not isos:
             raise SystemExit("There is no finished ISO in {}".format(p.output))
         if not args.yes:
@@ -915,7 +1073,7 @@ def cmd_clean(args):
             if answer.strip().lower() not in ("y", "yes"):
                 return 1
         isos, own = projectfiles.keep_only_iso(p, lambda text: print(text))
-        print("Only the ISO is left:", " ".join(str(f) for f in isos if f.suffix == ".iso"))
+        print("Only the ISO is left:", " ".join(str(f) for f in isos if f.suffix in (".iso", ".img", ".xz")))
         if own:
             print("Your own files stayed:", ", ".join(own))
         return 0
@@ -1002,12 +1160,59 @@ Help for one command: disco COMMAND --help""")
     s.add_argument("--name", default="", help="name of the project (the distribution is named on the Identity page)")
     g = s.add_mutually_exclusive_group()
     g.add_argument("--iso", help="Debian or Debian-based live ISO")
-    g.add_argument("--bootstrap", choices=["stable", "testing", "sid"])
+    g.add_argument("--bootstrap", choices=["oldstable", "stable", "testing", "sid"])
     s.add_argument("--devuan", action="store_true", help="with --bootstrap: a Devuan base (no systemd)")
     g.add_argument("--snapshot", choices=["dist", "backup"], help="copy the running system")
     s.add_argument("--arch", default="amd64")
+    s.add_argument("--platform", help="what the system is for: pc64, pc32, arm64-efi, rpi-arm64, rpi5, rpi-armhf, "
+                                      "rpi-armel, riscv64-efi (see 'disco platforms'); sets --arch")
+    s.add_argument("--preset", help="start from a preset (see 'disco presets')")
     s.add_argument("--variant", default="important", choices=["important", "standard", "minbase"])
     s.set_defaults(func=cmd_new)
+
+    s = sub.add_parser("platforms", help="the computers and boards D!sco builds for (PC, ARM64, Raspberry Pi, RISC-V)")
+    s.set_defaults(func=cmd_platforms)
+
+    s = sub.add_parser("presets", help="presets: everything of the Builder page saved under a name")
+    s.add_argument("action", nargs="?", default="list", choices=["list", "show", "apply", "save", "delete", "export"])
+    s.add_argument("name", nargs="?", help="preset name (list shows them)")
+    s.add_argument("--file", help="export: write the preset to this file; apply: read it from this file")
+    s.add_argument("--description", default="")
+    s.set_defaults(func=cmd_presets)
+
+    s = sub.add_parser("builder", help="show or change the choices of the Builder page")
+    s.add_argument("--name", dest="distro_name", help="name of the distribution")
+    s.add_argument("--platform")
+    s.add_argument("--family", choices=["debian", "devuan"])
+    s.add_argument("--suite", choices=["oldstable", "stable", "testing", "sid"])
+    s.add_argument("--variant", choices=["important", "standard", "minbase"])
+    s.add_argument("--desktop", help="desktop id (see 'disco desktop list'), 'none' for no desktop")
+    s.add_argument("--dm", help="display manager id ('' = the desktop's own)")
+    s.add_argument("--init", choices=["systemd", "sysvinit", "openrc", "runit"])
+    s.add_argument("--installer", choices=["calamares", "none", "debs"])
+    s.add_argument("--method", choices=["disco", "live-build"])
+    s.add_argument("--mirror")
+    s.add_argument("--profile", help="purpose with recommended applications (education, server, ...)")
+    s.set_defaults(func=cmd_builder)
+
+    s = sub.add_parser("lists", help="package lists of the distribution (lists/NN-name.list)")
+    s.add_argument("action", nargs="?", default="show",
+                   choices=["show", "new", "add", "remove", "on", "off", "delete", "install", "catalog"])
+    s.add_argument("list", nargs="?", help="list name (10-kernel-and-firmware.list or kernel-and-firmware)")
+    s.add_argument("packages", nargs="*")
+    s.set_defaults(func=cmd_lists)
+
+    s = sub.add_parser("step", help="run one step of the build: prepare, base, packages, overlay, image")
+    s.add_argument("name", choices=["prepare", "base", "packages", "overlay", "image"])
+    s.set_defaults(func=cmd_step)
+
+    s = sub.add_parser("build-all", help="every step: prepare, base, packages, overlay & scripts, ISO or SD image")
+    s.add_argument("--rebuild-base", action="store_true", help="make the base system again (deletes the system)")
+    s.set_defaults(func=cmd_build_all)
+
+    s = sub.add_parser("live-build", help="Debian's live-build: write its configuration, or build the ISO with it")
+    s.add_argument("action", choices=["export", "build"])
+    s.set_defaults(func=cmd_live_build)
 
     sub.add_parser("info", help="show project information").set_defaults(func=cmd_info)
 

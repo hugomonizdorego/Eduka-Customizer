@@ -243,24 +243,26 @@ from disco.gui.main_window import MainWindow, SECTIONS
 w = MainWindow()
 keys = [s.key for s in w.sections]
 assert keys == [s[0] for s in SECTIONS]
-assert [s.step for s in w.steps] == list(range(1, 14))
-assert not w.section_open(w.sections[keys.index("sources")])
+assert [s.step for s in w.steps] == list(range(1, 11))
+assert not w.section_open(w.sections[keys.index("system")])
 w.project = Project.open(sys.argv[1])
 w.update_state()
 open_ = [s.key for s in w.sections if w.section_open(s)]
-assert open_ == ["start", "wizard", "sources", "settings"], open_
+assert open_ == ["start", "system", "settings"], open_
 w.next_step(w.steps[1], w.steps[2])
-assert w.section_open(w.sections[keys.index("identity")])
-assert not w.section_open(w.sections[keys.index("users")])
+assert w.section_open(w.sections[keys.index("software")])
+assert not w.section_open(w.sections[keys.index("boot")])
+w.go("BoardPage")
+assert w.stack.currentWidget().key == "software"   # Boot is not open yet
 w.go("UsersPage")
-assert w.stack.currentWidget().key == "identity"
-w.go("BrandingPage")
 sec = w.stack.currentWidget()
-assert sec.key == "identity" and sec.current().__class__.__name__ == "BrandingPage"
+assert sec.key == "system" and sec.current().__class__.__name__ == "UsersPage"
 w.project.mark_all_steps()
 w.update_state()
 w.go("ReplaceAppsPage")
 assert w.stack.currentWidget().key == "software"
+w.go("ReadmePage")
+assert w.stack.currentWidget().key == "branding"
 print("ok", len(w.pages), len(w.sections))
 """
 
@@ -274,7 +276,7 @@ def test_gui_steps_and_merged_menus(tmp_path):
     res = subprocess.run([sys.executable, "-c", GUI_STEPS, str(p.path)], capture_output=True, text=True,
                          env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
-    assert res.stdout.startswith("ok 27 15")
+    assert res.stdout.startswith("ok 32 11")
 
 
 def test_cli_check_and_apps(project):

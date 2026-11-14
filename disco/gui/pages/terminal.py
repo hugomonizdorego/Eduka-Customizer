@@ -59,7 +59,7 @@ SETTINGS_APPS = [
 class TerminalPage(Page):
     title = "Terminal & Live"
     nav_title = "Terminal & Live"
-    subtitle = ("Step 11 · For experts: start the system's desktop in a window and change things by hand, use a "
+    subtitle = ("For experts: start the system's desktop in a window and change things by hand, use a "
                 "root terminal, or run scripts. Everything ends up in the ISO.")
     icon_names = ("utilities-terminal", "terminal")
 

@@ -11,7 +11,7 @@ from disco.gui.widgets import Page, button, combo, fill, hbox, label, table
 class BootLoaderPage(Page):
     title = "Boot Loader"
     nav_title = "Boot Loader"
-    subtitle = ("Step 8 · The boot loader the installer puts on computers. Install the ones you want into the "
+    subtitle = ("The boot loader the installer puts on computers. Install the ones you want into the "
                 "image, remove the others, choose one and set it up. Every choice works with the Calamares "
                 "installer; when a boot loader cannot work on a computer, the next one that can is used.")
     icon_names = ("grub-customizer", "system-reboot")

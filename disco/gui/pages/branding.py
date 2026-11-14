@@ -14,9 +14,9 @@ from disco.gui.widgets import (FilePicker, FileTreeEditor, ImagePreview, Page, b
 class BrandingPage(Page):
     title = "Distro Branding"
     nav_title = "Distro Branding"
-    subtitle = ("Step 3 · Your name, logo, colors and artwork everywhere: system information, login, GRUB, boot "
+    subtitle = ("Your name, logo, colors and artwork everywhere: system information, login, GRUB, boot "
                 "splash and installer. D!sco packs them into a <id>-branding package, so Debian updates "
-                "keep them. Your changes wait in Review & Apply (step 12).")
+                "keep them. Your changes wait in Review & Apply.")
     icon_names = ("preferences-desktop-theme-global", "applications-graphics", "emblem-favorite")
     CHANGES = ('Apply distro branding', 'Build edited branding packages')
 

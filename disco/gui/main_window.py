@@ -20,32 +20,31 @@ from disco.gui.worker import LogBridge, QtLogHandler, Task
 
 
 # Bundled Papirus icons (GPL-3.0), see data/icons/menu/README.md.
-MENU_ICONS = {"ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "sources",
-              "IdentityPage": "identity", "UsersPage": "users", "LanguagePage": "language",
+MENU_ICONS = {"BuilderPage": "builder", "ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "sources",
+              "IdentityPage": "identity", "SystemFilesPage": "sysfiles", "UsersPage": "users",
+              "LanguagePage": "language", "InitSystemPage": "initsystem", "DesktopPage": "desktop",
               "PackagesPage": "packages", "FlatpakPage": "flatpak", "ReplaceAppsPage": "replace",
-              "KernelPage": "kernel", "DesktopPage": "desktop", "ThemesPage": "themes",
-              "AppearancePage": "wallpaper", "PlymouthPage": "plymouth", "BrandingPage": "branding",
-              "CalamaresPage": "calamares", "BootMenuPage": "bootmenu", "WorkshopPage": "workshop",
-              "TerminalPage": "terminal", "BuildPage": "build", "SettingsPage": "settings", "SoundsPage": "sounds",
-              "WelcomePage": "welcome", "BootLoaderPage": "bootloader", "InitSystemPage": "initsystem", "AboutPage": "about", "ReviewPage": "review"}
+              "KernelPage": "kernel", "BootLoaderPage": "bootloader", "BootMenuPage": "bootmenu",
+              "BoardPage": "board", "BrandingPage": "branding", "AppearancePage": "wallpaper",
+              "PlymouthPage": "plymouth", "ReadmePage": "readme", "ThemesPage": "themes", "SoundsPage": "sounds",
+              "WelcomePage": "welcome", "ShellBrowserPage": "shellbrowser", "CalamaresPage": "calamares",
+              "TerminalPage": "terminal", "WorkshopPage": "workshop", "ReviewPage": "review", "BuildPage": "build",
+              "SettingsPage": "settings", "AboutPage": "about"}
 
-# The sidebar, in the order of the work. Pages that are used together share one
-# menu (as tabs). (key, menu title, icon, page classes, is a numbered step)
+# The sidebar, in the order of the work: ten steps, each a menu with its pages as tabs.
+# (key, menu title, icon, page classes, is a numbered step)
 SECTIONS = [
-    ("start", "Start", "project", ["project.ProjectPage"], True),
-    ("wizard", "Quick Wizard", "wizard", ["wizard.WizardPage"], False),
-    ("sources", "Repositories", "sources", ["sources.SourcesPage"], True),
-    ("identity", "Identity & Branding", "identity", ["identity.IdentityPage", "branding.BrandingPage"], True),
-    ("users", "Users", "users", ["users.UsersPage"], True),
-    ("language", "Language", "language", ["language.LanguagePage"], True),
-    ("desktop", "Desktop", "desktop", ["desktop.DesktopPage"], True),
-    ("software", "Software", "packages", ["packages.PackagesPage", "flatpak.FlatpakPage",
-                                          "replace_apps.ReplaceAppsPage"], True),
-    ("boot", "Kernel & Boot", "kernel", ["kernel.KernelPage", "bootloader.BootLoaderPage", "initsystem.InitSystemPage",
-                                         "bootmenu.BootMenuPage"],
-     True),
-    ("look", "Look & Feel", "themes", ["themes.ThemesPage", "appearance.AppearancePage", "plymouth.PlymouthPage",
-                                       "sounds.SoundsPage", "welcome.WelcomePage"], True),
+    ("start", "Builder", "builder", ["builder.BuilderPage", "project.ProjectPage", "wizard.WizardPage"], True),
+    ("system", "System", "identity", ["sources.SourcesPage", "identity.IdentityPage", "sysfiles.SystemFilesPage",
+                                      "users.UsersPage", "language.LanguagePage", "initsystem.InitSystemPage"], True),
+    ("software", "Desktop & Apps", "desktop", ["desktop.DesktopPage", "packages.PackagesPage", "flatpak.FlatpakPage",
+                                              "replace_apps.ReplaceAppsPage"], True),
+    ("boot", "Boot", "kernel", ["kernel.KernelPage", "bootloader.BootLoaderPage", "bootmenu.BootMenuPage",
+                                "board.BoardPage"], True),
+    ("branding", "Branding", "branding", ["branding.BrandingPage", "appearance.AppearancePage",
+                                          "plymouth.PlymouthPage", "readme.ReadmePage"], True),
+    ("look", "Look & Feel", "themes", ["themes.ThemesPage", "sounds.SoundsPage", "welcome.WelcomePage",
+                                       "shellbrowser.ShellBrowserPage"], True),
     ("installer", "Installer", "calamares", ["calamares.CalamaresPage"], True),
     ("advanced", "Advanced", "terminal", ["terminal.TerminalPage", "workshop.WorkshopPage"], True),
     ("review", "Review & Apply", "review", ["review.ReviewPage"], True),
@@ -213,7 +212,7 @@ class MainWindow(QMainWindow):
         brand = QLabel("D!sco")
         brand.setObjectName("brand")
         v.addWidget(brand)
-        sub = QLabel("{} · ISO builder for Debian-based distributions".format(VERSION_LABEL))
+        sub = QLabel("{} · Distro Custom: Debian & Devuan for PC, ARM and Raspberry Pi".format(VERSION_LABEL))
         sub.setObjectName("brandSub")
         sub.setWordWrap(True)
         v.addWidget(sub)
@@ -257,7 +256,7 @@ class MainWindow(QMainWindow):
         self.distro_badge.setObjectName("badge")
         lay.addWidget(self.distro_badge)
         lay.addStretch(1)
-        # Where you are in the build: "Step 6 of 14 · Desktop" and a thin progress bar.
+        # Where you are in the build: "Step 3 of 10 · Desktop & Apps" and a thin progress bar.
         box = QVBoxLayout()
         box.setSpacing(4)
         self.step_label = QLabel("")
@@ -567,7 +566,7 @@ class MainWindow(QMainWindow):
             self._told_review = True
             # Not modal: it explains once and never blocks the work.
             box = QMessageBox(QMessageBox.Icon.Information, "Review & Apply",
-                              "'{}' was added to Review & Apply (step 12).\n\nNothing in the image changes yet: "
+                              "'{}' was added to Review & Apply.\n\nNothing in the image changes yet: "
                               "choose everything you want in the steps, then check the list in Review & Apply "
                               "and apply it all at once.".format(name), QMessageBox.StandardButton.Ok, self)
             box.setModal(False)
@@ -768,7 +767,7 @@ class MainWindow(QMainWindow):
         if self.task:
             QMessageBox.information(self, APP_NAME, "Wait until '{}' is finished.".format(self.task.name))
             return False
-        isos = [f for f in projectfiles.iso_files(self.project) if f.suffix == ".iso"]
+        isos = [f for f in projectfiles.iso_files(self.project) if f.suffix in (".iso", ".img", ".xz")]
         if not isos:
             QMessageBox.information(self, APP_NAME, "There is no finished ISO in this project yet.")
             return False
@@ -803,7 +802,7 @@ class MainWindow(QMainWindow):
             self._update_pending()
             self.update_state()
             QMessageBox.information(self, APP_NAME, "Only the ISO is left:\n{}{}".format(
-                "\n".join(str(f) for f in isos_left if f.suffix == ".iso"),
+                "\n".join(str(f) for f in isos_left if f.suffix in (".iso", ".img", ".xz")),
                 "\n\nYour own files stayed: " + ", ".join(own) if own else ""))
             if closing:
                 self.close()

@@ -17,9 +17,9 @@ HIDDEN_KEYS = {"menu_icon", "_settings_revision", "locked", "reserve_workarea",
 class DesktopPage(Page):
     title = "Desktop"
     nav_title = "Desktop"
-    subtitle = ("Step 6 · Choose a desktop environment or window manager and how complete it is (Mini, Compact, "
+    subtitle = ("Choose a desktop environment or window manager and how complete it is (Mini, Compact, "
                 "Full, Full with apps), then the login screen, X11 or Wayland and the compositor. Your changes "
-                "wait in Review & Apply (step 12).")
+                "wait in Review & Apply.")
     icon_names = ("preferences-desktop", "user-desktop", "video-display")
     CHANGES = ("Set up desktop", "Install Eduka-Desktop")
 

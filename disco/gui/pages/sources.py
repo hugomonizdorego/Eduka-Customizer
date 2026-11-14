@@ -45,8 +45,8 @@ class RepoDialog(QDialog):
 class SourcesPage(Page):
     title = "Repositories"
     nav_title = "Repositories"
-    subtitle = ("Step 2 · Where packages come from: the Debian or Devuan release (stable, testing or unstable) "
-                "and extra repositories. Your changes wait in Review & Apply (step 12).")
+    subtitle = ("Where packages come from: the Debian or Devuan release (stable, testing or unstable) "
+                "and extra repositories. Your changes wait in Review & Apply.")
     icon_names = ("software-properties", "preferences-system-network", "network-server")
     CHANGES = ("Set Debian", "Set Devuan")
 

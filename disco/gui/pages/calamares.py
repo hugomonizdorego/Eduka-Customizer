@@ -1,6 +1,8 @@
 """Calamares page: installer branding, images, slideshow, users and passwords,
 partitions, requirements and the raw configuration files."""
 
+from pathlib import Path
+
 from disco.qt.core import Qt
 from disco.qt.widgets import (QCheckBox, QDoubleSpinBox, QFileDialog, QFormLayout, QHBoxLayout, QLineEdit,
                                           QListWidget, QListWidgetItem, QMessageBox, QPlainTextEdit, QSpinBox,
@@ -18,13 +20,27 @@ COLORS = [("sidebarBackground", "Sidebar", "#0f2f27"), ("sidebarText", "Sidebar 
 class CalamaresPage(Page):
     title = "Installer (Calamares)"
     nav_title = "Installer"
-    subtitle = ("Step 10 · The graphical installer that puts your distribution on a computer: name, logo, "
+    subtitle = ("The graphical installer that puts your distribution on a computer: name, logo, "
                 "colors, slides, user and partition rules. 'Check the installer' finds what would make it fail. "
-                "Your changes wait in Review & Apply (step 12).")
+                "Your changes wait in Review & Apply.")
     icon_names = ("calamares", "system-software-install", "drive-harddisk")
-    CHANGES = ('Calamares ', 'Use Calamares branding ')
+    CHANGES = ('Calamares ', 'Use Calamares branding ', 'Own installer packages')
 
     def build(self):
+        k = self.card("Which installer", "Calamares (recommended), no installer (a live system only), or your own "
+                                         ".deb packages, for example an installer of your own.")
+        self.kind = combo([("calamares", "Calamares"), ("none", "None: live system only"),
+                           ("debs", "My own .deb packages")])
+        self.kind.currentIndexChanged.connect(self._kind_changed)
+        from disco.gui.widgets import DropZone
+        self.debs = DropZone("Drop .deb files here (they are kept in the debs folder of the project and installed "
+                             "with their dependencies)", "Debian packages (*.deb)", folders=False)
+        self.debs.dropped.connect(self._add_debs)
+        self.debs_list = label("", "muted")
+        k.add(hbox(label("Installer:"), self.kind, None, button("Save", self.save_kind)))
+        k.add(self.debs)
+        k.add(hbox(self.debs_list, None, button("Install them now", self.install_debs, "primary")))
+
         c = self.card("Installer")
         self.state = label("", "muted")
         self.brand_combo = combo([])
@@ -207,9 +223,53 @@ class CalamaresPage(Page):
     def calamares(self):
         return cal.Calamares(self.project)
 
+    # Which installer ------------------------------------------------------------------
+    def _debs_dir(self):
+        d = Path(self.project.path) / "debs"
+        d.mkdir(exist_ok=True)
+        return d
+
+    def _kind_changed(self):
+        own = self.kind.currentData() == "debs"
+        self.debs.setVisible(own)
+        self.debs_list.setVisible(own)
+
+    def _show_debs(self):
+        debs = sorted(p.name for p in self._debs_dir().glob("*.deb"))
+        self.debs_list.setText("In the debs folder: " + (", ".join(debs) if debs else "nothing yet"))
+
+    def _add_debs(self, paths):
+        import shutil
+        for p in paths:
+            if p.endswith(".deb"):
+                shutil.copy2(p, self._debs_dir() / Path(p).name)
+        self._show_debs()
+
+    def save_kind(self):
+        if not self.project:
+            return
+        self.project.state.setdefault("builder", {})["installer"] = self.kind.currentData()
+        self.project.save()
+        self.main.stage_label.setText("Installer: {}".format(self.kind.currentText()))
+
+    def install_debs(self):
+        debs = sorted(self._debs_dir().glob("*.deb"))
+        if not debs:
+            QMessageBox.information(self, "Own packages", "Drop your .deb files here first.")
+            return
+        from disco.core.apt import Packages
+        proj = self.project
+        self.task("Own installer packages ({})".format(len(debs)), lambda t: Packages(proj).install_debs(debs))
+
     def refresh(self):
         if not self.project:
             return
+        kind = (self.project.state.get("builder") or {}).get("installer") or "calamares"
+        self.kind.blockSignals(True)
+        self.kind.setCurrentIndex(max(0, self.kind.findData(kind)))
+        self.kind.blockSignals(False)
+        self._kind_changed()
+        self._show_debs()
         c = self.calamares()
         ok = c.installed()
         self.state.setText("Calamares {} is installed. Branding: {}.".format(c.version() or "", c.branding_name())

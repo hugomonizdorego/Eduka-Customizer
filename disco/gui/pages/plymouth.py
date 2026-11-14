@@ -14,8 +14,8 @@ from disco.gui.widgets import FilePicker, ImagePreview, Page, button, combo, hbo
 class PlymouthPage(Page):
     title = "Boot Splash (Plymouth)"
     nav_title = "Boot Splash"
-    subtitle = ("Step 9 · The animation shown while the computer starts and shuts down: install a theme, preview "
-                "it, use it, or make one from your logo. Your changes wait in Review & Apply (step 12).")
+    subtitle = ("The animation shown while the computer starts and shuts down: install a theme, preview "
+                "it, use it, or make one from your logo. Your changes wait in Review & Apply.")
     icon_names = ("preferences-desktop-screensaver", "plymouth", "video-display")
     CHANGES = ('Apply Plymouth theme ', 'Create Plymouth theme', 'Install Plymouth', 'Plymouth settings', 'Remove Plymouth theme ')
 

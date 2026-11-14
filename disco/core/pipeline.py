@@ -73,6 +73,9 @@ class Pipeline:
         out.append((ok, why or "{} {} ({}) can be built for {}".format(b["family"].capitalize(), b["suite"],
                                                                       codename, p.name)))
         if b["method"] == "live-build":
+            from disco.core import livebuild
+            lb_ok, lb_why = livebuild.usable()
+            out.append((lb_ok, lb_why))
             if p.output != "iso":
                 out.append((False, "live-build makes ISO images only: use the D!sco method for {}".format(p.name)))
             if b["family"] == "devuan":
@@ -275,6 +278,8 @@ def copy_overlay(src, rootfs):
 
 def _inside(rootfs, rel):
     """rootfs/rel, refusing any path that would leave the system (.. or symbolic links)."""
+    if str(rel) in (".", ""):
+        return rootfs
     target = rootfs / rel
     parent = target.parent.resolve()
     if parent != rootfs and rootfs not in parent.parents:

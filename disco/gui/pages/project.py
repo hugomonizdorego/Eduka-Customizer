@@ -28,7 +28,7 @@ def apply_language(proj, choice):
 class ProjectPage(Page):
     title = "Start"
     nav_title = "Start"
-    subtitle = ("Step 1 · Create a project and choose where your distribution starts from: a Debian live ISO "
+    subtitle = ("Create a project and choose where your distribution starts from: a Debian live ISO "
                 "(the small 'standard' ISO is recommended), another Debian-based ISO, a new Debian base, or this "
                 "computer.")
     icon_names = ("go-home", "user-home")
