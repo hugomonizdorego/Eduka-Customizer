@@ -7,8 +7,11 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-os.environ.setdefault("EDUKA_CUSTOMIZER_CONF", str(ROOT / "tests" / "_no_such.conf"))
-os.environ.setdefault("EDUKA_CUSTOMIZER_DATA", str(ROOT / "data"))
+# Tests never read or write the settings of this computer: a fresh settings file per test run.
+import tempfile  # noqa: E402
+os.environ.setdefault("DISCO_CONF", os.path.join(tempfile.mkdtemp(prefix="disco-test-"), "disco.conf"))
+os.environ.setdefault("DISCO_DATA", str(ROOT / "data"))
+os.environ.setdefault("DISCO_LOG_DIR", tempfile.mkdtemp(prefix="disco-test-log-"))
 
 
 def make_rootfs(base, os_release, debian_version, sources=None, legacy=None):
@@ -51,7 +54,7 @@ FILLED_IDENTITY = {"name": "Edukasaun OS", "id": "edukasaun", "version": "1.0", 
 
 @pytest.fixture
 def blank_project(tmp_path):
-    from eduka_customizer.core.project import Project
+    from disco.core.project import Project
     p = Project.create(tmp_path / "blank")
     make_rootfs_into(p.rootfs)
     return p
@@ -59,7 +62,7 @@ def blank_project(tmp_path):
 
 @pytest.fixture
 def project(tmp_path):
-    from eduka_customizer.core.project import Project
+    from disco.core.project import Project
     p = Project.create(tmp_path / "proj")
     make_rootfs_into(p.rootfs)
     # New projects start without a name; most tests use a distribution that was named.

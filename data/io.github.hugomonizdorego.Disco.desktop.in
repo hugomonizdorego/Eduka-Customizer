@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=D!sco
+GenericName=Distro Custom
+GenericName[id]=Pembuat Distro Kustom
+Comment=Build your own Debian-based distribution: live ISO for PCs, SD-card image for Raspberry Pi
+Comment[id]=Buat distribusi berbasis Debian sendiri: ISO live untuk PC, image kartu SD untuk Raspberry Pi
+Comment[pt]=Crie a sua própria distribuição baseada em Debian como imagem ISO live
+Exec=@PREFIX@/bin/disco-pkexec %f
+Icon=disco
+Terminal=false
+Categories=System;Settings;Development;
+Keywords=iso;img;remaster;live;debian;devuan;distro;distribution;builder;customizer;calamares;raspberry;arm;disco;
+MimeType=application/x-cd-image;application/x-iso9660-image;
+StartupNotify=true
+StartupWMClass=disco

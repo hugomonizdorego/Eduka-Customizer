@@ -1,7 +1,7 @@
 #!/bin/sh
-# distroforge-bootloader - set up the boot loader chosen in DistroForge.
+# distroforge-bootloader - set up the boot loader chosen in D!sco.
 #
-# Written into the image by DistroForge (GPL-3.0-or-later). It runs:
+# Written into the image by D!sco (GPL-3.0-or-later). It runs:
 #   install   in the new system, from the Calamares installer
 #             (shellprocess@distroforge-bootloader), after the disks are mounted;
 #   update    from the kernel and initramfs hooks, after every kernel update;

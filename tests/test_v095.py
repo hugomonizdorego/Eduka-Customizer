@@ -2,7 +2,7 @@
 
 import pytest
 
-from eduka_customizer.core import distro, initsystem
+from disco.core import distro, initsystem
 from tests.conftest import make_rootfs
 from tests.test_v016 import cal, nochroot  # noqa: F401 (fixtures)
 
@@ -13,7 +13,7 @@ DEVUAN_SOURCES = ("Types: deb\nURIs: http://deb.devuan.org/merged\nSuites: excal
 
 
 def test_hostnames():
-    from eduka_customizer.core.branding import Branding, split_hostname
+    from disco.core.branding import Branding, split_hostname
     assert split_hostname("localhost.localdomain", "mylinux") == ("mylinux", "")
     assert split_hostname("localhost", "mylinux") == ("mylinux", "")
     assert split_hostname("PC1.Example.org") == ("pc1", "pc1.example.org")
@@ -29,7 +29,7 @@ def test_hostnames():
 
 
 def test_identity_with_localdomain_applies(project, nochroot):  # noqa: F811
-    from eduka_customizer.core.branding import Branding
+    from disco.core.branding import Branding
     ident = dict(project.state["identity"], hostname="localhost.localdomain")
     Branding(project).apply_identity(ident)
     r = project.rootfs
@@ -58,7 +58,7 @@ def test_devuan_is_detected(tmp_path):
 
 
 def test_devuan_sources(tmp_path):
-    from eduka_customizer.core.apt import Sources, parse_deb822
+    from disco.core.apt import Sources, parse_deb822
     r = make_rootfs(tmp_path / "devuan", DEVUAN, "13.1", None)
     (r / "etc/apt/sources.list.d/old.sources").write_text(DEVUAN_SOURCES)
     (r / "etc/devuan_version").write_text("excalibur\n")
@@ -98,7 +98,7 @@ def test_init_detection_and_blockers(project):
 
 
 def test_switch_to_sysvinit(cal, monkeypatch):  # noqa: F811
-    from eduka_customizer.core import apt, chroot, yamlconf
+    from disco.core import apt, chroot, yamlconf
     r = cal.rootfs
     _status(r, "systemd-sysv", "live-config", "live-config-systemd", "xserver-xorg-core")
     calls = []
@@ -152,7 +152,7 @@ def test_switch_to_sysvinit(cal, monkeypatch):  # noqa: F811
 
 
 def test_recommendations_follow_the_desktop():
-    from eduka_customizer.core import desktop as dsk
+    from disco.core import desktop as dsk
     assert dsk.recommend("xfce")["dm"] == "lightdm" and dsk.recommend("xfce")["session_type"] == "x11"
     kde = dsk.recommend("kde")
     assert kde["dm"] == "sddm" and kde["session_type"] == "wayland" and kde["compositor"] == "kwin"
@@ -164,9 +164,9 @@ def test_recommendations_follow_the_desktop():
 
 GUI_DESKTOP = """
 import sys
-from eduka_customizer.qt.widgets import QApplication
+from disco.qt.widgets import QApplication
 app = QApplication([])
-from eduka_customizer.gui.main_window import MainWindow
+from disco.gui.main_window import MainWindow
 w = MainWindow()
 assert w.open_project(sys.argv[1])
 w.project.mark_all_steps(); w.update_state()
@@ -203,7 +203,7 @@ def test_gui_desktop_follows_choice(project):
 def test_preview_changes_nothing(project):
     import os
     import subprocess
-    from eduka_customizer.core.preview import Preview, leftover
+    from disco.core.preview import Preview, leftover
     if os.geteuid() != 0:
         pytest.skip("needs root for overlayfs")
     p = Preview(project)
@@ -233,11 +233,11 @@ def test_preview_changes_nothing(project):
 
 GUI_PREVIEW = """
 import os, sys, time
-from eduka_customizer.qt.widgets import QApplication, QMessageBox
+from disco.qt.widgets import QApplication, QMessageBox
 QMessageBox.information = staticmethod(lambda *a, **k: QMessageBox.StandardButton.Ok)
 QMessageBox.question = staticmethod(lambda *a, **k: QMessageBox.StandardButton.Yes)
 app = QApplication([])
-from eduka_customizer.gui.main_window import MainWindow
+from disco.gui.main_window import MainWindow
 w = MainWindow()
 assert w.open_project(sys.argv[1])
 w.project.mark_all_steps(); w.update_state(); w._told_review = True
@@ -274,7 +274,7 @@ def test_gui_preview_keep_and_discard(project):
 
 
 def test_resources_plan():
-    from eduka_customizer.core import resources
+    from disco.core import resources
     big = {"cores": 8, "mem_total": 16 << 30, "mem_available": 12 << 30}
     full, bal, light = (resources.plan(m, "zstd", 15, big) for m in ("full", "balanced", "light"))
     assert full["processors"] == 8 and bal["processors"] == 6 and light["processors"] == 4

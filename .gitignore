@@ -2,7 +2,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 debian/eduka-customizer/
-debian/distroforge/
+debian/disco/
 debian/.debhelper/
 debian/files
 debian/*.substvars

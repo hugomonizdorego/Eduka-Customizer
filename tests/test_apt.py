@@ -1,6 +1,6 @@
 import pytest
 
-from eduka_customizer.core import apt
+from disco.core import apt
 
 
 def test_deb822_roundtrip():

@@ -8,10 +8,10 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from eduka_customizer.core import bootedit, bootloader, language, yamlconf  # noqa: E402
-from eduka_customizer.core.calamares import Calamares  # noqa: E402
-from eduka_customizer.core.kernel import Kernels  # noqa: E402
-from eduka_customizer.core.plymouth import Plymouth  # noqa: E402
+from disco.core import bootedit, bootloader, language, yamlconf  # noqa: E402
+from disco.core.calamares import Calamares  # noqa: E402
+from disco.core.kernel import Kernels  # noqa: E402
+from disco.core.plymouth import Plymouth  # noqa: E402
 
 needs_mtools = pytest.mark.skipif(not (shutil.which("mcopy") and shutil.which("mkfs.vfat")),
                                   reason="mtools/dosfstools missing")
@@ -19,7 +19,7 @@ needs_mtools = pytest.mark.skipif(not (shutil.which("mcopy") and shutil.which("m
 
 @pytest.fixture
 def nochroot(monkeypatch):
-    from eduka_customizer.core import apt, chroot
+    from disco.core import apt, chroot
     calls = {"install": [], "remove": [], "run": []}
     monkeypatch.setattr(chroot.Chroot, "run", lambda self, cmd, *a, **k: calls["run"].append(cmd) or 0)
     monkeypatch.setattr(chroot.Chroot, "output", lambda self, *a, **k: "")
@@ -31,8 +31,8 @@ def nochroot(monkeypatch):
 
 
 def png(path, color="#00a879"):
-    from eduka_customizer.core import imaging
-    from eduka_customizer.qt import gui
+    from disco.core import imaging
+    from disco.qt import gui
     imaging._qt()
     img = gui.QImage(64, 48, gui.QImage.Format.Format_ARGB32)
     img.fill(gui.QColor(color))
@@ -206,7 +206,7 @@ def test_language_catalog_and_packs():
 
 
 def test_language_apply(project, nochroot, monkeypatch):
-    from eduka_customizer.core.branding import Branding
+    from disco.core.branding import Branding
     seen = {}
     monkeypatch.setattr(Branding, "apply_locale", lambda self, *a: seen.setdefault("locale", a))
     monkeypatch.setattr(language.Language, "install_packs", lambda self, locales: ["hunspell-pt-pt"])
@@ -482,7 +482,7 @@ def test_grub_defaults(kproject):
 
 
 def test_third_party_kernel_repository(kproject, nochroot, monkeypatch):
-    from eduka_customizer.core import apt
+    from disco.core import apt
     monkeypatch.setattr(apt.Sources, "install_key", lambda self, name, key: self.rootfs / "etc/apt/keyrings/x.gpg")
     k = Kernels(kproject)
     k.install_third_party("liquorix", headers=False)
@@ -501,10 +501,10 @@ def test_third_party_kernel_repository(kproject, nochroot, monkeypatch):
 
 GUI_SMOKE = """
 import sys
-from eduka_customizer.qt.widgets import QApplication
+from disco.qt.widgets import QApplication
 app = QApplication([])
-from eduka_customizer.core.project import Project
-from eduka_customizer.gui.main_window import MainWindow
+from disco.core.project import Project
+from disco.gui.main_window import MainWindow
 w = MainWindow()
 w.project = Project.open(sys.argv[1])
 names = [p.__class__.__name__ for p in w.pages]
@@ -533,7 +533,7 @@ def test_every_data_file_is_installed():
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
     used = set()
-    for py in (root / "eduka_customizer").rglob("*.py"):
+    for py in (root / "disco").rglob("*.py"):
         used |= set(re.findall(r'data_file\("([^"]+)"\)', py.read_text()))
     makefile = (root / "Makefile").read_text()
     missing = [f for f in sorted(used) if "data/" + f not in makefile]

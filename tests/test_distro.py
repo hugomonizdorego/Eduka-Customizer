@@ -1,7 +1,7 @@
 import pytest
 
 from conftest import DEBIAN_TRIXIE, make_rootfs
-from eduka_customizer.core import distro
+from disco.core import distro
 
 
 def test_parse_os_release_quotes_and_escapes():

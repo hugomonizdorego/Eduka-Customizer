@@ -1,0 +1,5 @@
+#!/bin/sh
+# D!sco launcher
+export DISCO_DATA="${DISCO_DATA:-@DATADIR@}"
+export PYTHONPATH="@LIBDIR@${PYTHONPATH:+:$PYTHONPATH}"
+exec /usr/bin/python3 -m disco "$@"

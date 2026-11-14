@@ -10,12 +10,12 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from eduka_customizer.core import assets, catalog, desktop as dsk, distro, profiles  # noqa: E402
+from disco.core import assets, catalog, desktop as dsk, distro, profiles  # noqa: E402
 
 
 def png(path, color="#00a879"):
-    from eduka_customizer.core import imaging
-    from eduka_customizer.qt import gui
+    from disco.core import imaging
+    from disco.qt import gui
     imaging._qt()
     img = gui.QImage(32, 18, gui.QImage.Format.Format_ARGB32)
     img.fill(gui.QColor(color))
@@ -25,7 +25,7 @@ def png(path, color="#00a879"):
 
 @pytest.fixture
 def nochroot(monkeypatch):
-    from eduka_customizer.core import apt, chroot
+    from disco.core import apt, chroot
     calls = []
     monkeypatch.setattr(chroot.Chroot, "run", lambda self, cmd, *a, **k: calls.append(cmd) or 0)
     monkeypatch.setattr(chroot.Chroot, "output", lambda self, *a, **k: "")
@@ -143,10 +143,10 @@ def test_catalog_lists_and_desktop_apps(project):
 
 PACKAGE_BROWSER = """
 import sys
-from eduka_customizer.qt.widgets import QApplication
+from disco.qt.widgets import QApplication
 app = QApplication([])
-from eduka_customizer.qt.core import Qt
-from eduka_customizer.gui.package_browser import PackageBrowser
+from disco.qt.core import Qt
+from disco.gui.package_browser import PackageBrowser
 b = PackageBrowser()
 b.load(sys.argv[1])
 assert len(b.model.rows) == 5, len(b.model.rows)  # 3 available + bash and live-boot (installed)
@@ -223,7 +223,7 @@ def test_profiles():
 
 
 def test_profiles_apply_selected_steps(project, monkeypatch):
-    from eduka_customizer.core import recipe
+    from disco.core import recipe
     seen = []
     monkeypatch.setattr(recipe, "run_step", lambda proj, step, base, build=True: seen.append(step["action"]))
     done = profiles.apply(project, "professional", keys={"desktop", "apps"})
@@ -248,16 +248,16 @@ def test_lmde_and_derivatives_accepted():
 
 
 def test_live_defaults(project):
-    from eduka_customizer.core.users import SUGGESTED_USER, Users
+    from disco.core.users import SUGGESTED_USER, Users
     assert SUGGESTED_USER == ("live", "Live")
     assert project.state["identity"]["live_user"] == "live" and project.state["identity"]["live_fullname"] == "Live"
     assert Users(project).live()["username"] == "user"  # nothing configured: Debian's default
 
 
 def test_menu_icons_exist_for_every_page():
-    from eduka_customizer.core.config import data_file
+    from disco.core.config import data_file
     root = Path(__file__).resolve().parents[1]
-    src = (root / "eduka_customizer/gui/main_window.py").read_text()
+    src = (root / "disco/gui/main_window.py").read_text()
     import re
     keys = re.findall(r'"(\w+Page)": "(\w+)"', src)
     assert len(keys) == 27
@@ -265,11 +265,11 @@ def test_menu_icons_exist_for_every_page():
         assert data_file("icons", "menu", key + ".svg").exists(), key
     assert "GPL-3.0" in (root / "data/icons/menu/README.md").read_text()
     for size in (16, 32, 48, 256):
-        assert (root / "icons/hicolor/{0}x{0}/apps/distroforge.png".format(size)).exists()
+        assert (root / "icons/hicolor/{0}x{0}/apps/disco.png".format(size)).exists()
 
 
 def test_archive_links():
-    from eduka_customizer.core.fsutil import link_stays_inside
+    from disco.core.fsutil import link_stays_inside
     assert link_stays_inside("Tela/48x48/apps/a.svg", "../../scalable/apps/a.svg")
     assert link_stays_inside("ePapirus/64x64", "../Papirus/64x64")
     assert not link_stays_inside("theme/x", "../../etc/passwd")
@@ -282,14 +282,14 @@ def test_new_projects_are_not_edukasaun(blank_project, tmp_path):
     p = blank_project
     ident = p.state["identity"]
     assert ident["name"] == "" and ident["id"] == "" and ident["volume_label"] == "" and ident["hostname"] == ""
-    from eduka_customizer.core import distro, legacy
+    from disco.core import distro, legacy
     p.state["distro"] = distro.detect(p.rootfs).to_dict()
     assert p.display_name() == "Debian GNU/Linux" and p.os_id() == "debian"
     assert p.volume_label() == "DEBIAN_GNU_LINUX"
-    from eduka_customizer.core.isobuild import BuildOptions
+    from disco.core.isobuild import BuildOptions
     o = BuildOptions.from_project(p)
     assert o.title == "Debian GNU/Linux" and o.volume_label == "DEBIAN_GNU_LINUX"
-    from eduka_customizer.core.branding import Branding
+    from disco.core.branding import Branding
     with pytest.raises(ValueError, match="name"):
         Branding(p).apply_identity(dict(ident))
     old = p.rootfs / "etc/live/config.conf.d/50-edukasaun.conf"

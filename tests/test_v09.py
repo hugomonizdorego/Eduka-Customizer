@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from eduka_customizer.core import bootchoice, calamares_check as cc, yamlconf
+from disco.core import bootchoice, calamares_check as cc, yamlconf
 from tests.test_v016 import cal, nochroot  # noqa: F401 (fixtures)
 
 
@@ -86,7 +86,7 @@ def test_syslinux_and_checks(cal, nochroot):  # noqa: F811
     (r / bootchoice.CONF).unlink()
     fails = [x for x in cc.check(cal) if x[0] == "fail"]
     assert any("choose the boot loader again" in x[2] for x in fails)
-    from eduka_customizer.core import fixes
+    from disco.core import fixes
     label, _f = fixes.find("/etc/distroforge-bootloader.conf: missing: choose the boot loader again")
     assert "boot loader" in label.lower()
 
@@ -111,7 +111,7 @@ def test_settings_are_checked():
 
 
 def test_remove_never_takes_the_chosen_loader_or_other_packages(cal, nochroot, monkeypatch):  # noqa: F811
-    from eduka_customizer.core import apt, chroot
+    from disco.core import apt, chroot
     b = bootchoice.BootChoice(cal)
     with pytest.raises(ValueError):
         b.remove("grub")
@@ -137,7 +137,7 @@ def test_grub_settings_go_to_the_grub_drop_in(cal, nochroot):  # noqa: F811
 
 def test_setup_script_is_valid_shell():
     import subprocess
-    from eduka_customizer.core.config import data_file
+    from disco.core.config import data_file
     script = data_file("bootloader", "distroforge-bootloader")
     assert subprocess.run(["sh", "-n", str(script)]).returncode == 0
     out = subprocess.run(["sh", str(script), "nothing"], capture_output=True, text=True)
@@ -145,7 +145,7 @@ def test_setup_script_is_valid_shell():
 
 
 def test_opener_finds_runuser_outside_path(monkeypatch, tmp_path):
-    from eduka_customizer.gui import opener
+    from disco.gui import opener
     sbin = tmp_path / "sbin"
     sbin.mkdir()
     (sbin / "runuser").write_text("#!/bin/sh\n")
@@ -159,10 +159,10 @@ def test_opener_finds_runuser_outside_path(monkeypatch, tmp_path):
 
 
 def test_keep_only_iso(tmp_path, monkeypatch):
-    from eduka_customizer.core import chroot, projectfiles
-    from eduka_customizer.core.project import Project
+    from disco.core import chroot, projectfiles
+    from disco.core.project import Project
     p = Project.create(tmp_path / "proj")
-    assert (p.path / "README.txt").read_text().startswith("This is a DistroForge project folder")
+    assert (p.path / "README.txt").read_text().startswith("This is a D!sco project folder")
     (p.rootfs / "etc").mkdir(parents=True)
     (p.rootfs / "etc/hostname").write_text("x\n")
     (p.path / "hooks").mkdir()
@@ -190,10 +190,10 @@ def test_feedback_report_and_sending(tmp_path, monkeypatch):
     import http.server
     import tarfile
     import threading
-    from eduka_customizer.core import feedback, log as logmod
+    from disco.core import feedback, log as logmod
     monkeypatch.setattr(logmod, "DEBUG_DIR", str(tmp_path / "logs"))
     (tmp_path / "logs").mkdir()
-    (tmp_path / "logs/distroforge.log").write_text("line\n" * 10)
+    (tmp_path / "logs/disco.log").write_text("line\n" * 10)
     shot = tmp_path / "shot.png"
     shot.write_bytes(b"\x89PNG....")
     with pytest.raises(ValueError):
@@ -203,7 +203,7 @@ def test_feedback_report_and_sending(tmp_path, monkeypatch):
     report = feedback.make_report("idea", "Dark blue theme", "Please add one.", "me@example.org", [shot], True)
     with tarfile.open(report) as tf:
         names = tf.getnames()
-    assert {"report.json", "files/shot.png", "logs/distroforge.log"} <= set(names)
+    assert {"report.json", "files/shot.png", "logs/disco.log"} <= set(names)
     assert feedback.waiting() == [report]
     # The e-mail address never appears as text in the program.
     src = (feedback.__file__)

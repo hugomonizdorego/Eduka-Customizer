@@ -1,4 +1,4 @@
-from eduka_customizer.core import bootloader, iso
+from disco.core import bootloader, iso
 
 GRUB = '''set timeout=30
 menuentry "Live system (amd64)" --hotkey=l {

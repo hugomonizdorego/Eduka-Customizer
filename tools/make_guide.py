@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the PDF user guide docs/DistroForge-Guide.pdf from the text below and
+"""Write the PDF user guide docs/Disco-Guide.pdf from the text below and
 docs/screenshots.
 
     QT_QPA_PLATFORM=offscreen python3 tools/make_guide.py
@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from eduka_customizer import APP_NAME, AUTHOR, DONATE_URL, FACEBOOK_URL, HOMEPAGE, VERSION_LABEL  # noqa: E402
+from disco import APP_NAME, AUTHOR, DONATE_URL, FACEBOOK_URL, HOMEPAGE, VERSION_LABEL  # noqa: E402
 
 SHOTS = ROOT / "docs" / "screenshots"
 
@@ -22,7 +22,7 @@ SHOTS = ROOT / "docs" / "screenshots"
 # Text may hold <b>, <i> and <code>; everything else is escaped.
 
 EN = {
-    "file": "DistroForge-Guide.pdf",
+    "file": "Disco-Guide.pdf",
     "title": "User Guide",
     "lead": "Build your own Debian-based Linux distribution as a live ISO, step by step.",
     "toc": "Contents",
@@ -37,7 +37,7 @@ EN = {
                       "a new Debian base system (stable, testing or sid) made with mmdebstrap/debootstrap",
                       "a copy of this computer (snapshot)"]),
             "Devuan (Debian without systemd) and its derivatives, such as Refracta, Exe GNU/Linux and Gnuinos, "
-            "work too: DistroForge then writes Devuan's repositories (deb.devuan.org) and can bootstrap a new "
+            "work too: D!sco then writes Devuan's repositories (deb.devuan.org) and can bootstrap a new "
             "Devuan base.",
             "Ubuntu-based ISOs (Ubuntu, Linux Mint's Ubuntu edition, Pop!_OS, elementary OS, Zorin OS) are not "
             "supported: {app} is made for Debian-based distributions. {app} itself installs on Debian, Debian "
@@ -50,10 +50,10 @@ EN = {
         ]),
         ("Installing and starting", [
             "Install the .deb package (it pulls in every tool it needs):",
-            ("code", "sudo apt install ./distroforge_0.9.5~beta_all.deb"),
-            "Start it from the application menu (<b>DistroForge</b>) or a terminal:",
-            ("code", "distroforge            # the window (asks for the admin password)\n"
-                     "sudo distroforge --help  # command line"),
+            ("code", "sudo apt install ./disco_0.9.5~beta_all.deb"),
+            "Start it from the application menu (<b>D!sco</b>) or a terminal:",
+            ("code", "disco            # the window (asks for the admin password)\n"
+                     "sudo disco --help  # command line"),
             "The old command <code>eduka-customizer</code> still works and opens {app}. Old settings in "
             "/etc/eduka-customizer are read automatically.",
             "Needs: Debian 12 or newer (or a derivative), 4 GB RAM, free disk space of three times the ISO size.",
@@ -190,7 +190,7 @@ EN = {
             "closing the window after a build) deletes everything of the project but the ISO and its checksum "
             "files, which move into the project folder. Nothing is deleted while anything is still mounted inside "
             "the project, and files of your own in the folder stay. The command line does the same with "
-            "<code>distroforge clean --keep-iso</code>.",
+            "<code>disco clean --keep-iso</code>.",
         ]),
         ("Testing and writing to USB", [
             "After the build, <b>Boot ISO</b> in the <b>Test in a virtual machine</b> card boots the ISO with QEMU "
@@ -202,18 +202,18 @@ EN = {
         ("Command line", [
             "Every step is also available in a terminal, in the order of the work. The commands apply each change "
             "at once (Review & Apply is only in the window).",
-            ("code", "sudo distroforge new --iso debian-live.iso ~/mylinux\n"
+            ("code", "sudo disco new --iso debian-live.iso ~/mylinux\n"
                      "cd ~/mylinux\n"
-                     "sudo distroforge brand identity name=\"My Linux\" version=1.0\n"
-                     "sudo distroforge apt install vlc gimp\n"
-                     "sudo distroforge boot-loader list\n"
-                     "sudo distroforge boot-loader set systemd-boot TIMEOUT=3\n"
-                     "sudo distroforge boot-loader use systemd-boot\n"
-                     "sudo distroforge check --fix\n"
-                     "sudo distroforge build --target-size 700\n"
-                     "sudo distroforge test\n"
-                     "sudo distroforge clean --keep-iso"),
-            "<code>distroforge --help</code> lists the commands by step; <code>distroforge COMMAND --help</code> "
+                     "sudo disco brand identity name=\"My Linux\" version=1.0\n"
+                     "sudo disco apt install vlc gimp\n"
+                     "sudo disco boot-loader list\n"
+                     "sudo disco boot-loader set systemd-boot TIMEOUT=3\n"
+                     "sudo disco boot-loader use systemd-boot\n"
+                     "sudo disco check --fix\n"
+                     "sudo disco build --target-size 700\n"
+                     "sudo disco test\n"
+                     "sudo disco clean --keep-iso"),
+            "<code>disco --help</code> lists the commands by step; <code>disco COMMAND --help</code> "
             "explains one command.",
         ]),
         ("Common problems and feedback", [
@@ -221,11 +221,11 @@ EN = {
                       "install GRUB from the ISO pool during installation. If it shows, press Fix automatically.",
                       "<b>Half-installed packages</b> — Fix automatically runs dpkg --configure -a and "
                       "apt-get -f install.",
-                      "<b>Not enough disk space</b> — remove caches with <code>sudo distroforge clean</code>, or "
+                      "<b>Not enough disk space</b> — remove caches with <code>sudo disco clean</code>, or "
                       "keep only the ISO of finished projects.",
                       "<b>No internet</b> — installing packages and Flatpaks needs internet; all other edits work "
                       "offline.",
-                      "<b>Log</b> — every message is in the log panel and in /tmp/distroforge/distroforge.log."]),
+                      "<b>Log</b> — every message is in the log panel and in /tmp/disco/disco.log."]),
             "<b>Send feedback</b> (in the sidebar, in Settings, and in every error message) sends a bug report, an "
             "error, an idea or a question to the developers, with screenshots or other files and, if you agree, "
             "the logs. Without internet the report is kept and sent the next time {app} starts.",
@@ -258,7 +258,7 @@ def fmt(text):
 
 def img(path, width):
     """<img> with both sizes, so the layout reserves exactly the scaled picture."""
-    from eduka_customizer.qt.gui import QImage
+    from disco.qt.gui import QImage
     q = QImage(str(path))
     if q.isNull():
         raise SystemExit("missing picture: {}".format(path))
@@ -268,7 +268,7 @@ def img(path, width):
 
 def to_html(guide, width):
     parts = ["<div align='center' style='line-height: 100%'>",
-             "<br>{}<br>".format(img(ROOT / "icons/hicolor/256x256/apps/distroforge.png", 140)),
+             "<br>{}<br>".format(img(ROOT / "icons/hicolor/256x256/apps/disco.png", 140)),
              "<h1 style='font-size: 34pt'>{}</h1>".format(APP_NAME),
              "<p style='font-size: 18pt'>{} · {}</p>".format(guide["title"], VERSION_LABEL),
              "<p style='font-size: 12pt'>{}</p><br>".format(fmt(guide["lead"])),
@@ -294,8 +294,8 @@ def to_html(guide, width):
 
 
 def write(guide, out):
-    from eduka_customizer.qt.core import QMarginsF, QSizeF
-    from eduka_customizer.qt.gui import QFont, QPageLayout, QPageSize, QPdfWriter, QTextDocument
+    from disco.qt.core import QMarginsF, QSizeF
+    from disco.qt.gui import QFont, QPageLayout, QPageSize, QPdfWriter, QTextDocument
     pdf = QPdfWriter(str(out))
     pdf.setResolution(96)
     pdf.setTitle("{} {}".format(APP_NAME, guide["title"]))
@@ -314,7 +314,7 @@ def write(guide, out):
 
 
 def main():
-    from eduka_customizer.qt.gui import QGuiApplication
+    from disco.qt.gui import QGuiApplication
     app = QGuiApplication(sys.argv)  # noqa: F841 (fonts and images need it)
     write(EN, ROOT / "docs" / EN["file"])
 

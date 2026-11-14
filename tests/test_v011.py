@@ -6,16 +6,16 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from eduka_customizer.core import debpkg, desktop, imaging  # noqa: E402
-from eduka_customizer.core.distrobrand import BrandingSpec, DistroBranding  # noqa: E402
-from eduka_customizer.core.themes import Themes  # noqa: E402
+from disco.core import debpkg, desktop, imaging  # noqa: E402
+from disco.core.distrobrand import BrandingSpec, DistroBranding  # noqa: E402
+from disco.core.themes import Themes  # noqa: E402
 
 needs_dpkg = pytest.mark.skipif(not shutil.which("dpkg-deb"), reason="dpkg-deb missing")
 
 
 @pytest.fixture
 def nochroot(monkeypatch):
-    from eduka_customizer.core import apt, chroot
+    from disco.core import apt, chroot
     monkeypatch.setattr(chroot.Chroot, "run", lambda self, *a, **k: 0)
     monkeypatch.setattr(chroot.Chroot, "output", lambda self, *a, **k: "")
     monkeypatch.setattr(chroot.Chroot, "__enter__", lambda self: self)
@@ -24,7 +24,7 @@ def nochroot(monkeypatch):
 
 
 def png(path, w=64, h=64, color="#00a879"):
-    from eduka_customizer.qt import gui
+    from disco.qt import gui
     imaging._qt()
     img = gui.QImage(w, h, gui.QImage.Format.Format_ARGB32)
     img.fill(gui.QColor(color))
@@ -74,7 +74,7 @@ def test_install_path_escape(tmp_path):
 
 @needs_dpkg
 def test_distro_branding_generate(project, tmp_path):
-    from eduka_customizer.core import distro
+    from disco.core import distro
     project.state["distro"] = distro.detect(project.rootfs).to_dict()
     r = project.rootfs
     (r / "usr/share/pixmaps").mkdir(parents=True)
@@ -175,7 +175,7 @@ def test_catalog_login_screens():
 
 
 def test_workshop_verify_detects_missing(project):
-    from eduka_customizer.core.workshop import Workshop
+    from disco.core.workshop import Workshop
     r = project.rootfs
     info = r / "var/lib/dpkg/info"
     info.mkdir(parents=True)
@@ -190,7 +190,7 @@ def test_workshop_verify_detects_missing(project):
 
 
 def test_log_dir_safe(tmp_path, monkeypatch):
-    from eduka_customizer.core import log
+    from disco.core import log
     d = tmp_path / "logs"
     assert log._safe_dir(str(d)) == str(d)
     assert oct(os.stat(d).st_mode & 0o7777) == "0o1777"

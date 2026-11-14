@@ -2,8 +2,8 @@
 
 import pytest
 
-from eduka_customizer.core import calamares_check as cc
-from eduka_customizer.core import fixes, preflight
+from disco.core import calamares_check as cc
+from disco.core import fixes, preflight
 from tests.test_v016 import cal, nochroot  # noqa: F401 (fixtures)
 
 
@@ -46,7 +46,7 @@ def test_auto_fix_calamares(cal, nochroot):  # noqa: F811
     done, failed = preflight.auto_fix(cal, results)
     assert not failed, failed
     assert not [x for x in cc.check(cal) if x[0] == "fail"], cc.check(cal)
-    from eduka_customizer.core.calamares import Calamares
+    from disco.core.calamares import Calamares
     c = Calamares(cal)
     ops = c.read("packages")["operations"]
     assert {"remove": ["live-boot"], "try_remove": ["not-there"]} in ops
@@ -56,10 +56,10 @@ def test_auto_fix_calamares(cal, nochroot):  # noqa: F811
 
 GUI_REVIEW = """
 import sys
-from eduka_customizer.qt.widgets import QApplication
+from disco.qt.widgets import QApplication
 app = QApplication([])
-from eduka_customizer.core.project import Project
-from eduka_customizer.gui.main_window import MainWindow
+from disco.core.project import Project
+from disco.gui.main_window import MainWindow
 w = MainWindow()
 assert w.open_project(sys.argv[1])
 w.project.mark_all_steps(); w.update_state()
@@ -89,7 +89,7 @@ def test_review_and_apply_collects_changes(tmp_path):
     import subprocess
     import sys
     from pathlib import Path
-    from eduka_customizer.core.project import Project
+    from disco.core.project import Project
     from tests.conftest import make_rootfs_into
     p = Project.create(tmp_path / "gui")
     make_rootfs_into(p.rootfs)
@@ -104,7 +104,7 @@ def test_review_and_apply_collects_changes(tmp_path):
 # ISO size targets ---------------------------------------------------------------------------------
 
 def test_iso_size_plan():
-    from eduka_customizer.core import isosize
+    from disco.core import isosize
     MB = isosize.MB
     est = {"system": 1000 * MB, "ratio": 0.3, "other": 60 * MB,
            "sizes": {(c, l): int(1000 * MB * 0.3 * f) + 60 * MB for c, l, f, _s in isosize.METHODS}}
@@ -120,7 +120,7 @@ def test_iso_size_plan():
 
 
 def test_iso_size_estimate_and_savers(project, tmp_path):
-    from eduka_customizer.core import cleanup, isosize
+    from disco.core import cleanup, isosize
     r = project.rootfs
     doc = r / "usr/share/doc/foo"
     doc.mkdir(parents=True)

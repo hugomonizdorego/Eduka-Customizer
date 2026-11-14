@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from eduka_customizer.core import gsettings, sounds
+from disco.core import gsettings, sounds
 
 
 @pytest.fixture
 def nochroot(monkeypatch):
-    from eduka_customizer.core import apt, chroot
+    from disco.core import apt, chroot
     calls = []
     monkeypatch.setattr(chroot.Chroot, "run", lambda self, cmd, *a, **k: calls.append(list(cmd)) or 0)
     monkeypatch.setattr(chroot.Chroot, "output", lambda self, *a, **k: "")
@@ -115,7 +115,7 @@ def test_sounds_reject_non_audio(project, tmp_path):
 # Welcome screen ------------------------------------------------------------------------------
 
 def test_welcome_markup_and_validation(project):
-    from eduka_customizer.core import welcome
+    from disco.core import welcome
     assert welcome.to_markup("Hi **you** & *me* [site](https://e.org) <x>") == \
         'Hi <b>you</b> &amp; <i>me</i> <a href="https://e.org">site</a> &lt;x&gt;'
     d = welcome.default_design(project)
@@ -130,7 +130,7 @@ def test_welcome_markup_and_validation(project):
 
 
 def test_welcome_apply_and_remove(project, nochroot, tmp_path):
-    from eduka_customizer.core import welcome
+    from disco.core import welcome
     from tests.test_v012 import png
     r = project.rootfs
     d = welcome.default_design(project)
@@ -155,14 +155,14 @@ def test_welcome_apply_and_remove(project, nochroot, tmp_path):
 
 def test_welcome_program_compiles():
     import py_compile
-    from eduka_customizer.core import welcome
+    from disco.core import welcome
     py_compile.compile(str(welcome.app_source()), doraise=True)
 
 
 # Identity from the ISO -------------------------------------------------------------------------
 
 def test_identity_and_artwork_from_image(blank_project, tmp_path):
-    from eduka_customizer.core import imageinfo
+    from disco.core import imageinfo
     from tests.test_v012 import png
     p = blank_project
     r = p.rootfs
@@ -191,7 +191,7 @@ def test_identity_and_artwork_from_image(blank_project, tmp_path):
 # Editions in each desktop's own words ----------------------------------------------------------
 
 def test_edition_names_per_desktop(project):
-    from eduka_customizer.core import desktop as dsk
+    from disco.core import desktop as dsk
     assert dsk.edition_name("kde", "full_apps")[0] == "KDE Plasma with KDE Gear"
     assert dsk.edition_name("xfce", "full_apps")[0] == "Xfce with Goodies"
     assert dsk.edition_name("gnome", "compact")[0] == "GNOME Core"
@@ -211,7 +211,7 @@ def test_edition_names_per_desktop(project):
 
 def test_flathub_api_by_category(monkeypatch):
     import io
-    from eduka_customizer.core import flathub
+    from disco.core import flathub
     pages = {"Office": [{"app_id": "org.libreoffice.LibreOffice", "name": "LibreOffice", "summary": "Office",
                          "main_categories": "Office"}],
              "AudioVideo": [{"app_id": "org.videolan.VLC", "name": "VLC", "summary": "Media player",
@@ -237,7 +237,7 @@ def test_flathub_api_by_category(monkeypatch):
 
 def test_flathub_appstream(tmp_path):
     import gzip
-    from eduka_customizer.core import flathub
+    from disco.core import flathub
     xml = """<?xml version="1.0"?>
 <components origin="flathub">
   <component type="desktop-application"><id>org.gimp.GIMP</id><name>GNU Image Manipulation Program</name>
@@ -266,7 +266,7 @@ def test_flathub_appstream(tmp_path):
 # Replace apps for everyone ---------------------------------------------------------------------
 
 def test_replace_terminal_for_everyone(project, nochroot):
-    from eduka_customizer.core import replace
+    from disco.core import replace
     from tests.test_v015 import _pkg
     r = project.rootfs
     _pkg(r, "tilix", ["/usr/bin/tilix", "/usr/share/applications/com.gexperts.Tilix.desktop"],
@@ -295,8 +295,8 @@ def test_replace_terminal_for_everyone(project, nochroot):
 # Kernel repositories from the terminal ---------------------------------------------------------
 
 def test_kernel_console_temporary_repositories(project, monkeypatch):
-    from eduka_customizer.core import chroot
-    from eduka_customizer.core.kernel import Kernels
+    from disco.core import chroot
+    from disco.core.kernel import Kernels
     r = project.rootfs
     (r / "etc/apt/keyrings").mkdir(parents=True, exist_ok=True)
 
@@ -341,8 +341,8 @@ def test_kernel_console_temporary_repositories(project, monkeypatch):
 # Look & Feel per desktop -----------------------------------------------------------------------
 
 def test_theme_packs_fit_the_desktop():
-    from eduka_customizer.core import desktop as dsk
-    from eduka_customizer.core import themes
+    from disco.core import desktop as dsk
+    from disco.core import themes
     packs = {p["package"]: p for p in themes.packs_catalog()}
     kde, xfce, gnome, sway = (dsk.desktop(i) for i in ("kde", "xfce", "gnome", "sway"))
     fits = lambda pkg, de: themes.pack_fits(packs[pkg], de)  # noqa: E731
@@ -359,7 +359,7 @@ def test_theme_packs_fit_the_desktop():
 
 
 def test_window_themes(project, nochroot):
-    from eduka_customizer.core.themes import Themes
+    from disco.core.themes import Themes
     r = project.rootfs
     for name, sub in (("Greybird", "xfwm4"), ("Numix", "openbox-3"), ("Arc", "cinnamon")):
         (r / "usr/share/themes" / name / sub).mkdir(parents=True)
@@ -457,7 +457,7 @@ def cal(project):
 
 
 def test_calamares_check_clean(cal):
-    from eduka_customizer.core import calamares_check as cc
+    from disco.core import calamares_check as cc
     res = cc.check(cal)
     fails = [x for x in res if x[0] == "fail"]
     assert not fails, fails
@@ -467,7 +467,7 @@ def test_calamares_check_clean(cal):
 
 
 def test_calamares_check_finds_problems(cal):
-    from eduka_customizer.core import calamares_check as cc
+    from disco.core import calamares_check as cc
     r = cal.rootfs
     etc = r / "etc/calamares"
     desc = etc / "branding/debian/branding.desc"
@@ -490,7 +490,7 @@ def test_calamares_check_finds_problems(cal):
 
 
 def test_calamares_text_slides(cal, tmp_path):
-    from eduka_customizer.core.calamares import Calamares
+    from disco.core.calamares import Calamares
     from tests.test_v012 import png
     c = Calamares(cal)
     c.set_branding(slides=[{"title": 'Say "hello"', "text": "Line one\n**Bold** and [web](https://e.org)",
@@ -502,7 +502,7 @@ def test_calamares_text_slides(cal, tmp_path):
     assert (cal.rootfs / "etc/calamares/branding/debian/slide-02.png").exists()
     data = c.slide_data()
     assert data[0]["title"] == 'Say "hello"' and data[1]["image"].endswith("slide-02.png")
-    from eduka_customizer.core import calamares_check as cc
+    from disco.core import calamares_check as cc
     assert not [x for x in cc.check(cal) if x[0] == "fail"]
     # Applying the same slides again (their images are the current files) keeps them.
     c.set_branding(slides=data, slide_seconds=5)
@@ -557,7 +557,7 @@ def _theme(base, name="Vimix", **extra):
 
 
 def test_grub_theme_check_and_use(project, tmp_path):
-    from eduka_customizer.core import grubtheme
+    from disco.core import grubtheme
     cfg = _grub(project)
     good = _theme(tmp_path / "good")
     problems, warnings, info = grubtheme.check(good)
@@ -578,7 +578,7 @@ def test_grub_theme_check_and_use(project, tmp_path):
 
 
 def test_grub_theme_rejected(project, tmp_path):
-    from eduka_customizer.core import grubtheme
+    from disco.core import grubtheme
     _grub(project)
     bad = _theme(tmp_path / "bad", "Svg")
     (bad / "theme.txt").write_text('desktop-image: "background.svg"\n+ boot_menu { item_font = "Noto 12" '
@@ -596,7 +596,7 @@ def test_grub_theme_rejected(project, tmp_path):
 
 
 def test_grub_menu_designer(project):
-    from eduka_customizer.core import grubmenu
+    from disco.core import grubmenu
     cfg = _grub(project)
     gm = grubmenu.GrubMenu(project)
     d = gm.design()
@@ -624,7 +624,7 @@ def test_grub_menu_designer(project):
 
 
 def test_boot_loader_choice(cal, nochroot):
-    from eduka_customizer.core import bootchoice
+    from disco.core import bootchoice
     r = cal.rootfs
     b = bootchoice.BootChoice(cal)
     opts = {o[0]: o for o in b.options()}

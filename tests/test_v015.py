@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from eduka_customizer.core import desktop as dsk
-from eduka_customizer.core import preflight, profiles, replace
-from eduka_customizer.core.project import Project
+from disco.core import desktop as dsk
+from disco.core import preflight, profiles, replace
+from disco.core.project import Project
 
 
 @pytest.fixture
 def nochroot(monkeypatch):
-    from eduka_customizer.core import apt, chroot
+    from disco.core import apt, chroot
     calls = []
     monkeypatch.setattr(chroot.Chroot, "run", lambda self, cmd, *a, **k: calls.append(list(cmd)) or 0)
     monkeypatch.setattr(chroot.Chroot, "output", lambda self, *a, **k: "")
@@ -62,7 +62,7 @@ def test_edition_plan():
 
 
 def test_install_edition(project, nochroot, monkeypatch):
-    from eduka_customizer.core import apt
+    from disco.core import apt
     monkeypatch.setattr(apt.Packages, "available", lambda self, names: set(names) - {"krita"})
     monkeypatch.setattr(dsk.DesktopManager, "set_display_manager", lambda self, dm: None)
     monkeypatch.setattr(dsk.DesktopManager, "set_default_session", lambda self, s: None)
@@ -160,7 +160,7 @@ def test_replace_browser(project, nochroot):
 
 
 def test_removal_keeps_the_desktop(project, monkeypatch):
-    from eduka_customizer.core import apt, chroot
+    from disco.core import apt, chroot
     calls = []
     sim = "Remv firefox-esr [1]\nRemv gnome-core [1]\nRemv task-gnome-desktop [3]\n"
     deps = ("gnome-core\n  Depends: gnome-shell\n  Depends: nautilus\n |Depends: firefox-esr\n"
@@ -236,10 +236,10 @@ def test_steps_state(tmp_path):
 
 GUI_STEPS = """
 import sys
-from eduka_customizer.qt.widgets import QApplication
+from disco.qt.widgets import QApplication
 app = QApplication([])
-from eduka_customizer.core.project import Project
-from eduka_customizer.gui.main_window import MainWindow, SECTIONS
+from disco.core.project import Project
+from disco.gui.main_window import MainWindow, SECTIONS
 w = MainWindow()
 keys = [s.key for s in w.sections]
 assert keys == [s[0] for s in SECTIONS]
@@ -280,19 +280,19 @@ def test_gui_steps_and_merged_menus(tmp_path):
 def test_cli_check_and_apps(project):
     env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
     project.save()
-    res = subprocess.run([sys.executable, "-m", "eduka_customizer", "--project", str(project.path), "check"],
+    res = subprocess.run([sys.executable, "-m", "disco", "--project", str(project.path), "check"],
                          capture_output=True, text=True, env=env, timeout=120)
     assert "Distribution" in res.stdout and "problem(s)" in res.stdout, res.stderr
-    res = subprocess.run([sys.executable, "-m", "eduka_customizer", "apps", "roles"], capture_output=True,
+    res = subprocess.run([sys.executable, "-m", "disco", "apps", "roles"], capture_output=True,
                          text=True, env=env, timeout=60)
     assert res.returncode == 0 and "browser" in res.stdout
-    res = subprocess.run([sys.executable, "-m", "eduka_customizer", "desktop", "catalog"], capture_output=True,
+    res = subprocess.run([sys.executable, "-m", "disco", "desktop", "catalog"], capture_output=True,
                          text=True, env=env, timeout=60)
     assert "full_apps" in res.stdout and "hyprland" in res.stdout
 
 
 def test_old_edukasaun_settings_section(tmp_path):
-    from eduka_customizer.core.config import Settings
+    from disco.core.config import Settings
     conf = tmp_path / "old.conf"
     conf.write_text("[edukasaun]\nrepo = /srv/eduka-desktop\nref = v2\n")
     s = Settings(conf)

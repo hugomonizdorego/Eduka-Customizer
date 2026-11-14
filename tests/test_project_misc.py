@@ -2,12 +2,12 @@ import json
 
 import pytest
 
-from eduka_customizer.core import cleanup, isobuild, recipe
-from eduka_customizer.core.branding import Branding
-from eduka_customizer.core.desktop import DesktopManager, catalog, sessions
-from eduka_customizer.core.eduka_desktop import EdukaDesktop, parse_defaults
-from eduka_customizer.core.flatpak import Flatpak, check_ids
-from eduka_customizer.core.project import Project, ProjectLocked
+from disco.core import cleanup, isobuild, recipe
+from disco.core.branding import Branding
+from disco.core.desktop import DesktopManager, catalog, sessions
+from disco.core.eduka_desktop import EdukaDesktop, parse_defaults
+from disco.core.flatpak import Flatpak, check_ids
+from disco.core.project import Project, ProjectLocked
 
 COMMON = '''
 from pathlib import Path
@@ -161,7 +161,7 @@ def test_identity_files(project, monkeypatch):
 
 
 def test_cleanup_files(project, monkeypatch):
-    from eduka_customizer.core import chroot
+    from disco.core import chroot
     monkeypatch.setattr(chroot.Chroot, "run", lambda self, *a, **k: 0)
     monkeypatch.setattr(chroot.Chroot, "__enter__", lambda self: self)
     monkeypatch.setattr(chroot.Chroot, "__exit__", lambda self, *a: False)

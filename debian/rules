@@ -12,12 +12,12 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 endif
 
 override_dh_auto_install:
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/distroforge PREFIX=/usr
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/disco PREFIX=/usr
 	# Documentation and screenshots for developers who try the package.
-	install -d $(CURDIR)/debian/distroforge/usr/share/doc/distroforge/screenshots
+	install -d $(CURDIR)/debian/disco/usr/share/doc/disco/screenshots
 	install -m644 README.md CHANGELOG.md docs/manual.md docs/PANDUAN.md docs/ROADMAP.md \
-		$(CURDIR)/debian/distroforge/usr/share/doc/distroforge/
-	install -m644 docs/screenshots/*.png $(CURDIR)/debian/distroforge/usr/share/doc/distroforge/screenshots/
+		$(CURDIR)/debian/disco/usr/share/doc/disco/
+	install -m644 docs/screenshots/*.png $(CURDIR)/debian/disco/usr/share/doc/disco/screenshots/
 
 # The package is not compressed: whatever its size, it is built as it is.
 override_dh_builddeb:
