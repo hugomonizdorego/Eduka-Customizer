@@ -152,9 +152,14 @@ class BuilderPage(Page):
         self.platform = combo([(p.id, "{} — {}{}".format(p.name, p.arch, " (experimental)" if p.experimental
                                                                          else "")) for p in platforms.PLATFORMS])
         self.platform.currentIndexChanged.connect(self._platform_changed)
-        f.addRow("Platform:", self.platform)
         self.platform_note = label("", "muted")
-        f.addRow("", self.platform_note)
+        box = QWidget()
+        bl = QVBoxLayout(box)
+        bl.setContentsMargins(0, 0, 0, 0)
+        bl.setSpacing(4)
+        bl.addWidget(self.platform)
+        bl.addWidget(self.platform_note)
+        f.addRow("Platform:", box)
         self.family = combo([("debian", "Debian"), ("devuan", "Devuan (without systemd)")])
         self.suite = combo(SUITES)
         self.family.currentIndexChanged.connect(self._family_changed)
@@ -244,7 +249,10 @@ class BuilderPage(Page):
 
     # Presets ------------------------------------------------------------------------------------------
     def _fill_presets(self, select=None):
-        keep = select or self.preset.currentText()
+        own = (self.project.state.get("builder") or {}).get("preset") if self.project else None
+        keep = select or self.preset.currentText() or own or ""
+        if not select and own and not self.preset.currentText():
+            keep = own
         self.preset.blockSignals(True)
         self.preset.clear()
         for name, path, builtin in presets.available():
@@ -386,6 +394,9 @@ class BuilderPage(Page):
     def project_changed(self):
         if self.project:
             self.folder.setText(str(self.project.path))
+            own = (self.project.state.get("builder") or {}).get("preset")
+            if own:
+                self._fill_presets(own)
             b = self.project.state.get("builder")
             if b:
                 self._show(b)

@@ -1,7 +1,26 @@
 # Roadmap & rekomendasi
 
-Status: **0.9 Beta** (Oktober 2026), menuju 1.0. Daftar ini adalah usulan langkah
-berikutnya untuk pengembang DistroForge (dulu Eduka-Customizer), diurutkan menurut manfaatnya.
+Status: **D!sco 0.11** (November 2026). Nomor versi dimulai lagi dengan nama baru
+D!sco (Distro Custom); sebelumnya DistroForge (0.9 Beta) dan Eduka-Customizer (sampai 0.17 Alpha).
+Daftar ini adalah usulan langkah berikutnya, diurutkan menurut manfaatnya.
+
+## Selesai di D!sco 0.11
+Halaman **Builder** gaya distro builder klasik (preset, daftar paket bercentang, katalog aplikasi,
+Prepare → Build base → Install packages → Overlay & scripts → Make image, Build all); **ARM64,
+Raspberry Pi (1/Zero sampai 5) dan RISC-V** lewat qemu-user; **image kartu SD** seperti image Debian
+(RASPIFIRM + RASPIROOT, raspi-firmware, first boot, sysconf.txt); ISO UEFI ARM64/RISC-V dengan partisi
+EFI GPT; rute **live-build**; editor **file sistem** (os-release, lsb-release, issue, hostname, hosts,
+motd, /etc/skel, GRUB_BACKGROUND); **Terminal & Browser** (MOTD, PS1, kebijakan Firefox ESR/Chromium);
+**dokumen PDF** di desktop; pilihan installer (Calamares, tanpa installer, paket .deb sendiri); 10 langkah;
+sekitar 50 perbaikan dari review kode; panduan PDF langkah demi langkah.
+
+## Menuju D!sco 0.12
+1. **Uji di perangkat nyata**: Raspberry Pi 3/4/400 dan 5 dengan image dari mirror Debian asli
+   (lingkungan pengembangan 0.11 tidak bisa menjangkau deb.debian.org), dan mesin ARM64 UEFI.
+2. **Uji live-build penuh** dengan live-build Debian (bukan versi lama Ubuntu).
+3. **Kernel Raspberry Pi 5**: pantau dukungan Debian untuk BCM2712 (saat ini eksperimental).
+4. **Riwayat preset** (versi) dan impor preset dari URL.
+5. **Build tanpa root** (mmdebstrap --mode=unshare) untuk CI.
 
 ## Selesai di 0.11 Alpha
 Quick Wizard, Distro Branding Studio (paket branding + keyring), Package
@@ -67,9 +86,9 @@ dengan lampiran; warna baru; perbaikan `runuser`; panduan PDF bahasa Inggris.
    (EFI/<id> + salinan EFI/debian) dan Calamares.
 3. **Repositori APT untuk Eduka-Desktop** dengan paket menu, tema Plymouth,
    wallpaper dan keyring, sehingga update Eduka-Desktop bisa lewat `apt`.
-   DistroForge sudah mendukung penambahan repositori dengan kunci.
+   D!sco sudah mendukung penambahan repositori dengan kunci.
 4. **Folder `debian/` di Eduka-Desktop** (paket sumber yang benar, dengan
-   `dpkg-buildpackage`). DistroForge sudah mendeteksinya otomatis.
+   `dpkg-buildpackage`). D!sco sudah mendeteksinya otomatis.
 5. **Terjemahan GUI** (Bahasa Indonesia, Tetun, Português) memakai
    Qt Linguist (`pylupdate6`/`lrelease`); teks GUI sudah dirapikan di 0.17
    sehingga siap diterjemahkan.
@@ -101,7 +120,7 @@ dengan lampiran; warna baru; perbaikan `runuser`; panduan PDF bahasa Inggris.
 ## Catatan teknis yang perlu dipantau
 
 * Codename Debian berubah setiap rilis (sekarang: stable `trixie`, testing
-  `forky`). Ubah di Settings atau `/etc/distroforge/distroforge.conf`.
+  `forky`). Ubah di Settings atau `/etc/disco/disco.conf`.
 * Debian tidak membuat ISO live untuk sid: mulai dari testing lalu ganti
   sumber ke sid, atau bootstrap basis sid.
 * Jika Debian berhenti memakai ISOLINUX untuk BIOS, mode *replay* tetap

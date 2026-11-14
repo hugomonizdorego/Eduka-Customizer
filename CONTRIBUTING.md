@@ -1,6 +1,6 @@
-# Contributing to DistroForge
+# Contributing to D!sco
 
-Thank you for helping DistroForge!
+Thank you for helping D!sco (Distro Custom)!
 
 ## Development setup
 
@@ -16,18 +16,19 @@ make deb        # build the Debian package
 ## Layout
 
 ```
-eduka_customizer/core/   logic without any GUI code (usable from the CLI and recipes)
-eduka_customizer/gui/    PyQt6 interface; pages/ has one file per sidebar page
-data/                    desktops.json, exclude.list, config, launchers, polkit, desktop file
+disco/core/              logic without any GUI code (usable from the CLI and recipes)
+disco/gui/               PyQt6 interface; pages/ has one file per page (tab)
+data/                    catalogs, presets, board and boot loader scripts, config, launchers, polkit
 tests/                   pytest unit tests (fake root filesystems, no root required)
-tools/make_guide.py      writes the PDF user guides in docs/ from docs/screenshots
+tools/screenshots.py     takes docs/screenshots from a demo project
+tools/make_guide.py      writes docs/Disco-Guide.pdf and docs/manual.md
 examples/                recipes and hook scripts
 debian/                  Debian packaging (3.0 native)
 ```
 
 ## Rules
 
-* Keep the scope: Debian stable/testing/sid and Debian-based distributions only (never Ubuntu-based).
+* Keep the scope: Debian (stable/testing/sid) and Devuan, Debian's own tools only (never Ubuntu parts).
 * New features go into `core/` first (with a test), then get a GUI page or
   card and, when useful, a CLI command and a recipe action.
 * Long operations run through `MainWindow.run_task` so the GUI never freezes.

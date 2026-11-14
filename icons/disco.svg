@@ -1,26 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <!-- Eduka-Customizer: flat icon. A monitor (the system being built) showing an
-       ISO disc, and a wrench (customizing). Eduka colors. -->
-  <title>Eduka-Customizer</title>
-  <!-- stand -->
-  <path d="M52 98 h24 l4 14 h-32 z" fill="#0f2f27"/>
-  <rect x="38" y="110" width="52" height="8" rx="4" fill="#0f2f27"/>
-  <!-- monitor -->
-  <rect x="8" y="14" width="112" height="86" rx="10" fill="#0f2f27"/>
-  <rect x="15" y="21" width="98" height="68" rx="4" fill="#00a879"/>
-  <!-- ISO disc -->
-  <circle cx="54" cy="55" r="26" fill="#f4fbf8"/>
-  <path d="M54 29 a26 26 0 0 1 26 26 h-9 a17 17 0 0 0 -17 -17 z" fill="#cdeee2"/>
-  <circle cx="54" cy="55" r="9" fill="#00a879"/>
-  <circle cx="54" cy="55" r="4" fill="#0f2f27"/>
-  <!-- wrench: handle and round head with an open jaw -->
-  <mask id="wrench">
-    <rect width="128" height="128" fill="#000"/>
-    <g transform="rotate(45 86 62)">
-      <rect x="81.5" y="58" width="9" height="40" rx="4.5" fill="#fff"/>
-      <circle cx="86" cy="50" r="13" fill="#fff"/>
-      <rect x="81.5" y="33" width="9" height="16" rx="1.5" fill="#000"/>
-    </g>
-  </mask>
-  <rect width="128" height="128" fill="#ffc845" mask="url(#wrench)"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 48 48" version="1.1">
+ <defs>
+  <linearGradient id="bg" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+   <stop offset="0" stop-color="#3f51b5"/>
+   <stop offset="1" stop-color="#8e24aa"/>
+  </linearGradient>
+  <linearGradient id="disc" x1="10" y1="10" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+   <stop offset="0" stop-color="#ffffff"/>
+   <stop offset="0.45" stop-color="#e3f2fd"/>
+   <stop offset="0.7" stop-color="#f8bbd0"/>
+   <stop offset="1" stop-color="#fff59d"/>
+  </linearGradient>
+ </defs>
+ <rect x="4" y="5" width="40" height="40" rx="9" fill="#000000" opacity="0.2"/>
+ <rect x="4" y="4" width="40" height="40" rx="9" fill="url(#bg)"/>
+ <circle cx="23" cy="25" r="14" fill="#000000" opacity="0.15"/>
+ <circle cx="23" cy="24" r="14" fill="url(#disc)"/>
+ <circle cx="23" cy="24" r="9" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.7"/>
+ <circle cx="23" cy="24" r="5" fill="#5e35b1"/>
+ <circle cx="23" cy="24" r="2" fill="url(#bg)"/>
+ <path d="M 15.5,17 A 11,11 0 0 1 22,13.3" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+ <path d="M 37,7.5 L 38.2,11.3 42,12.5 38.2,13.7 37,17.5 35.8,13.7 32,12.5 35.8,11.3 Z" fill="#fff59d"/>
+ <path d="M 40.5,18 L 41.1,19.9 43,20.5 41.1,21.1 40.5,23 39.9,21.1 38,20.5 39.9,19.9 Z" fill="#ffffff" opacity="0.9"/>
 </svg>

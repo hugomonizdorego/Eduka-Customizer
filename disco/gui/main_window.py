@@ -212,7 +212,7 @@ class MainWindow(QMainWindow):
         brand = QLabel("D!sco")
         brand.setObjectName("brand")
         v.addWidget(brand)
-        sub = QLabel("{} · Distro Custom: Debian & Devuan for PC, ARM and Raspberry Pi".format(VERSION_LABEL))
+        sub = QLabel("{} · Distro Custom".format(VERSION_LABEL))
         sub.setObjectName("brandSub")
         sub.setWordWrap(True)
         v.addWidget(sub)

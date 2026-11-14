@@ -8,6 +8,8 @@ if [ "$1" = "--as-root" ]; then
         case "$1" in
             WAYLAND_DISPLAY=*|XDG_RUNTIME_DIR=*|XDG_SESSION_TYPE=*|QT_QPA_PLATFORM=*|\
             QT_SCALE_FACTOR=*|QT_SCREEN_SCALE_FACTORS=*|LANG=*|LANGUAGE=*|XDG_CURRENT_DESKTOP=*)
+                # "$1" is NAME=value: export sets NAME to value.
+                # shellcheck disable=SC2163
                 export "$1" ;;
         esac
         shift

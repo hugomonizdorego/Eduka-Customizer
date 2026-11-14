@@ -1,5 +1,59 @@
 # Changelog
 
+## D!sco 0.11 — 2026-11-14
+
+The program is now **D!sco (Distro Custom)**. Version numbers start again (0.11 = November); the commands
+`distroforge` and `eduka-customizer` keep working and old settings are read.
+
+### New
+* **Builder** (step 1): presets (Load, Save, File, Delete, New; ten come with D!sco), distro name, build
+  path, platform, Debian/Devuan release, desktop, init system, installer, method, repository; application
+  package lists (`lists/NN-name.list`) with tick boxes and a catalog of programs by category; the steps
+  Prepare, Build base, Install packages, Overlay & scripts, Make image and **Build all**; QEMU, a chroot
+  terminal, the desktop in a window, Synaptic, open/unmount/delete the build, the guide.
+* **Platforms**: PC 64/32-bit, ARM64 with UEFI, Raspberry Pi 3/4/400, Pi 5 (experimental), Pi 2/3 32-bit,
+  Pi 1/Zero, RISC-V 64 (experimental). Bases for other processors through qemu-user (binfmt is switched on
+  by D!sco when needed).
+* **SD-card images** for the Raspberry Pi, laid out like Debian's (RASPIFIRM + RASPIROOT, raspi-firmware),
+  made without loop devices (`mkfs.ext4 -d`, `mkfs.vfat` + mtools, `sfdisk`, `dd`); first start grows the
+  card, makes SSH keys and a machine id and reads `sysconf.txt`; xz and SHA-256. Raspberry Pi page for
+  config.txt lines, kernel options, sizes and compression. Tested: the image's system partition mounts by
+  label in QEMU (aarch64).
+* **UEFI ISOs for ARM64 and RISC-V** (GRUB for the processor, GPT EFI partition for USB sticks); QEMU for
+  ARM ISOs (UEFI) and SD-card images (own kernel).
+* **live-build route**: `auto/config`, package lists, includes, hooks and the name of the system;
+  `lb clean`, `lb config`, `lb build` (Debian's live-build 2021 or later).
+* **System files**: os-release (with LOGO), lsb-release, issue ("Welcome to ..."), issue.net, hostname,
+  hosts, motd with templates; the picture of new users; settings folders into /etc/skel; GRUB_BACKGROUND.
+* **Terminal & Browser**: MOTD (static or dynamic in /etc/update-motd.d), bash prompt presets, Firefox ESR
+  and Chromium policies (home page, lock, bookmarks, telemetry, search engine).
+* **Desktop document**: a PDF with a free title about the system, on every user's desktop at the first
+  login (in the desktop folder of the user's language) and in the menu.
+* **Installer**: Calamares, none, or own .deb packages.
+* **Ten steps** in the sidebar with tabs; new icon; new step-by-step guide (PDF and docs/manual.md).
+* CLI: `platforms`, `presets`, `builder`, `lists`, `step`, `build-all`, `live-build`; `new --preset/--platform`;
+  `build` makes the SD-card image for boards.
+
+### Fixed (full code review)
+* mksquashfs ignored every compression option (`-e` must come last); xz uses the right branch filters.
+* Cancel could leave /proc, /sys and /dev of the computer mounted in the project; the build refuses a
+  system still in use (service blocker and borrowed resolv.conf would end up in the image).
+* Boot menu editor broke GRUB entries inside `if … fi`; titles with backslashes; ISOLINUX `timeout 0`
+  waited forever; projects that were moved could not replay the boot setup; EFI-only ISOs had no partition
+  table for USB sticks.
+* Snapshots for distribution kept root's password, SSH and GnuPG keys; a project on a mounted disk was
+  unmounted; the kernel chosen for the ISO could be purged or get no initrd.
+* Cursor and Plymouth settings and Debian logos were read or written through absolute links on this
+  computer instead of inside the image; Plymouth preview could change the boot splash; the GDM logo was
+  ignored; greetd started a shell instead of the desktop.
+* Calamares did not follow a boot loader or init system chosen before it was installed; non-systemd
+  first-boot services ran in the live session; third-party lines of sources.list were lost; Devuan
+  derivatives with only `ID_LIKE=devuan` were refused; downloads could not resume a complete file.
+* `disco shell` and `disco run` crashed; `disco about` needed root; build options were reset after any
+  task; files over 2 MiB were cut when saved; re-opening the open project failed; and more.
+* bootstrap gives the new system its own host name and an empty resolv.conf (mmdebstrap copied those of
+  the build computer).
+
 ## 0.9.5 Beta — 2026-10-11
 
 ### Fixed

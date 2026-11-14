@@ -1,3 +1,47 @@
+disco (0.11) unstable; urgency=medium
+
+  * Renamed to D!sco (Distro Custom). Version numbers start again: 0.11 is
+    November. The distroforge and eduka-customizer commands keep working.
+  * Builder page: presets (load, save, file, delete, new), distro name, build
+    path, platform, Debian or Devuan release, desktop, init system,
+    installer, method and repository; package lists with tick boxes and an
+    application catalog; Prepare, Build base, Install packages, Overlay &
+    scripts, Make image and Build all.
+  * Platforms: PC 64-bit and 32-bit, ARM64 with UEFI, Raspberry Pi 3/4/400,
+    Pi 5 (experimental), Pi 2/3 32-bit, Pi 1/Zero, RISC-V 64 (experimental).
+    Bases for other processors are made through qemu-user (binfmt).
+  * Raspberry Pi SD-card images laid out like Debian's (RASPIFIRM and
+    RASPIROOT, raspi-firmware), made without loop devices, with a first start
+    that grows the card, makes SSH keys and reads sysconf.txt; xz, SHA-256.
+  * UEFI ISOs for ARM64 and RISC-V with a GPT EFI partition for USB sticks.
+  * QEMU tests for ARM ISOs (UEFI) and SD-card images.
+  * live-build route: D!sco writes auto/config, the package lists, includes
+    and hooks, and runs lb config and lb build (Debian's live-build only).
+  * System files: os-release (with LOGO), lsb-release, issue ("Welcome to"),
+    issue.net, hostname, hosts, motd; the picture of new users and settings
+    folders copied into /etc/skel; GRUB_BACKGROUND of installed systems.
+  * Terminal & Browser: message after login (static or dynamic), bash prompt
+    presets, Firefox ESR and Chromium policies (home page, lock, bookmarks).
+  * Desktop document: a PDF about the system with a free title, put on every
+    user's desktop at the first login and into the menu.
+  * Installer: Calamares, none, or your own .deb packages.
+  * Ten steps in the sidebar, the pages of each step as tabs.
+  * New commands: platforms, presets, builder, lists, step, build-all,
+    live-build; build makes the SD-card image for boards.
+  * Fixed (code review): mksquashfs ignored the compression options; Cancel
+    could leave /proc, /sys and /dev mounted; nested GRUB entries broke the
+    menu editor; snapshots kept root's password and keys; a project on a
+    mounted disk was unmounted; the chosen kernel could be purged; titles
+    with backslashes; ISOLINUX "timeout 0"; moved projects; cursor and
+    Plymouth links were followed on this computer; greetd started a shell;
+    "disco shell" and "disco run" crashed; build options were reset; big
+    files were cut when saved; Calamares did not follow the boot loader and
+    init system; third-party lines of sources.list were lost; and more.
+  * bootstrap gives the new system its own host name and an empty resolv.conf
+    instead of those of the build computer.
+
+ -- Hugo Moniz do Rego <hugomonizdorego@users.noreply.github.com>  Sat, 14 Nov 2026 12:00:00 +0000
+
 distroforge (1:0.9.5~beta) unstable; urgency=medium
 
   * Fixed: 'Apply all changes' failed with "Invalid hostname:

@@ -56,11 +56,13 @@ esp_dir() {
 }
 
 newest_kernel() {
-    ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's|^/boot/vmlinuz-||' | sort -V | tail -n1
+    kernels_newest_first | head -n1
 }
 
 kernels_newest_first() {
-    ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's|^/boot/vmlinuz-||' | sort -rV
+    for f in /boot/vmlinuz-*; do
+        [ -e "$f" ] && echo "${f#/boot/vmlinuz-}"
+    done | sort -rV
 }
 
 # The device of a mount point (btrfs shows /dev/sda2[/@]).

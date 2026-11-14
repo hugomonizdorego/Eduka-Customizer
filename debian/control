@@ -20,6 +20,8 @@ Depends: ${misc:Depends},
  xorriso,
  mtools,
  dosfstools,
+ e2fsprogs,
+ fdisk,
  isolinux,
  syslinux-common,
  grub-common,
@@ -31,47 +33,53 @@ Depends: ${misc:Depends},
  mount,
  util-linux
 Recommends: mmdebstrap | debootstrap,
- openssl,
  debian-archive-keyring,
+ qemu-user-static,
+ binfmt-support,
+ openssl,
  grub-efi-amd64-bin,
  shim-signed,
  grub-efi-amd64-signed,
  xserver-xephyr,
  qemu-system-x86,
+ qemu-system-arm,
+ qemu-efi-aarch64,
  qemu-utils,
  ovmf,
  gpgv,
- gpg,
  debian-keyring,
  xdg-utils,
  qterminal | x-terminal-emulator
-Suggests: calamares-settings-debian
-Provides: eduka-customizer
-Replaces: eduka-customizer (<< 0.17~)
-Breaks: eduka-customizer (<< 0.17~)
-Description: ISO builder and customizer for Debian-based distributions
- D!sco builds live images of your own Debian-based distribution
- from Debian stable, testing, sid or a Debian derivative such as LMDE. It
- extracts a Debian live ISO (or bootstraps a new Debian base, or snapshots
- the running system) and guides you step by step: repositories, identity,
- users, language, desktop or window manager in a Mini, Compact, Full or
- Full-with-apps edition (GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt,
- LXDE, Budgie, Enlightenment, Eduka-Desktop, i3, Sway, labwc and more),
- packages and Flatpak applications, replacing the default applications,
- kernel, boot menu, themes, the Plymouth boot splash, login screen,
- wallpaper and the Calamares installer. Checks before building stop what
- would break the ISO. It can edit the system live in a nested window and
- builds a hybrid BIOS/UEFI ISO that can be tested in QEMU.
+Suggests: live-build, devuan-keyring, calamares-settings-debian
+Replaces: distroforge (<< 1:0.9.6~), eduka-customizer (<< 0.18~)
+Breaks: distroforge (<< 1:0.9.6~), eduka-customizer (<< 0.18~)
+Description: Distro Custom: build your own Debian or Devuan distribution
+ D!sco (Distro Custom) builds your own distribution from Debian (stable,
+ testing, sid) or Devuan, with Debian's own tools: debootstrap or mmdebstrap,
+ chroot, squashfs, xorriso and, if you like, live-build. No Ubuntu parts
+ (no casper, no PPAs) are used.
  .
- D!sco was called Eduka-Customizer before version 0.17; the
- eduka-customizer command keeps working.
+ It builds for PCs (64-bit and 32-bit), 64-bit ARM computers with UEFI,
+ the Raspberry Pi (1, Zero, 2, 3, 4, 400 and 5) and RISC-V. Bases for other
+ processors are made on this computer through qemu-user. PCs and UEFI
+ machines get a hybrid live ISO (BIOS and UEFI); boards get an SD-card image
+ laid out like Debian's own Raspberry Pi images.
  .
- It also builds your own branding packages (replacing the identity of
- base-files, lsb-release, distro-info-data, desktop-base, the Debian logos,
- GRUB and the Calamares installer) and lets you edit any installed Debian
- package directly in the Package Workshop.
+ The Builder page holds the whole distribution: a preset, the name, the
+ platform, Debian or Devuan release, desktop (GNOME, KDE Plasma, Xfce,
+ Cinnamon, MATE, LXQt, LXDE, Budgie, Enlightenment, Eduka-Desktop, i3, Sway,
+ labwc and more), init system (systemd, SysVinit, OpenRC, runit), installer
+ (Calamares, none or your own packages), package lists with tick boxes and
+ an application catalog, and the steps: Prepare, Build base, Install
+ packages, Overlay & scripts, Make image, or Build all.
  .
- D!sco runs on Debian, Debian derivatives, Ubuntu and
- Ubuntu-based systems. The images it builds are always Debian-based
- (Debian stable, testing, sid and derivatives); Ubuntu-based images are not
- supported as a source.
+ Every part can be refined: repositories, identity and the files of
+ /etc (os-release, lsb-release, issue, hostname, motd), users, language,
+ kernel, boot loaders, boot menu, Plymouth, wallpaper and login screen,
+ themes, sounds, a welcome screen, the bash prompt, browser policies, a PDF
+ about your system on every desktop, and the Calamares installer. Checks
+ before building stop what would break the image, and it can be tested in
+ QEMU.
+ .
+ D!sco was called DistroForge (0.9 Beta) and Eduka-Customizer (up to 0.17
+ Alpha); the old commands keep working.

@@ -1,17 +1,22 @@
-.TH DISTROFORGE 1 "October 2026" "DistroForge 0.9.5 Beta" "DistroForge"
+.TH DISCO 1 "November 2026" "D!sco 0.11" "D!sco (Distro Custom)"
 .SH NAME
-distroforge \- ISO builder and customizer for Debian-based distributions
+disco \- D!sco (Distro Custom): build your own Debian or Devuan distribution
 .SH SYNOPSIS
-.B distroforge
+.B disco
 [\fB\-p\fR \fIPROJECT\fR] [\fB\-D\fR] \fICOMMAND\fR [\fIoptions\fR]
 .br
-.B distroforge-pkexec
+.B disco-pkexec
 [\fIPROJECT\fR|\fIISO\fR]
 .SH DESCRIPTION
-DistroForge builds live ISO images of your own Debian-based
-distribution from Debian stable, testing, sid or a Debian derivative. A project holds the root filesystem (\fIrootfs/\fR), the ISO tree
-(\fIiso/\fR), boot images (\fIboot/\fR), caches, logs and the built images
-(\fIoutput/\fR). Ubuntu and Ubuntu-based images are refused.
+D!sco builds your own distribution from Debian (stable, testing, sid) or Devuan
+with Debian's own tools (mmdebstrap or debootstrap, chroot, mksquashfs, xorriso,
+live-build): a hybrid live ISO for PCs and UEFI machines (amd64, i386, arm64,
+riscv64) or an SD-card image for the Raspberry Pi. Other processors are built
+through qemu-user (binfmt_misc). A project holds the system (\fIrootfs/\fR), the
+ISO tree (\fIiso/\fR), package lists (\fIlists/\fR), files copied into the system
+(\fIoverlay/\fR), scripts (\fIhooks/\fR), own packages (\fIdebs/\fR), boot images,
+caches, logs and the built images (\fIoutput/\fR). Ubuntu and Ubuntu-based images
+are refused. The old commands \fBdistroforge\fR and \fBeduka-customizer\fR start D!sco.
 .PP
 Without a command the graphical interface starts. Most commands need
 administrator rights.
@@ -20,9 +25,34 @@ administrator rights.
 .B gui [PROJECT|ISO]
 Start the graphical interface.
 .TP
-.B new [PATH] \-\-iso FILE | \-\-bootstrap SUITE | \-\-snapshot dist|backup
-Create a project from a Debian or Debian-based live ISO, a new Debian base
-(mmdebstrap) or a copy of the running system.
+.B new [PATH] [\-\-preset NAME] [\-\-platform ID] [\-\-iso FILE | \-\-bootstrap SUITE [\-\-devuan] | \-\-snapshot dist|backup]
+Create a project from a preset, a Debian or Debian-based live ISO, a new Debian or
+Devuan base (mmdebstrap) or a copy of the running system.
+.TP
+.B platforms
+List what D!sco builds for: pc64, pc32, arm64-efi, rpi-arm64, rpi5, rpi-armhf,
+rpi-armel, riscv64-efi.
+.TP
+.B presets [list|show|apply|save|delete|export] [NAME] [\-\-file FILE]
+Presets: every choice of the Builder page and the package lists, saved under a name.
+.TP
+.B builder [\-\-name N] [\-\-platform ID] [\-\-family debian|devuan] [\-\-suite S] [\-\-desktop ID|none] [\-\-init I] [\-\-installer calamares|none|debs] [\-\-method disco|live-build] [\-\-mirror URL]
+Show or change the choices of the Builder page.
+.TP
+.B lists [show|new|add|remove|on|off|delete|install|catalog] [LIST] [PACKAGE...]
+The package lists of the distribution (\fIlists/NN-name.list\fR): one package per
+line, \fB#\fR comments, \fB\-name\fR removes a package.
+.TP
+.B step prepare|base|packages|overlay|image
+Run one step of the build.
+.TP
+.B build-all [\-\-rebuild-base]
+Every step: prepare, base (when there is none), packages, overlay and scripts,
+then the ISO or SD-card image.
+.TP
+.B live-build export|build
+Write the live-build configuration (\fIlive-build/\fR), or build the ISO with
+Debian's live-build.
 .TP
 .B info
 Show the project, the detected system and the last ISO.
@@ -140,7 +170,8 @@ boot or private data leak into it. With \-\-fix, fix automatically what can be
 fixed and check again. Exits with 1 when there are problems.
 .TP
 .B build [\-\-target\-size smallest|none|MB] [\-\-compression zstd|xz|gzip|lz4|lzo] [\-\-boot\-mode auto|replay|generate] [\-\-skip\-checks] ...
-Check, then build the hybrid BIOS/UEFI ISO image. \-\-target\-size (for example
+Check, then build the hybrid BIOS/UEFI ISO image (for Raspberry Pi platforms:
+the SD-card image, compressed with xz, with its SHA-256 checksum). \-\-target\-size (for example
 100, 300, 500, 700, 1000, 4400) chooses the fastest lossless compression that
 should reach that size in megabytes.
 .TP
@@ -164,41 +195,44 @@ Download and verify an official Debian live image.
 Version, license, credits and how to support the project.
 .SH FILES
 .TP
-.I /etc/distroforge/distroforge.conf
+.I /etc/disco/disco.conf
 Global settings (Debian codenames, mirrors, Eduka-Desktop repository, build defaults).
 .TP
-.I /usr/share/distroforge/exclude.list
+.I /usr/share/disco/exclude.list
 Paths excluded from the squashfs.
 .TP
 .I PROJECT/project.json
 Project state and history.
 .TP
-.I /tmp/distroforge/
-Developer logs: distroforge.log, errors.log and bug reports.
+.I /tmp/disco/
+Developer logs: disco.log, errors.log and bug reports.
 .TP
-.I /usr/share/distroforge/guide/DistroForge-Guide.pdf
+.I /usr/share/disco/guide/Disco-Guide.pdf
 User guide with pictures.
 .TP
 .I /etc/distroforge-bootloader.conf, /usr/sbin/distroforge-bootloader
 In the image: the boot loader the installer sets up, and the program that does it.
 .SH EXAMPLES
 .nf
-sudo distroforge new ~/mylinux \-\-iso debian-live-13.1.0-amd64-standard.iso
-sudo distroforge -p ~/mylinux desktop install xfce \-\-edition full_apps
-sudo distroforge -p ~/mylinux apps replace browser chromium \-\-remove-old
-sudo distroforge -p ~/mylinux flatpak install org.kde.gcompris \-\-firstboot
-sudo distroforge -p ~/mylinux check \-\-fix
-sudo distroforge -p ~/mylinux build \-\-target\-size 700
-distroforge -p ~/mylinux test \-\-firmware uefi
+sudo disco new /home/disco/mypi \-\-preset "Raspberry Pi desktop (Pi 3, 4, 400)"
+sudo disco -p /home/disco/mypi lists add applications thonny
+sudo disco -p /home/disco/mypi build-all
+sudo disco new ~/mylinux \-\-iso debian-live-13.1.0-amd64-standard.iso
+sudo disco -p ~/mylinux desktop install xfce \-\-edition full_apps
+sudo disco -p ~/mylinux apps replace browser chromium \-\-remove-old
+sudo disco -p ~/mylinux flatpak install org.kde.gcompris \-\-firstboot
+sudo disco -p ~/mylinux check \-\-fix
+sudo disco -p ~/mylinux build \-\-target\-size 700
+disco -p ~/mylinux test \-\-firmware uefi
 .fi
 .SH NOTES
 The graphical interface collects changes in step 14, Review & Apply, and applies
-them together; the commands apply each change at once. DistroForge was called
+them together; the commands apply each change at once. D!sco was called
 Eduka-Customizer until 0.17 Alpha; the commands \fBeduka-customizer\fR and
 \fBeduka-customizer-pkexec\fR still work.
 .SH LICENSE
 GNU General Public License version 3 or later; there is NO WARRANTY. Debian is a
-registered trademark of Software in the Public Interest, Inc. DistroForge is not
+registered trademark of Software in the Public Interest, Inc. D!sco is not
 affiliated with Debian.
 .SH SEE ALSO
 .BR xorriso (1),

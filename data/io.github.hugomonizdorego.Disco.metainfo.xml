@@ -4,32 +4,33 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name>D!sco</name>
-  <summary>ISO builder for Debian-based distributions</summary>
+  <summary>Build your own Debian or Devuan distribution for PC, ARM and Raspberry Pi</summary>
   <description>
-    <p>D!sco builds live images of your own Debian-based distribution from Debian
-    stable, testing, sid or a derivative such as LMDE, step by step: extract an ISO or bootstrap a
-    new base, choose the desktop or window manager in a Mini, Compact, Full or Full-with-apps
-    edition (GNOME, KDE Plasma, Xfce, Cinnamon, MATE, LXQt, Eduka-Desktop, i3, Sway and more),
-    install packages and Flatpak apps by category, replace the default applications, add system
-    sounds and a welcome screen, brand the boot splash, login screen, GRUB theme and installer, check
-    the image and build a hybrid BIOS/UEFI ISO.</p>
+    <p>D!sco (Distro Custom) builds your own distribution from Debian or Devuan with Debian's own tools
+    (debootstrap or mmdebstrap, chroot, squashfs, xorriso, live-build): a hybrid live ISO for PCs and
+    UEFI machines, or an SD-card image for the Raspberry Pi. Other processors (ARM64, ARM, RISC-V) are
+    built on this computer through qemu-user.</p>
+    <p>The Builder page holds the whole distribution: a preset, the platform, release, desktop, init
+    system, installer and package lists with tick boxes, then Build all. Every part can be refined:
+    identity and system files, users, language, kernel, boot loaders, boot menu, Plymouth, login screen,
+    themes, sounds, welcome screen, bash prompt, browser policies and the Calamares installer.</p>
   </description>
   <launchable type="desktop-id">io.github.hugomonizdorego.Disco.desktop</launchable>
   <provides><binary>disco</binary></provides>
-  <replaces><id>org.edukasaun.customizer</id></replaces>
+  <replaces>
+    <id>io.github.hugomonizdorego.DistroForge</id>
+    <id>org.edukasaun.customizer</id>
+  </replaces>
   <developer id="io.github.hugomonizdorego"><name>Hugo Moniz do Rego</name></developer>
   <url type="donation">https://paypal.me/hugocenturion0311</url>
   <url type="homepage">https://github.com/hugomonizdorego/Eduka-Customizer</url>
   <releases>
-    <release version="0.9.5~beta" date="2026-10-11" type="development"/>
-    <release version="0.9.0~beta" date="2026-10-08" type="development"/>
-    <release version="0.17.0~alpha" date="2026-10-08"/>
-    <release version="0.16.0~alpha" date="2026-10-08"/>
-    <release version="0.15.0~alpha" date="2026-10-08"/>
-    <release version="0.14.0~alpha" date="2026-10-07"/>
-    <release version="0.13.0~alpha" date="2026-10-07"/>
-    <release version="0.12.0~alpha" date="2026-10-07"/>
-    <release version="0.11.0~alpha" date="2026-10-07"/>
-    <release version="0.10.0~alpha" date="2026-10-07"/>
+    <release version="0.11" date="2026-11-14" type="development">
+      <description>
+        <p>Renamed to D!sco (Distro Custom). New Builder page with presets, package lists and Build all;
+        ARM64, Raspberry Pi and RISC-V; SD-card images; live-build; system files, terminal and browser
+        branding; a PDF about the system on every desktop.</p>
+      </description>
+    </release>
   </releases>
 </component>
