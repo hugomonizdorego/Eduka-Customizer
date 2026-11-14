@@ -165,6 +165,15 @@ os._exit(1 if errors else 0)
 
 
 def test_press_every_button(tmp_path):
+    _press_all(tmp_path, "pc64")
+
+
+def test_press_every_button_raspberry_pi(tmp_path):
+    """A Raspberry Pi project: the Build page makes an SD-card image, the Raspberry Pi page is active."""
+    _press_all(tmp_path, "rpi-arm64")
+
+
+def _press_all(tmp_path, platform):
     from disco.core.project import Project
     from tests.conftest import make_rootfs_into
     p = Project.create(tmp_path / "clicks", name="Clicks")
@@ -180,6 +189,7 @@ def test_press_every_button(tmp_path):
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(text)
     p.state["identity"].update({"name": "Clicks", "id": "clicks", "version": "1.0"})
+    p.state.setdefault("builder", {})["platform"] = platform
     p.save()
     env = dict(os.environ, QT_QPA_PLATFORM="offscreen", PYTHONPATH=str(Path(__file__).resolve().parents[1]))
     res = subprocess.run([sys.executable, "-c", CLICK_ALL, str(p.path)], capture_output=True, text=True, env=env,
