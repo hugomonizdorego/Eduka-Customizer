@@ -155,8 +155,10 @@ EN = {
         ]),
         ("Step 8 · Installer", [
             "<b>Which installer</b>: Calamares (recommended), none (a live system only), or <b>your own .deb "
-            "packages</b>: drop them on the page and press <b>Install them now</b>. Below it: the name, pictures, "
-            "slides and rules of Calamares, and <b>Check the installer</b>.",
+            "packages</b>: drop them on the page and press <b>Install them now</b>. <b>Save</b> makes the system "
+            "match the choice: it offers to install Calamares, or to take it out for <i>none</i> and for your own "
+            "packages. Below it: the name, pictures, slides and rules of Calamares, and <b>Check the "
+            "installer</b>.",
             ("img", "09-installer.png", "Installer"),
         ]),
         ("Step 9 · Files & Terminal", [
@@ -217,6 +219,9 @@ EN = {
             "that grows to the whole card). Before the first start, <code>sysconf.txt</code> on the boot "
             "partition can set the computer name and an SSH key:",
             ("code", "hostname=mypi\nroot_authorized_key=ssh-ed25519 AAAA... you@laptop"),
+            "The card has the account of the <b>Users</b> page. While it has the well-known password "
+            "(<code>live</code>) or none, it logs in over SSH with a key only: set a password of your own on "
+            "System → Users, or change it with <code>passwd</code> after the first start.",
             ("img", "08c-raspberry-pi.png", "Raspberry Pi"),
         ]),
         ("Command line", [

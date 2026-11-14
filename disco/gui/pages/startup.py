@@ -53,6 +53,8 @@ class StartupPage(Page):
     def refresh(self):
         if not self.project or not self.project.has_rootfs():
             return
+        if self.main.pending_for(self):
+            return     # the ticks show what waits in Review & Apply: the system does not have it yet
         self._services = startup.services(self.project)
         self.services.clear()
         for s in self._services:
@@ -91,15 +93,27 @@ class StartupPage(Page):
                 out.append((ident, on))
         return out
 
+    @staticmethod
+    def _rebase(items, key, changes):
+        """What is queued is the new starting point: ticking a box back queues the change back."""
+        for ident, on in changes:
+            for x in items:
+                if x[key] == ident:
+                    x["enabled"] = on
+
     def apply_services(self):
         changes = self._changed(self.services, self._services, "unit")
         if not changes:
             self.main.stage_label.setText("No service was changed")
             return
         proj = self.project
-        for unit, on in changes:
-            self.task("Startup: service {} {}".format(unit, "on" if on else "off"),
-                      lambda t, u=unit, o=on: startup.set_service(proj, u, o))
+        text = ", ".join("{} {}".format(u, "on" if on else "off") for u, on in changes)
+
+        def work(t):
+            for unit, on in changes:
+                startup.set_service(proj, unit, on)
+        self.task("Startup: services " + text, work)
+        self._rebase(self._services, "unit", changes)
 
     def apply_apps(self):
         changes = self._changed(self.apps, self._apps, "file")
@@ -107,9 +121,13 @@ class StartupPage(Page):
             self.main.stage_label.setText("No program was changed")
             return
         proj = self.project
-        for file, on in changes:
-            self.task("Startup: program {} {}".format(file, "on" if on else "off"),
-                      lambda t, f=file, o=on: startup.set_application(proj, f, o))
+        text = ", ".join("{} {}".format(f, "on" if on else "off") for f, on in changes)
+
+        def work(t):
+            for file, on in changes:
+                startup.set_application(proj, file, on)
+        self.task("Startup: programs " + text, work)
+        self._rebase(self._apps, "file", changes)
 
     def add_app(self):
         name, cmd = self.new_name.text().strip(), self.new_cmd.text().strip()

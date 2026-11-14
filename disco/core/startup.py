@@ -69,9 +69,29 @@ def _unit_file(rootfs, unit):
     return None
 
 
+def _in_image(rootfs, path):
+    """*path* with its links followed inside the image (never into this computer); None when it leaves."""
+    from disco.core.distro import resolve_in_root
+    rootfs = Path(rootfs)
+    try:
+        rel = Path(path).relative_to(rootfs)
+    except ValueError:
+        return None
+    real = resolve_in_root(rootfs, str(rel))
+    if real is None:
+        return None
+    root = rootfs.resolve()
+    full = real.resolve() if real.exists() else real
+    if full != root and root not in full.parents:
+        return None
+    return real
+
+
 def _read_unit(path):
     """{section: {key: value}} of a unit file (repeated keys joined with spaces)."""
     out, sec = {}, None
+    if path is None:
+        return out
     try:
         text = path.read_text(errors="replace")
     except OSError:
@@ -120,7 +140,7 @@ def systemd_services(rootfs):
                             "description": FRIENDLY.get(unit, "Switched off for good (masked)"),
                             "essential": _is_essential(unit)})
                 continue
-            info = _read_unit(p)
+            info = _read_unit(_in_image(rootfs, p))
             install = info.get("Install", {})
             if not (install.get("WantedBy") or install.get("RequiredBy")) and unit not in enabled:
                 continue  # started by others when needed: nothing to switch
@@ -162,7 +182,7 @@ def _links(rootfs, action, unit):
     path = _unit_file(rootfs, unit) or _unit_file(rootfs, re.sub(r"@[^.]+\.", "@.", unit))
     if path is None:
         raise ValueError("No unit file for {}".format(unit))
-    info = _read_unit(path).get("Install", {})
+    info = _read_unit(_in_image(rootfs, path)).get("Install", {})
     targets = (info.get("WantedBy", "") + " " + info.get("RequiredBy", "")).split() or ["multi-user.target"]
     for t in targets:
         kind = ".requires" if t in info.get("RequiredBy", "").split() else ".wants"
@@ -186,9 +206,10 @@ def sysv_services(rootfs, init):
         if not p.is_file() or name in ("README", "skeleton", "rc", "rcS") or name.startswith("."):
             continue
         if init == "openrc":
-            on = (rootfs / "etc/runlevels/default" / name).exists() or (rootfs / "etc/runlevels/boot" / name).exists()
+            on = os.path.lexists(rootfs / "etc/runlevels/default" / name) or \
+                os.path.lexists(rootfs / "etc/runlevels/boot" / name)
         elif init == "runit":
-            on = (rootfs / "etc/runit/runsvdir/default" / name).exists() or (
+            on = os.path.lexists(rootfs / "etc/runit/runsvdir/default" / name) or (
                 (rootfs / "etc/rc2.d").is_dir() and bool(list((rootfs / "etc/rc2.d").glob("S??" + name))))
         else:
             on = bool(list((rootfs / "etc/rc2.d").glob("S??" + name))) if (rootfs / "etc/rc2.d").is_dir() else False
@@ -230,10 +251,10 @@ def set_service(project, unit, enabled):
                 ch.run(["rc-update", "add" if enabled else "del", name, "default"], check=False)
             elif init == "runit" and Path(project.rootfs, "etc/sv", name).is_dir():
                 link = Path(project.rootfs, "etc/runit/runsvdir/default", name)
-                if enabled and not link.exists():
+                if enabled and not os.path.lexists(link):
                     link.parent.mkdir(parents=True, exist_ok=True)
                     link.symlink_to("/etc/sv/" + name)
-                elif not enabled and (link.is_symlink() or link.exists()):
+                elif not enabled and os.path.lexists(link):
                     link.unlink()
             else:
                 ch.run(["update-rc.d", name, "enable" if enabled else "disable"], check=False)
@@ -250,6 +271,8 @@ def _unit_masked(rootfs, unit):
 
 # Applications after login (XDG autostart) ---------------------------------------------------------------------------
 def _desktop(path):
+    if path is None:
+        return None
     cp = configparser.ConfigParser(interpolation=None, strict=False)
     cp.optionxform = str
     try:
@@ -265,7 +288,7 @@ def applications(project):
     if not d.is_dir():
         return out
     for p in sorted(d.glob("*.desktop")):
-        cp = _desktop(p)
+        cp = _desktop(_in_image(project.rootfs, p))
         if cp is None:
             continue
         e = cp["Desktop Entry"]
@@ -311,6 +334,15 @@ def set_application(project, file, enabled):
     if not re.match(r"^[A-Za-z0-9._+-]+\.desktop$", file):
         raise ValueError("Invalid autostart file: {}".format(file))
     p = Path(project.rootfs) / AUTOSTART / file
+    if p.is_symlink():
+        # The entry is a link (often to /usr/share/applications/...): give it a file of its own, made
+        # from the target inside the image, so the program's menu entry stays as it is.
+        real = _in_image(project.rootfs, p)
+        if real is None or not real.is_file():
+            raise FileNotFoundError("/{}/{} points outside the system".format(AUTOSTART, file))
+        text = real.read_text(errors="replace")
+        p.unlink()
+        p.write_text(text)
     if not p.is_file():
         raise FileNotFoundError("/{}/{} is not in the system".format(AUTOSTART, file))
     _set_key(p, "Hidden", None if enabled else "true")
@@ -326,10 +358,14 @@ def add_application(project, name, command, comment=""):
     if not command.strip() or "\n" in command:
         raise ValueError("Type the command to start, for example: firefox-esr https://example.org")
     slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "program"
-    p = Path(project.rootfs) / AUTOSTART / "disco-{}.desktop".format(slug)
+    d = Path(project.rootfs) / AUTOSTART
+    p, n = d / "disco-{}.desktop".format(slug), 2
+    while os.path.lexists(p):                      # never replace a program added before
+        p, n = d / "disco-{}-{}.desktop".format(slug, n), n + 1
     p.parent.mkdir(parents=True, exist_ok=True)
+    # Desktop entries read % as a field code: a literal % is written %% (https://x/a%20b keeps working).
     p.write_text("[Desktop Entry]\nType=Application\nName={}\nComment={}\nExec={}\nX-D!sco=added\n".format(
-        name, comment.replace("\n", " "), command.strip()))
+        name, comment.replace("\n", " "), command.strip().replace("%", "%%")))
     project.record("startup-add", p.name)
     return p.name
 

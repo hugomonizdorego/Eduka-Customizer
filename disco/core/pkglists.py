@@ -104,6 +104,7 @@ class PackageList:
                 raise ValueError("Not a Debian package name: {}".format(p))
             names.append(p)
         title = title if title is not None else self.title
+        title = " ".join(str(title).split())         # one line: a second line would be read as a package
         comment = comment if comment is not None else (self.comment() if self.path.exists() else "")
         head = ["# Title: " + title] + ["# " + c for c in comment.splitlines() if c.strip()]
         self.path.write_text("\n".join(head + names) + "\n")
@@ -303,11 +304,12 @@ class Lists:
         with pk.chroot:
             pk.recover()
             pk.update()
-            todo = [p for p in install if p.split(":")[0] not in have]
+            base = lambda p: p.split(":")[0]           # firefox-esr:amd64 is firefox-esr for apt-cache
+            todo = [p for p in install if base(p) not in have]
             if todo:
-                known = pk.available(todo)
-                skipped = [p for p in todo if p not in known]
-                todo = [p for p in todo if p in known]
+                known = pk.available(sorted({base(p) for p in todo}))
+                skipped = [p for p in todo if base(p) not in known]
+                todo = [p for p in todo if base(p) in known]
             if skipped:
                 log.warning("Not in the repositories of this release and processor, skipped: %s",
                             " ".join(skipped))
@@ -315,7 +317,7 @@ class Lists:
                 if stage:
                     stage("Installing {} package(s) from the lists".format(len(todo)))
                 pk.install(todo, update=False)
-            gone = [p for p in remove if p in have]
+            gone = [p for p in remove if base(p) in have]
             if gone:
                 if stage:
                     stage("Removing {} package(s)".format(len(gone)))
@@ -331,20 +333,36 @@ class Lists:
         Path(path).write_text(json.dumps(data, indent=1) + "\n")
 
     def load(self, data, replace=True):
-        """Lists from a preset: {file name: {title, on, packages, comment}}."""
+        """Lists from a preset: {file name: {title, on, packages, comment}}. Everything is checked
+        first: a broken preset never leaves the project without its lists."""
+        if not isinstance(data, dict):
+            raise ValueError("The package lists of a preset are an object: {name: {title, packages}}")
+        checked = []
+        for name, entry in sorted(data.items()):
+            if not isinstance(name, str) or not FILE.match(name):
+                raise ValueError("Not a package list name: {} (use NN-name.list)".format(name))
+            if not isinstance(entry, dict):
+                raise ValueError("The list {} must be an object".format(name))
+            pkgs = entry.get("packages", [])
+            if not isinstance(pkgs, list) or not all(isinstance(p, str) for p in pkgs):
+                raise ValueError("The packages of {} must be a list of names".format(name))
+            bad = [p.strip() for p in pkgs if p.strip() and not PACKAGE.match(p.strip())]
+            if bad:
+                raise ValueError("Not Debian package names in {}: {}".format(name, ", ".join(bad[:5])))
+            title, comment = entry.get("title"), entry.get("comment", "")
+            if (title is not None and not isinstance(title, str)) or not isinstance(comment, str):
+                raise ValueError("The title and comment of {} must be text".format(name))
+            checked.append((name, pkgs, title, comment, bool(entry.get("on", True))))
         self.dir.mkdir(parents=True, exist_ok=True)
         if replace:
             for l in self.all():
                 l.path.unlink()
             self.project.state.setdefault("lists", {})["off"] = []
         off = set(self.project.state.setdefault("lists", {}).get("off", []))
-        for name, entry in sorted(data.items()):
-            if not FILE.match(name):
-                raise ValueError("Not a package list name: {} (use NN-name.list)".format(name))
+        for name, pkgs, title, comment, on in checked:
             pl = PackageList(self.dir / name)
-            pl.write(entry.get("packages", []), title=entry.get("title") or pl.title,
-                     comment=entry.get("comment", ""))
-            if not entry.get("on", True):
+            pl.write(pkgs, title=title or pl.title, comment=comment)
+            if not on:
                 off.add(name)
         self.project.state["lists"]["off"] = sorted(off)
         self.project.save()

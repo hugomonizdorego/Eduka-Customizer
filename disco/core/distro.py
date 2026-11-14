@@ -90,9 +90,15 @@ def parse_os_release(text):
 
 
 def format_os_release(data):
+    """os-release (and lsb-release) text. Scripts source these files: values are escaped, and a
+    line break (which would start a new line of the script) is refused."""
     lines = []
     for key, value in data.items():
         value = str(value)
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", str(key)):
+            raise ValueError("{!r} is not a name of os-release".format(key))
+        if any(ord(ch) < 32 and ch != "\t" or ord(ch) == 127 for ch in value):
+            raise ValueError("{} must be one line of text (no line breaks)".format(key))
         if re.fullmatch(r"[A-Za-z0-9._-]*", value):
             lines.append("{}={}".format(key, value))
         else:
@@ -139,6 +145,17 @@ def resolve_in_root(rootfs, rel):
             continue
         current = candidate
     return None
+
+
+def in_image(rootfs, rel):
+    """*rel* in the image with its links followed inside the image, never to a file of this computer.
+    ValueError when it would lead out of the image."""
+    import os
+    p = resolve_in_root(rootfs, rel)
+    root = os.path.realpath(str(rootfs)).rstrip("/") + "/"
+    if p is None or not os.path.realpath(str(p)).startswith(root):
+        raise ValueError("/{} leads out of the system".format(str(rel).lstrip("/")))
+    return p
 
 
 def apt_suites(rootfs):

@@ -2,6 +2,7 @@
 
 import logging
 import time
+from pathlib import Path
 
 from disco.qt.core import QSize, Qt, QTimer
 from disco.qt.gui import QAction, QFont, QKeySequence, QTextCharFormat, QColor
@@ -87,7 +88,7 @@ class Section(QWidget):
 
     @property
     def needs_rootfs(self):
-        return all(p.needs_rootfs for p in self.pages)
+        return any(p.needs_rootfs for p in self.pages)
 
     def current(self):
         return self.tabs.currentWidget() if self.tabs else self.pages[0]
@@ -348,10 +349,10 @@ class MainWindow(QMainWindow):
         quit_.setShortcut(QKeySequence.StandardKey.Quit)
         quit_.triggered.connect(self.close)
         self.addAction(quit_)
-        for i in range(min(9, len(self.sections))):
+        for i in range(min(9, len(self.steps))):
             a = QAction(self)
-            a.setShortcut(QKeySequence("Ctrl+{}".format(i + 1)))
-            a.triggered.connect(lambda _=False, n=i: self.nav.setCurrentRow(n))
+            a.setShortcut(QKeySequence("Ctrl+{}".format(i + 1)))       # Ctrl+N: step N
+            a.triggered.connect(lambda _=False, n=i: self.go_section(self.steps[n]))
             self.addAction(a)
 
     def apply_style(self, sidebar=None, accent=None):
@@ -440,20 +441,36 @@ class MainWindow(QMainWindow):
         elif sec is not None:
             self.step_label.setText("{}  —  {} of {} steps done".format(sec.title, done, total))
 
-    def go_section(self, sec):
-        self.nav.setCurrentRow(self.sections.index(sec))
+    def go_section(self, sec, force=False):
+        """Show a step. *force*: also when the steps before it are not done yet (links in pages)."""
+        row = self.sections.index(sec)
+        if not force:
+            self.nav.setCurrentRow(row)
+            return
+        if sec.needs_rootfs and not (self.project and self.project.has_rootfs()):
+            self.stage_label.setText("Start first: extract an ISO or continue a project (step 1)")
+            return
+        self.nav.blockSignals(True)
+        self.nav.setCurrentRow(row)
+        self.nav.blockSignals(False)
+        self.stack.setCurrentIndex(row)
+        self._update_step_header()
+        try:
+            sec.refresh()
+        except Exception as e:  # a broken page must not take the window down
+            get_logger().error("Could not refresh %s: %s", sec.title, e)
 
-    def go(self, page_class_name):
+    def go(self, page_class_name, force=True):
+        """Open a page. Buttons that point to a page open it even when its step comes later;
+        *force=False* keeps the order of the steps (as the sidebar does)."""
         for sec in self.sections:
             for p in sec.pages:
                 if p.__class__.__name__ == page_class_name:
-                    if not self.section_open(sec):
+                    if not force and not self.section_open(sec):
                         self.stage_label.setText("{} opens at step {}".format(sec.title, sec.step))
                         return
                     sec.show_page(p)
-                    self.go_section(sec)
-                    if self.stack.currentWidget() is sec:
-                        sec.refresh()
+                    self.go_section(sec, force=True)
                     return
 
     def next_step(self, sec, nxt):
@@ -467,6 +484,11 @@ class MainWindow(QMainWindow):
         self.project.mark_step(sec.key)
         self.update_state()
         self.go_section(nxt)
+
+    def pending_for(self, page):
+        """The changes of *page* that wait in Review & Apply (a page must not overwrite them with the image)."""
+        name = page.__class__.__name__
+        return [ch for ch in self.pending if ch.get("page") == name]
 
     def continue_project(self):
         """Go on where the open project stopped: the first step that is not done (or Build)."""
@@ -541,6 +563,14 @@ class MainWindow(QMainWindow):
         if self.task:
             QMessageBox.information(self, APP_NAME, "Wait for the running task to finish.")
             return False
+        if self.project and not create and Path(path).resolve() == self.project.path:
+            return True        # already open (opening it again would fail on its own lock)
+        if self.pending:
+            if QMessageBox.question(self, APP_NAME, "{} change(s) for {} still wait in Review & Apply and are lost "
+                                    "when another project opens. Open the other project anyway?".format(
+                                        len(self.pending), self.project.display_name() if self.project else
+                                        "this project")) != QMessageBox.StandardButton.Yes:
+                return False
         try:
             if not create:
                 from disco.core import preview
@@ -579,6 +609,7 @@ class MainWindow(QMainWindow):
             except RuntimeError as e:
                 get_logger().error("%s", e)
         self.live = None
+        self.built_iso = None      # it belonged to this project: quitting must not offer to clean another one
         if self.project:
             self.project.unlock()
             if self._file_handler:
@@ -660,6 +691,8 @@ class MainWindow(QMainWindow):
 
     def _on_done(self, task, ok, result, error, done):
         self.task = None
+        if getattr(self, "_closing", False):
+            return            # the window is closing: no dialogs, no refreshing
         self.timer.stop()
         self.progress.setVisible(False)
         self.cancel_btn.setVisible(False)
@@ -840,6 +873,13 @@ class MainWindow(QMainWindow):
             self.built_iso = None
             self._update_pending()
             self.update_state()
+            for p in self.pages:
+                if hasattr(p, "project_changed"):
+                    try:
+                        p.project_changed()
+                    except Exception as e:  # a page must not stop the others
+                        get_logger().debug("project_changed of %s: %s", p.__class__.__name__, e)
+            self.go("ProjectPage")
             QMessageBox.information(self, APP_NAME, "Only the ISO is left:\n{}{}".format(
                 "\n".join(str(f) for f in isos_left if f.suffix in (".iso", ".img", ".xz")),
                 "\n\nYour own files stayed: " + ", ".join(own) if own else ""))
@@ -875,8 +915,15 @@ class MainWindow(QMainWindow):
             if r != QMessageBox.StandardButton.Yes:
                 event.ignore()
                 return
+            self._closing = True
             runner.CANCEL.set()
-            self.task.wait(15000)
+            if not self.task.wait(15000):
+                # Still busy (work that cannot be interrupted at once): quitting now would kill it halfway.
+                self._closing = False
+                QMessageBox.information(self, APP_NAME, "The task is still stopping. Wait a moment and close the "
+                                        "window again.")
+                event.ignore()
+                return
         self.close_project()
         get_logger().removeHandler(self.log_handler)
         event.accept()

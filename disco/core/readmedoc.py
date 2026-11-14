@@ -128,13 +128,14 @@ def make_pdf(title, body_html, out):
     writer.setPageLayout(page)
     writer.setResolution(300)
     doc = gui.QTextDocument()
+    doc.documentLayout().setPaintDevice(writer)     # measure the text for the PDF (300 dpi), not the screen
+    font = doc.defaultFont()
+    font.setPointSizeF(11)
+    doc.setDefaultFont(font)
     doc.setDefaultStyleSheet("h1 { color: #1d3557; } h2 { color: #264653; } code { background: #eeeeee; }")
     doc.setHtml(body_html)
     rect = writer.pageLayout().paintRectPixels(writer.resolution())
     doc.setPageSize(core.QSizeF(rect.width(), rect.height()))
-    font = doc.defaultFont()
-    font.setPointSizeF(11)
-    doc.setDefaultFont(font)
     if hasattr(doc, "print_"):      # PyQt5
         doc.print_(writer)
     else:                           # PyQt6

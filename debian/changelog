@@ -15,8 +15,15 @@ disco (0.11.1) unstable; urgency=medium
   * New logo with a penguin tinkering with a computer.
   * A test presses every button of every page and runs the work behind it.
   * US English everywhere; docs/QUICKSTART.md replaces docs/PANDUAN.md.
+  * Fixes from two code reviews: typed text survives page refreshes; the
+    installer choice changes the system; SD-card accounts with the default
+    password log in over SSH with a key only; /etc/skel imports leave
+    secrets behind; presets cannot inject lines into scripts or sources;
+    live-build failures are reported; package lists are checked before
+    they replace; unlocked Chromium settings are recommended; links never
+    lead writes out of the image; the README PDF text has its real size.
 
- -- Hugo Moniz do Rego <hugomonizdorego@users.noreply.github.com>  Sun, 15 Nov 2026 10:00:00 +0000
+ -- Hugo Moniz do Rego <hugomonizdorego@users.noreply.github.com>  Sat, 14 Nov 2026 10:00:00 +0000
 
 disco (0.11) unstable; urgency=medium
 

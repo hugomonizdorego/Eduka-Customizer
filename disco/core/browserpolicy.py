@@ -5,7 +5,8 @@ Firefox ESR (Debian's firefox-esr) reads policies.json from
   /etc/firefox/policies/policies.json          (every Firefox on Linux)
   /usr/lib/firefox-esr/distribution/policies.json
 D!sco writes the same file to all three. Chromium reads every JSON file in
-/etc/chromium/policies/managed/.
+/etc/chromium/policies/managed/ (fixed) and /etc/chromium/policies/recommended/
+(defaults that users may change): settings that are not locked go to the second.
 
 What can be set here: the home page (locked or not), bookmarks in the toolbar,
 no telemetry, no "first run" pages, and the search engine of Firefox.
@@ -20,6 +21,10 @@ from disco.core.log import log
 FIREFOX_PATHS = ["etc/firefox-esr/policies/policies.json", "etc/firefox/policies/policies.json",
                  "usr/lib/firefox-esr/distribution/policies.json"]
 CHROMIUM_PATH = "etc/chromium/policies/managed/disco.json"
+CHROMIUM_RECOMMENDED = "etc/chromium/policies/recommended/disco.json"
+# What users may change later when the settings are not locked (Chromium's "recommended" policies).
+CHROMIUM_CHANGEABLE = {"HomepageLocation", "HomepageIsNewTabPage", "ShowHomeButton", "RestoreOnStartup",
+                       "RestoreOnStartupURLs", "BookmarkBarEnabled"}
 SEARCH = ["", "DuckDuckGo", "Google", "Bing", "Wikipedia (en)", "Qwant", "Startpage"]
 URL = re.compile(r"^(https?|file)://\S+$")
 
@@ -75,6 +80,34 @@ def chromium_policies(homepage="", locked=False, bookmarks=(), telemetry=False):
     return p
 
 
+def chromium_files(homepage="", locked=False, bookmarks=(), telemetry=False):
+    """{file of the image: policies or None (no file)}: what is not locked is only recommended."""
+    pol = chromium_policies(homepage, locked, bookmarks, telemetry)
+    if locked:
+        return {CHROMIUM_PATH: pol, CHROMIUM_RECOMMENDED: None}
+    recommended = {k: v for k, v in pol.items() if k in CHROMIUM_CHANGEABLE}
+    managed = {k: v for k, v in pol.items() if k not in CHROMIUM_CHANGEABLE}
+    return {CHROMIUM_PATH: managed or None, CHROMIUM_RECOMMENDED: recommended or None}
+
+
+def _target(rootfs, rel):
+    """The file *rel* of the image, its links followed inside the image (never into this computer)."""
+    import os
+    from disco.core.distro import resolve_in_root
+    p = resolve_in_root(rootfs, rel)
+    root = os.path.realpath(str(rootfs)).rstrip("/") + "/"
+    if p is None or not os.path.realpath(str(p)).startswith(root):
+        raise ValueError("/{} leads out of the system".format(rel))
+    return p
+
+
+def _write(rootfs, rel, data):
+    p = _target(rootfs, rel)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(data)
+    p.chmod(0o644)
+
+
 def apply(project, homepage="", locked=False, bookmarks_text="", telemetry=False, search="",
           firefox=True, chromium=True):
     """Write the policies into the image. Returns the files written."""
@@ -84,17 +117,17 @@ def apply(project, homepage="", locked=False, bookmarks_text="", telemetry=False
     if firefox:
         data = json.dumps(firefox_policies(homepage, locked, bookmarks, telemetry, search), indent=2) + "\n"
         for rel in FIREFOX_PATHS:
-            p = r / rel
-            p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(data)
-            p.chmod(0o644)
+            _write(r, rel, data)
             written.append("/" + rel)
     if chromium:
-        p = r / CHROMIUM_PATH
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(chromium_policies(homepage, locked, bookmarks, telemetry), indent=2) + "\n")
-        p.chmod(0o644)
-        written.append("/" + CHROMIUM_PATH)
+        for rel, pol in chromium_files(homepage, locked, bookmarks, telemetry).items():
+            if pol:
+                _write(r, rel, json.dumps(pol, indent=2) + "\n")
+                written.append("/" + rel)
+            else:
+                old = _target(r, rel)
+                if old.is_file() or old.is_symlink():
+                    old.unlink()
     project.state["browser"] = {"homepage": homepage, "locked": bool(locked), "bookmarks": bookmarks_text,
                                 "telemetry": bool(telemetry), "search": search, "firefox": firefox,
                                 "chromium": chromium}
@@ -106,8 +139,9 @@ def apply(project, homepage="", locked=False, bookmarks_text="", telemetry=False
 
 def remove(project):
     r = Path(project.rootfs)
-    for rel in FIREFOX_PATHS + [CHROMIUM_PATH]:
-        if (r / rel).exists():
-            (r / rel).unlink()
+    for rel in FIREFOX_PATHS + [CHROMIUM_PATH, CHROMIUM_RECOMMENDED]:
+        p = _target(r, rel)
+        if p.is_file() or p.is_symlink():
+            p.unlink()
     project.state.pop("browser", None)
     project.save()

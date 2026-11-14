@@ -29,6 +29,8 @@ FIELDS = {
     "profile": "",               # a purpose from profiles.json (recommended apps)
 }
 SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._+,:()/!-]{0,79}$")
+WORD = re.compile(r"^[a-z0-9][a-z0-9._+-]{0,62}$")                  # desktop, display manager, purpose
+MIRROR = re.compile(r"^(https?|ftp|file)://[A-Za-z0-9._~:/%+@-]+$")  # no spaces, quotes or line breaks
 
 
 def builtin_dir():
@@ -66,6 +68,18 @@ def normalize(data):
         raise ValueError("installer must be calamares, none or debs")
     if builder["method"] not in ("disco", "live-build"):
         raise ValueError("method must be disco or live-build")
+    # Everything else ends up in commands, scripts and apt sources: only plain values.
+    dn = builder["distro_name"]
+    if len(dn) > 80 or any(ord(ch) < 32 or ord(ch) == 127 for ch in dn):
+        raise ValueError("The distribution name is one line of 80 characters at most")
+    for key in ("desktop", "dm", "profile"):
+        if builder[key] and not WORD.match(builder[key]):
+            raise ValueError("{} must be an id such as xfce or lightdm".format(key))
+    from disco.core.bootstrap import VARIANTS
+    if builder["variant"] not in VARIANTS:
+        raise ValueError("variant must be one of: " + ", ".join(VARIANTS))
+    if builder["mirror"] and not MIRROR.match(builder["mirror"]):
+        raise ValueError("mirror must be an address such as http://deb.debian.org/debian")
     name = data.get("name") or builder["distro_name"]
     if not SAFE_NAME.match(name):
         raise ValueError("Preset names use letters, digits, spaces and . _ + - , : ( ) / ! (80 at most)")

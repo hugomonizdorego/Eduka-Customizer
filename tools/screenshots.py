@@ -185,6 +185,11 @@ def main():
     if box:
         box.close()
     grab(w, app, "11-review-apply.png", "ReviewPage")
+    try:                                   # what the checks look like (they only read the demo system)
+        from disco.core import preflight
+        pages["BuildPage"]._show_checks(preflight.run(w.project))
+    except Exception as e:
+        print("checks not shown:", e)
     grab(w, app, "12-build.png", "BuildPage")
     grab(w, app, "13-settings.png", "SettingsPage")
     grab(w, app, "13b-about.png", "AboutPage")

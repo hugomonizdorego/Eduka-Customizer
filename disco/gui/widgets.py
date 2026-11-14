@@ -309,16 +309,48 @@ class FileTreeEditor(QWidget):
                            button("Save file", self.save, "primary")))
 
     def set_root(self, path):
+        """Show the folder *path*. The same folder again (a page shown again) keeps the open file and
+        what was typed in it; set_root(None) starts afresh."""
         from pathlib import Path
-        self.root = Path(path) if path else None
+        new = Path(path) if path else None
+        if new is not None and new == self.root and getattr(self, "_shown", None) == new and new.exists():
+            return
+        self.root = new
         self.current = None
         self.editor.clear()
+        self.path_label.setText("")
         if self.root and self.root.exists():
             idx = self.model.setRootPath(str(self.root))
             self.tree.setRootIndex(idx)
             self.setEnabled(True)
+            self._shown = self.root
         else:
             self.setEnabled(False)
+            self._shown = None
+
+    def _inside(self, p, link_itself=False):
+        """True when *p* really is in the root folder. Images contain absolute links (/var/run -> /run)
+        and, while a chroot is active, mounts of this computer's /dev, /proc and /run: following them
+        would edit or delete files of this computer. *link_itself*: a link is judged by where it is,
+        not where it points (deleting a link only removes the link)."""
+        import os
+        from pathlib import Path
+        if self.root is None:
+            return False
+        root = os.path.realpath(str(self.root))
+        p = Path(p)
+        real = os.path.join(os.path.realpath(str(p.parent)), p.name) if link_itself else os.path.realpath(str(p))
+        if real != root and not real.startswith(root.rstrip("/") + "/"):
+            return False
+        from disco.core.chroot import mounts_under
+        for mp in mounts_under(root, include_self=False):
+            if real == mp or real.startswith(mp.rstrip("/") + "/"):
+                return False
+        return True
+
+    def _refuse(self, what):
+        self.path_label.setText("{}: outside the system folder (a link or a mount of this computer) - not "
+                                "changed".format(what))
 
     def _selected_dir(self):
         from pathlib import Path
@@ -335,6 +367,12 @@ class FileTreeEditor(QWidget):
             return
         self.current = p
         self.path_label.setText(str(p.relative_to(self.root)) if self.root else str(p))
+        if not p.is_symlink() and not self._inside(p):
+            self.current = None
+            self.editor.setPlainText("(this file is outside the system folder: it belongs to this computer and "
+                                     "is not shown here)")
+            self.editor.setReadOnly(True)
+            return
         try:
             if p.is_symlink():
                 self.editor.setPlainText("(symbolic link to {})".format(p.readlink()))
@@ -365,7 +403,11 @@ class FileTreeEditor(QWidget):
 
     def save(self):
         if self.current and not self.editor.isReadOnly():
+            if self.current.is_symlink() or not self._inside(self.current):
+                self._refuse(self.current.name)
+                return
             self.current.write_text(self.editor.toPlainText())
+            self.editor.document().setModified(False)
             self.path_label.setText("Saved " + str(self.current.relative_to(self.root)))
 
     def new_file(self):
@@ -376,15 +418,22 @@ class FileTreeEditor(QWidget):
         name, ok = QInputDialog.getText(self, "New file", "Name (sub/folders/allowed):")
         if ok and name and ".." not in name.split("/"):
             p = base / name.strip("/")
+            if not self._inside(base) or not self._inside(p.parent if p.parent.exists() else base):
+                self._refuse(name)
+                return
             p.parent.mkdir(parents=True, exist_ok=True)
             p.touch()
 
     def add_file(self):
         import shutil
         base = self._selected_dir()
+        if not base or not self._inside(base):
+            self._refuse(str(base))
+            return
         files, _ = QFileDialog.getOpenFileNames(self, "Add files", "")
         for f in files:
             if self.current and len(files) == 1 and self.current.parent == base \
+                    and not self.current.is_symlink() and self._inside(self.current) \
                     and QMessageBox.question(self, "Replace", "Replace {} with {}?".format(
                         self.current.name, f)) == QMessageBox.StandardButton.Yes:
                 shutil.copy2(f, self.current)
@@ -398,10 +447,18 @@ class FileTreeEditor(QWidget):
             return
         from pathlib import Path
         p = Path(self.model.filePath(idx))
-        if p == self.root or QMessageBox.question(self, "Delete", "Delete {}?".format(p.name)) != \
-                QMessageBox.StandardButton.Yes:
+        link = p.is_symlink()
+        if p == self.root or not self._inside(p, link_itself=link):
+            self._refuse(p.name)
             return
-        if p.is_dir() and not p.is_symlink():
+        from disco.core.chroot import mounts_under
+        if not link and p.is_dir() and mounts_under(p):
+            self.path_label.setText("{} holds mounted folders of this computer: unmount everything first".format(
+                p.name))
+            return
+        if QMessageBox.question(self, "Delete", "Delete {}?".format(p.name)) != QMessageBox.StandardButton.Yes:
+            return
+        if p.is_dir() and not link:
             shutil.rmtree(p)
         else:
             p.unlink()

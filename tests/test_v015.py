@@ -253,8 +253,10 @@ assert open_ == ["welcome", "start", "system", "settings"], open_
 w.next_step(w.steps[1], w.steps[2])
 assert w.section_open(w.sections[keys.index("software")])
 assert not w.section_open(w.sections[keys.index("boot")])
+w.go("BoardPage", force=False)
+assert w.stack.currentWidget().key == "software"   # in the order of the steps Boot is not open yet
 w.go("BoardPage")
-assert w.stack.currentWidget().key == "software"   # Boot is not open yet
+assert w.stack.currentWidget().key == "boot"       # a link in a page opens its page anyway
 w.continue_project()
 assert w.stack.currentWidget().key == "software"   # where the project stopped
 w.go("UsersPage")

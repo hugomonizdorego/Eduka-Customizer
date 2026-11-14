@@ -38,6 +38,11 @@ class ReadmePage(Page):
                    button("Remove from the system", self.remove, "danger"),
                    button("Put it on the desktop", self.apply, "primary", ("user-desktop",))))
 
+    def project_changed(self):
+        """Another project: its own title and text (never the text of the project before)."""
+        self.doc_title.clear()
+        self.body.clear()
+
     def refresh(self):
         if not self.project:
             return

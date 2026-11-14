@@ -67,18 +67,42 @@ class EasyBrandPage(Page):
             st["default"] = bool(on)
             self.project.save()
 
+    def _snapshot(self, kind):
+        """The picture and 'Set as default' of this moment, kept for the waiting change."""
+        try:
+            return quickbrand.snapshot(self.project, kind)
+        except (ValueError, OSError) as e:
+            QMessageBox.information(self, "Picture", str(e))
+            return None
+
     def apply(self, kind):
         if not self.project or quickbrand.stored(self.project, kind) is None:
             QMessageBox.information(self, "Picture", "Choose a picture first.")
             return
+        snap = self._snapshot(kind)
+        if snap is None:
+            return
+        image, default = snap
         proj = self.project
         title = dict((k, t) for k, t, *_ in quickbrand.KINDS)[kind]
-        self.task("Picture: {}".format(title), lambda t: quickbrand.apply(proj, kind))
+        self.task("Picture: {}{} ({})".format(title, "" if default else " added", image.name),
+                  lambda t: quickbrand.apply(proj, kind, image, default))
 
     def apply_all(self):
         chosen = [k for k in self.rows if self.project and quickbrand.stored(self.project, k)]
         if not chosen:
             QMessageBox.information(self, "Pictures", "Choose at least one picture first.")
             return
+        snaps = []
         for k in chosen:
-            self.apply(k)
+            snap = self._snapshot(k)
+            if snap is None:
+                return
+            snaps.append((k,) + snap)
+        proj = self.project
+
+        def work(t):
+            for kind, image, default in snaps:
+                t.set_stage("Picture: " + kind)
+                quickbrand.apply(proj, kind, image, default)
+        self.task("Picture: all chosen ({})".format(", ".join(k for k, *_ in snaps)), work)

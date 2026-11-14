@@ -53,6 +53,15 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 """
+SSH_GUARD = "etc/ssh/sshd_config.d/60-disco-default-password.conf"
+SSH_GUARD_TEXT = """# Written by D!sco. The account {user} has the well-known password of the image
+# ({what}). Over the network it logs in with an SSH key only: put your key into
+# sysconf.txt (root_authorized_key) or ~/.ssh/authorized_keys. Set a password of
+# your own (passwd), then delete this file to allow password logins again.
+Match User {user}
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+"""
 FSTAB = """# /etc/fstab of an SD-card image made with D!sco
 LABEL={root}\t/\text4\trw,errors=remount-ro\t0\t1
 LABEL={boot}\t/boot/firmware\tvfat\trw,umask=0022\t0\t2
@@ -184,8 +193,26 @@ class ImageBuilder:
                 password_hash = m.group(1) if m else None
             u.add_account(name, live["fullname"], password=password, admin=True, groups=live["groups"],
                           password_hash=password_hash)
+        self._guard_ssh(name, live["password"])
         if live["autologin"]:
             self._autologin(name)
+
+    def _guard_ssh(self, user, mode):
+        """A card on a network must not accept the well-known password (or no password) over SSH."""
+        from disco.core.distro import resolve_in_root
+        p = resolve_in_root(self.rootfs, SSH_GUARD)
+        root = os.path.realpath(str(self.rootfs))
+        if p is None or not os.path.realpath(str(p)).startswith(root.rstrip("/") + "/"):
+            raise RuntimeError("/{} leads out of the system".format(SSH_GUARD))
+        if mode in ("default", "none"):
+            p.parent.mkdir(parents=True, exist_ok=True)
+            if p.is_symlink():
+                p.unlink()
+            p.write_text(SSH_GUARD_TEXT.format(user=user, what="'live'" if mode == "default" else "no password"))
+            log.warning("The account %s has %s: change it after the first start (passwd). Over SSH it logs in "
+                        "with a key only.", user, "the password 'live'" if mode == "default" else "no password")
+        elif p.exists() or p.is_symlink():
+            p.unlink()                  # a password of your own: password logins are fine
 
     def _autologin(self, user):
         r = self.rootfs
@@ -436,6 +463,15 @@ def uncompressed(image, cache):
         return image
     raw = Path(cache) / image.name[:-3]
     if not raw.exists() or raw.stat().st_mtime < image.stat().st_mtime:
-        with open(raw, "wb") as out:
-            subprocess.run(["xz", "-dc", str(image)], stdout=out, check=True)
+        # Into a temporary file first: a stopped or failed run never leaves half an image that
+        # would look complete the next time.
+        Path(cache).mkdir(parents=True, exist_ok=True)
+        tmp = raw.with_name(raw.name + ".part")
+        try:
+            with open(tmp, "wb") as out:
+                subprocess.run(["xz", "-dc", str(image)], stdout=out, check=True)
+            os.replace(tmp, raw)
+        finally:
+            if tmp.exists():
+                tmp.unlink()
     return raw

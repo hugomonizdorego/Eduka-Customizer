@@ -57,6 +57,7 @@ class SystemFilesPage(Page):
         self.grub = FilePicker("GRUB background", "Images (*.png *.jpg *.jpeg)")
         self.grub_preview = ImagePreview(192, 108)
         self.grub.changed.connect(self.grub_preview.show_file)
+        self._queued = {}      # (project, file): text of a change that waits in Review & Apply
         g.add(hbox(self.grub, self.grub_preview, button("Use it", self.set_grub),
                    button("Remove", self.clear_grub, "danger")))
 
@@ -69,20 +70,32 @@ class SystemFilesPage(Page):
         if row < 0 or not self.project:
             return
         rel, _title, desc = sysfiles.FILES[row]
-        self.desc.setText(desc)
-        try:
-            text = sysfiles.read(self.project, rel)
-        except ValueError as e:
-            text = "# " + str(e)
+        key = (str(self.project.path), rel)
+        if key in self._queued and not any(ch.get("name") == "Write /" + rel for ch in self.main.pending_for(self)):
+            self._queued.pop(key)          # applied, or taken out of Review & Apply
+        queued = self._queued.get(key)
+        self.desc.setText(desc + ("  <b>(your change waits in Review & Apply)</b>" if queued is not None else ""))
+        if queued is not None:
+            text = queued
+        else:
+            try:
+                text = sysfiles.read(self.project, rel)
+            except ValueError as e:
+                text = "# " + str(e)
         self.editor.setPlainText(text)
+        self.editor.document().setModified(False)
 
     def _reload(self):
         self._show(self.files.currentRow())
 
+    def project_changed(self):
+        self.editor.document().setModified(False)
+        self._reload()
+
     def refresh(self):
         if self.files.currentRow() < 0:
             self.files.setCurrentRow(0)
-        else:
+        elif not self.editor.document().isModified():   # never throw away what is being typed
             self._reload()
 
     def template(self):
@@ -101,7 +114,11 @@ class SystemFilesPage(Page):
             QMessageBox.warning(self, "System files", str(e))
             return
         proj = self.project
-        self.task("Write /" + rel, lambda t: sysfiles.write(proj, rel, text))
+        key = (str(proj.path), rel)
+        self._queued[key] = text
+        self.editor.document().setModified(False)
+        self.task("Write /" + rel, lambda t: sysfiles.write(proj, rel, text),
+                  lambda _r: self._queued.pop(key, None))
 
     # Skel ---------------------------------------------------------------------------------------------------
     def set_face(self):

@@ -65,6 +65,11 @@ class BoardPage(Page):
                     "of this computer. Raspberry Pi Imager (\"Use custom\") and GNOME Disks (\"Restore Disk "
                     "Image\") write the same file with a safer device chooser.", wrap=True))
 
+    _loaded = None
+
+    def project_changed(self):
+        self._loaded = None
+
     def _board(self):
         return self.project and platforms.of_project(self.project).output == "img"
 
@@ -78,16 +83,27 @@ class BoardPage(Page):
                               "Start → Other ways to start → New system (no ISO) and choose a Raspberry Pi."
                               .format(plat.name))
         else:
-            self.note.setText("<b>{}</b> — {}{}".format(plat.name, plat.description, " " + plat.note if plat.note
-                                                         else ""))
-        o = imgbuild.ImageOptions.from_project(self.project)
-        self.config_txt.setPlainText(o.config_txt)
-        self.cmdline.setText(o.cmdline)
-        self.size.setValue(int(o.size_mb or 0))
-        self.boot_mb.setValue(int(o.boot_mb))
-        self.compress.setCurrentIndex(max(0, self.compress.findData(o.compress)))
-        self.sysconf.setChecked(bool(o.sysconf))
-        self.img_name.setText(o.name)
+            account = ""
+            if self.project.has_rootfs():
+                from disco.core.users import Users
+                live = Users(self.project).live()
+                if live["password"] in ("default", "none"):
+                    account = ("<br><b>Account on the card:</b> {} with {}. Over SSH it logs in with a key only. "
+                               "Set a password of your own on System → Users.".format(
+                                   live["username"], "the password 'live'" if live["password"] == "default"
+                                   else "no password"))
+            self.note.setText("<b>{}</b> — {}{}{}".format(plat.name, plat.description, " " + plat.note if plat.note
+                                                           else "", account))
+        if self._loaded != str(self.project.path):     # once per project: never undo what is being typed
+            self._loaded = str(self.project.path)
+            o = imgbuild.ImageOptions.from_project(self.project)
+            self.config_txt.setPlainText(o.config_txt)
+            self.cmdline.setText(o.cmdline)
+            self.size.setValue(int(o.size_mb or 0))
+            self.boot_mb.setValue(int(o.boot_mb))
+            self.compress.setCurrentIndex(max(0, self.compress.findData(o.compress)))
+            self.sysconf.setChecked(bool(o.sysconf))
+            self.img_name.setText(o.name)
         last = self.project.state.get("last_image")
         if last and Path(last).exists():
             self.flash.setText("<b>{}</b><br><code>{}</code>".format(last, imgbuild.flash_command(last)))

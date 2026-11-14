@@ -174,7 +174,7 @@ The other tabs: **Wallpaper & Login** (a wallpaper gallery and login screen them
 
 ## 11. Step 8 · Installer
 
-**Which installer**: Calamares (recommended), none (a live system only), or **your own .deb packages**: drop them on the page and press **Install them now**. Below it: the name, pictures, slides and rules of Calamares, and **Check the installer**.
+**Which installer**: Calamares (recommended), none (a live system only), or **your own .deb packages**: drop them on the page and press **Install them now**. **Save** makes the system match the choice: it offers to install Calamares, or to take it out for *none* and for your own packages. Below it: the name, pictures, slides and rules of Calamares, and **Check the installer**.
 
 ![Installer](screenshots/09-installer.png)
 
@@ -263,6 +263,8 @@ SD-card images are laid out like Debian's own (RASPIFIRM boot partition, RASPIRO
 hostname=mypi
 root_authorized_key=ssh-ed25519 AAAA... you@laptop
 ```
+
+The card has the account of the **Users** page. While it has the well-known password (`live`) or none, it logs in over SSH with a key only: set a password of your own on System → Users, or change it with `passwd` after the first start.
 
 ![Raspberry Pi](screenshots/08c-raspberry-pi.png)
 

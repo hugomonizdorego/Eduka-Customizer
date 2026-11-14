@@ -69,8 +69,10 @@ def project_summary(path):
     when = hist[-1].get("time", "").replace("T", " ")[:16] if hist else ""
     done = st.get("steps_done") or []
     built = st.get("last_iso") or st.get("last_image")
+    has_system = Path(path, "rootfs/usr").is_dir()
+    count = len([k for k in done if k != "start"]) + (1 if has_system else 0)
     state = "finished: {}".format(Path(built).name) if built else (
-        "all steps done" if "*" in done else "{} step(s) done".format(len(done) + (1 if Path(path, "rootfs/usr").is_dir() else 0)))
+        "all steps done" if "*" in done else "{} step(s) done".format(count))
     return name, "{}{}".format(state, " · last change " + when if when else "")
 
 
@@ -205,9 +207,14 @@ class ProjectPage(Page):
         base = settings().get("general", "projects_dir")
         cur = self.folder.text()
         if not cur or Path(cur).parent == Path(base):
-            self.folder.setText(os.path.join(base, slug(text)))
+            self.folder.setText(self._free_folder())
 
     def refresh(self):
+        # The folder of a new project never points at another project by surprise.
+        cur = self.folder.text().strip()
+        if cur and Path(cur, "project.json").exists() and not (self.project and Path(cur).resolve() ==
+                                                                self.project.path):
+            self.folder.setText(self._free_folder())
         self.recent.clear()
         for p in settings().recent_projects():
             name, state = project_summary(p)
@@ -258,12 +265,18 @@ class ProjectPage(Page):
 
     # Projects ---------------------------------------------------------------------------------------------------
     def _target_project(self):
-        """Open (or create) the project of the folder field. False when that did not work."""
+        """Open (or create) the project of the folder field. False when that did not work.
+        Asks first when the folder holds another project: its system would be replaced."""
         folder = os.path.realpath(self.folder.text().strip() or ".")
         name = self.name.text().strip() or Path(folder).name
         if self.project and str(self.project.path) == folder:
             return True
         if Path(folder, "project.json").exists():
+            other, _state = project_summary(folder)
+            if QMessageBox.question(self, "Project folder", "The folder {} holds the project '{}'.\n\nOpen it and "
+                                    "replace its system with the new one?".format(folder, other)) != \
+                    QMessageBox.StandardButton.Yes:
+                return False
             return self.main.open_project(folder)
         if Path(folder).exists() and any(Path(folder).iterdir()):
             if QMessageBox.question(self, "Project folder", "{} is not empty and is not a D!sco project. Use it "
@@ -294,10 +307,21 @@ class ProjectPage(Page):
     def _confirm_replace(self):
         if self.project.has_rootfs():
             r = QMessageBox.question(self, "Replace the system",
-                                     "This project already has a system. Replace it? Everything changed in it is "
-                                     "lost.")
+                                     "The project '{}' ({}) already has a system. Replace it? Everything changed in "
+                                     "it is lost.".format(self.project.display_name(), self.project.path))
             return r == QMessageBox.StandardButton.Yes
         return True
+
+    def _free_folder(self):
+        """A folder for a new project that is not the folder of another project."""
+        base = settings().get("general", "projects_dir")
+        want = slug(self.name.text().strip() or "My Linux")
+        cand, n = os.path.join(base, want), 2
+        while Path(cand, "project.json").exists() and not (self.project and Path(cand).resolve() ==
+                                                            self.project.path):
+            cand = os.path.join(base, "{}-{}".format(want, n))
+            n += 1
+        return cand
 
     def _language(self):
         if not self.lang.currentData() and self.lang.currentIndex() == 0:
@@ -306,8 +330,12 @@ class ProjectPage(Page):
 
     def _done(self, info):
         from disco.core import permissions
-        # A new system: its steps start again (Continue must not jump to Build of the old one).
+        # A new system: its steps start again (Continue must not jump to Build of the old one), and the
+        # platform is the one of the new system (a PC ISO in a former Raspberry Pi project builds an ISO).
         self.project.state["steps_done"] = []
+        builder = self.project.state.get("builder") or {}
+        if self.project.state.get("source", {}).get("kind") in ("iso", "snapshot"):
+            builder.pop("platform", None)
         self.project.save()
         permissions.share_user_folders(self.project)
         self.main.update_state()

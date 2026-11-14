@@ -11,7 +11,9 @@ Every picture is kept in <project>/branding/pictures, a folder of yours. Without
 /usr/share/pixmaps/<id>/) so users can pick it themselves.
 """
 
+import os
 import shutil
+import time
 from pathlib import Path
 
 from disco.core.log import log
@@ -33,16 +35,46 @@ EXTENSIONS = (".png", ".jpg", ".jpeg", ".svg", ".webp")
 
 
 def folder(project):
-    d = Path(project.path) / "branding" / "pictures"
+    """branding/pictures of the project. It belongs to the user: a link put in its place is refused
+    (D!sco writes there as administrator and must not follow it out of the project)."""
+    base = Path(project.path).resolve()
+    d = base / "branding" / "pictures"
+    for part in (base / "branding", d):
+        if part.is_symlink():
+            raise ValueError("{} is a link: replace it with a folder".format(part))
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def stored(project, kind):
-    """The picture chosen for *kind* (in the project's pictures folder), or None."""
+    """The picture chosen for *kind* (in the project's pictures folder), or None. Links are not pictures:
+    they could lead to any file of this computer."""
     entry = (project.state.get("quickbrand") or {}).get(kind) or {}
     p = Path(entry.get("file", "")) if entry.get("file") else None
-    return p if p and p.is_file() else None
+    return p if p and p.is_file() and not p.is_symlink() else None
+
+
+def _write_new(src, dest):
+    """Copy *src* to *dest* without following a link that may sit at *dest* (or at a temporary name)."""
+    tmp = dest.with_name(".{}.{}.tmp".format(dest.name, os.getpid()))
+    if os.path.lexists(tmp):
+        tmp.unlink()
+    fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o644)
+    with os.fdopen(fd, "wb") as out, open(src, "rb") as inp:
+        shutil.copyfileobj(inp, out)
+    os.replace(tmp, dest)          # replaces a link itself, never what it points to
+    return dest
+
+
+def readable(image):
+    """True when D!sco can read the picture (WebP needs Qt's image format plugin)."""
+    image = Path(image)
+    if image.suffix.lower() == ".svg":
+        return True
+    from disco.core import imaging
+    if imaging._qt() is None:
+        return image.suffix.lower() in (".png", ".jpg", ".jpeg")
+    return imaging.load(image) is not None
 
 
 def is_default(project, kind):
@@ -56,12 +88,18 @@ def store(project, kind, image, default=True):
     image = Path(image)
     if image.suffix.lower() not in EXTENSIONS or not image.is_file():
         raise ValueError("Choose a PNG, JPEG, SVG or WebP picture")
-    dest = folder(project) / (kind + image.suffix.lower())
-    for old in folder(project).glob(kind + ".*"):
-        if old != dest:
-            old.unlink()
+    if not readable(image):
+        raise ValueError("{} cannot be read on this computer (WebP needs the package qt6-image-formats-plugins): "
+                         "use PNG or JPEG".format(image.name))
+    d = folder(project)
+    dest = d / (kind + image.suffix.lower())
     if image.resolve() != dest.resolve():
-        shutil.copy2(image, dest)
+        _write_new(image, dest)
+    # The earlier picture of this kind (another file type) goes; other files of yours stay.
+    for ext in EXTENSIONS:
+        old = d / (kind + ext)
+        if old != dest and os.path.lexists(old):
+            old.unlink()
     from disco.core import permissions
     permissions.give_to_user(dest)
     project.state.setdefault("quickbrand", {})[kind] = {"file": str(dest), "default": bool(default)}
@@ -69,14 +107,29 @@ def store(project, kind, image, default=True):
     return dest
 
 
-def apply(project, kind):
-    """Put the stored picture into the system: as the default, or only into the system's pictures."""
+def snapshot(project, kind):
+    """(picture, default) as they are now, kept for a change that waits in Review & Apply: choosing
+    another picture later does not change what that change puts in."""
     image = stored(project, kind)
     if image is None:
         raise ValueError("Choose a picture first")
+    d = folder(project) / "queued"
+    d.mkdir(exist_ok=True)
+    keep = d / "{}-{}{}".format(kind, time.strftime("%Y%m%d-%H%M%S"), image.suffix.lower())
+    _write_new(image, keep)
+    return keep, is_default(project, kind)
+
+
+def apply(project, kind, image=None, default=None):
+    """Put the picture into the system: as the default, or only into the system's pictures.
+    *image* and *default* are the ones of the moment Apply was pressed (see snapshot())."""
+    image = Path(image) if image else stored(project, kind)
+    if image is None or not image.is_file() or image.is_symlink():
+        raise ValueError("Choose a picture first")
+    default = is_default(project, kind) if default is None else default
     from disco.core.branding import Branding
     br = Branding(project)
-    if not is_default(project, kind):
+    if not default:
         return _add_only(project, kind, image)
     if kind == "wallpaper":
         br.set_wallpaper(image)
@@ -99,8 +152,12 @@ def _add_only(project, kind, image):
     else:
         d = Path(project.rootfs) / "usr/share/pixmaps" / project.os_id()
     d.mkdir(parents=True, exist_ok=True)
-    target = d / "{}{}".format(kind if kind != "wallpaper" else image.stem + "-" + kind, image.suffix.lower())
-    shutil.copy2(image, target)
+    # Every added picture gets a name of its own (mylinux-wallpaper.png, mylinux-wallpaper-2.png...).
+    stem = "{}-{}".format(project.os_id(), kind)
+    target, n = d / "{}{}".format(stem, image.suffix.lower()), 2
+    while target.exists():
+        target, n = d / "{}-{}{}".format(stem, n, image.suffix.lower()), n + 1
+    shutil.copyfile(image, target)
     target.chmod(0o644)
     log.info("%s added to %s (not the default)", image.name, "/" + str(target.relative_to(project.rootfs)))
     return target
@@ -119,8 +176,17 @@ def apply_logo(project, image):
     if str(image).lower().endswith(".svg"):
         dest = icons / "scalable/apps" / (os_id + "-logo.svg")
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(image, dest)
+        shutil.copyfile(image, dest)
     imaging.write_png(image, r / "usr/share/pixmaps" / (os_id + "-logo.png"), (256, 256), fit="contain")
+    # Everyone must be able to read the icons (pictures saved by browsers are often private, 0600).
+    for f in list(icons.glob("*/apps/{}-logo.*".format(os_id))) + list(icons.glob(
+            "*/apps/distributor-logo-{}.*".format(os_id))) + [r / "usr/share/pixmaps" / (os_id + "-logo.png")]:
+        if f.is_file() and not f.is_symlink():
+            f.chmod(0o644)
+    # GTK finds new icons only when the icon cache knows them.
+    if (r / "usr/bin/gtk-update-icon-cache").exists() or (r / "usr/sbin/gtk-update-icon-cache").exists():
+        from disco.core.chroot import Chroot
+        Chroot(r).run(["gtk-update-icon-cache", "-f", "-q", "/usr/share/icons/hicolor"], check=False, quiet=True)
     # os-release names the icon (LOGO=<id>-logo)
     from disco.core import sysfiles
     from disco.core.distro import format_os_release, parse_os_release

@@ -160,7 +160,15 @@ class BuildPage(Page):
             self.preview.setText("→ {}".format(iso_filename(self.iso_name.text(), self.project)))
 
     def project_changed(self):
+        """Another project (or none): nothing of the project before stays on this page."""
         self._opts_for = None   # fill the options from the newly opened project
+        self._results = []
+        self._estimate = None
+        self.checks.setRowCount(0)
+        self.fix_btn.setEnabled(False)
+        self.check_state.setText("Not checked yet.")
+        self.test_iso.setText("")
+        self.result.setText("No image built yet.")
 
     def refresh(self):
         if not self.project:
@@ -202,7 +210,26 @@ class BuildPage(Page):
             cb.setChecked(bool(o.cleanup.get(k, cleanup.OPTIONS[k][1])))
 
     def _show_result(self):
+        from disco.core import platforms
+        board = platforms.of_project(self.project).output == "img"
+        self.quick_btn.setVisible(not board)      # SD-card images have no boot files to rebuild
+        if board:
+            last = self.project.state.get("last_image")
+            if last and Path(last).exists():
+                from disco.core import imgbuild
+                size = Path(last).stat().st_size / 1024 ** 3
+                self.result.setText("<b>{}</b><br>{:.2f} GiB<br><br>Write it to an SD card with: <code>{}</code><br>"
+                                    "<b>WARNING: dd overwrites the whole device: check its name with lsblk first."
+                                    "</b>".format(last, size, imgbuild.flash_command(last)))
+                if not self.test_iso.text():
+                    self.test_iso.setText(last)
+            else:
+                self.result.setText("No image built yet.")
+            return
         last = self.project.state.get("last_iso")
+        if not (last and Path(last).exists()):
+            self.result.setText("No image built yet.")
+            return
         if last and Path(last).exists():
             size = Path(last).stat().st_size / 1024 ** 3
             sha = Path(last + ".sha256")
@@ -230,7 +257,21 @@ class BuildPage(Page):
         o.resources = self.resources.currentData()
         return o
 
+    def _pending_ok(self):
+        """Changes still waiting in Review & Apply are not in the image: say so before building."""
+        n = len(self.main.pending)
+        if not n:
+            return True
+        r = QMessageBox.question(self, "Build", "{} change(s) still wait in Review & Apply and would not be in the "
+                                 "image. Build anyway?\n\n(No opens Review & Apply.)".format(n))
+        if r != QMessageBox.StandardButton.Yes:
+            self.main.go("ReviewPage", force=True)
+            return False
+        return True
+
     def start_build(self):
+        if not self._pending_ok():
+            return
         if self.main.preview_active():
             QMessageBox.information(self, "Build", "A preview is on. Keep the changes or throw the preview away in "
                                     "Review & Apply first: an ISO is built from the real project only.")
@@ -398,6 +439,8 @@ class BuildPage(Page):
                       lambda _r: self.apt_line.clear())
 
     def quick_build(self):
+        if not self._pending_ok():
+            return
         from disco.core.isobuild import quick_build
         proj, opts = self.project, self.options()
 

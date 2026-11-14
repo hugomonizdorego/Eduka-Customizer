@@ -56,6 +56,16 @@ class Calamares:
             log.warning("Could not set the installer's time zone: %s", e)
         self.rewire()
 
+    def remove(self):
+        """Take the installer out of the image: the ISO becomes a live system only (or your own
+        installer takes its place). Its desktop launcher goes with Debian's settings package."""
+        pk = Packages(self.project)
+        names = [n for n in ("calamares-settings-debian", "calamares") if pk.is_installed(n)]
+        if names:
+            pk.remove(names)
+        log.info("Calamares removed: the ISO has no graphical installer now")
+        return names
+
     def rewire(self):
         """Choices made before Calamares was in the image (boot loader, init system) reach it now."""
         from disco.core import initsystem

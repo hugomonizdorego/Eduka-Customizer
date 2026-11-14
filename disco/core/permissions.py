@@ -48,7 +48,11 @@ def give_to_user(path, user=None):
         return 0
     uid, gid = user[0], user[1]
     count = 0
-    items = [path] + (list(path.rglob("*")) if path.is_dir() and not path.is_symlink() else [])
+    items = [path]
+    if path.is_dir() and not path.is_symlink():
+        # os.walk does not follow links into other folders (a link in the folder may lead anywhere).
+        for top, dirs, files in os.walk(str(path), followlinks=False):
+            items += [Path(top, n) for n in dirs + files]
     for p in items:
         try:
             os.lchown(p, uid, gid)

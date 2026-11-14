@@ -249,7 +249,10 @@ class DesktopManager:
             Path(self.rootfs, "etc/X11/default-display-manager").write_text(dm["binary"] + "\n")
             self.chroot.run(["debconf-set-selections"],
                             input="{} shared/default-x-display-manager select {}\n".format(service, service))
-            link = Path(self.rootfs, "etc/systemd/system/display-manager.service")
+            from disco.core.distro import in_image
+            units = in_image(self.rootfs, "etc/systemd/system")      # minimal images may not have it yet
+            units.mkdir(parents=True, exist_ok=True)
+            link = units / "display-manager.service"
             if link.is_symlink() or link.exists():
                 link.unlink()
             unit = "/lib/systemd/system/{}.service".format(service)

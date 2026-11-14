@@ -152,26 +152,74 @@ def set_face(project, image):
     return target
 
 
+# What a settings folder of this computer must not take into the home of every new user: passwords,
+# cookies, keys, tokens, histories, caches and open sessions. Names are compared without case.
+PRIVATE = (
+    "*cache*", "*.lock", "lock", "lockfile", "singleton*", "*.socket", "*.pid", "*.log", "*history*",
+    "*keyring*", "*.kdbx", "*.keystore", "*token*", "*secret*", "*password*", "*credential*", "*.pem", "*.key",
+    "*.p12", "*.pfx", "id_rsa*", "id_dsa*", "id_ecdsa*", "id_ed25519*", "private-keys-v1.d", "secring.*",
+    "trustdb.gpg", "hosts.yml", "auth.json", "*recently-used*", "trash",
+    # Chromium, Chrome, Brave, Vivaldi, Edge
+    "cookies", "cookies-journal", "extension cookies*", "login data*", "web data*", "local state",
+    "visited links", "top sites*", "shortcuts*", "favicons*", "network action predictor*",
+    "network persistent state", "transportsecurity", "trust tokens*", "sessions", "current session",
+    "current tabs", "last session", "last tabs", "session storage", "local storage", "indexeddb",
+    "service worker", "sync data", "gcm store", "quotamanager*", "media history*",
+    # Firefox, Thunderbird
+    "cookies.sqlite*", "logins.json", "logins-backup.json", "key3.db", "key4.db", "cert8.db", "cert9.db",
+    "places.sqlite*", "formhistory.sqlite*", "sessionstore*", "sessionstore-backups", "signedinuser.json",
+    "webappsstore.sqlite*", "storage", "permissions.sqlite", "content-prefs.sqlite",
+)
+# Folders that are nothing but keys and passwords.
+SECRET_FOLDERS = {".ssh", ".gnupg", ".password-store", "keyrings", ".pki", ".aws", ".kube", ".docker", "gh"}
+
+
+def _private(_dir, names):
+    import fnmatch
+    return {n for n in names if any(fnmatch.fnmatchcase(n.lower(), pat) for pat in PRIVATE)}
+
+
+def _skel_mode(path):
+    """Settings stay as private as they were: a file only its owner could read stays so (in /etc/skel
+    it would otherwise be readable by every user of the system)."""
+    mode = path.lstat().st_mode
+    public = mode & 0o044
+    if path.is_dir():
+        return 0o755 if public else 0o700
+    exe = mode & 0o100
+    return (0o755 if exe else 0o644) if public else (0o700 if exe else 0o600)
+
+
 def import_config(project, folder, into=".config"):
     """Copy a settings folder of this computer (for example ~/.config/xfce4) into /etc/skel/<into>/."""
+    import os
     folder = Path(folder)
     if not folder.is_dir():
         raise ValueError("Not a folder: {}".format(folder))
+    if folder.name.lower() in SECRET_FOLDERS:
+        raise ValueError("{} holds keys or passwords: it is not copied into every new user's home".format(folder))
     if not re.match(r"^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$", into) or ".." in into.split("/"):
         raise ValueError("Invalid place in /etc/skel: {}".format(into))
-    dest = Path(project.rootfs) / "etc/skel" / into / folder.name
-    if dest.exists():
+    rootfs = Path(project.rootfs)
+    base = resolve_in_root(rootfs, "etc/skel/" + into)
+    root = os.path.realpath(str(rootfs)).rstrip("/") + "/"
+    if base is None or not os.path.realpath(str(base)).startswith(root):
+        raise ValueError("/etc/skel/{} leads out of the system".format(into))
+    base.mkdir(parents=True, exist_ok=True)
+    dest = base / folder.name
+    if dest.is_symlink() or dest.is_file():
+        dest.unlink()
+    elif dest.exists():
         shutil.rmtree(dest)
-    # Caches, sessions and keys of this computer stay here.
-    shutil.copytree(folder, dest, symlinks=True,
-                    ignore=shutil.ignore_patterns("*cache*", "*Cache*", "sessions", "*.lock", "*.socket",
-                                                  "*history*", "*keyring*", "*.pid"))
-    for p in [dest] + list(dest.rglob("*")):
-        try:
-            if not p.is_symlink():
-                p.chmod(0o755 if p.is_dir() else 0o644)
-        except OSError:
-            pass
+    # Caches, sessions, passwords and keys of this computer stay here.
+    shutil.copytree(folder, dest, symlinks=True, ignore=_private)
+    for top, dirs, files in os.walk(str(dest)):
+        for p in [Path(top)] + [Path(top, n) for n in dirs + files]:
+            try:
+                if not p.is_symlink():
+                    p.chmod(_skel_mode(p))
+            except OSError:
+                pass
     project.record("skel-import", "{} -> /etc/skel/{}/{}".format(folder, into, folder.name))
     return dest
 

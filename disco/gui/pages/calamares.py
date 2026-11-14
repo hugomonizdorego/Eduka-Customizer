@@ -39,7 +39,8 @@ class CalamaresPage(Page):
         self.debs_list = label("", "muted")
         k.add(hbox(label("Installer:"), self.kind, None, button("Save", self.save_kind)))
         k.add(self.debs)
-        k.add(hbox(self.debs_list, None, button("Install them now", self.install_debs, "primary")))
+        self.debs_btn = button("Install them now", self.install_debs, "primary")
+        k.add(hbox(self.debs_list, None, self.debs_btn))
 
         c = self.card("Installer")
         self.state = label("", "muted")
@@ -233,6 +234,7 @@ class CalamaresPage(Page):
         own = self.kind.currentData() == "debs"
         self.debs.setVisible(own)
         self.debs_list.setVisible(own)
+        self.debs_btn.setVisible(own)
 
     def _show_debs(self):
         debs = sorted(p.name for p in self._debs_dir().glob("*.deb"))
@@ -245,12 +247,39 @@ class CalamaresPage(Page):
                 shutil.copy2(p, self._debs_dir() / Path(p).name)
         self._show_debs()
 
+    def project_changed(self):
+        self.editor.set_root(None)
+
     def save_kind(self):
+        """Keep the choice and make the image match it (each change waits in Review & Apply)."""
         if not self.project:
             return
-        self.project.state.setdefault("builder", {})["installer"] = self.kind.currentData()
+        kind = self.kind.currentData()
+        self.project.state.setdefault("builder", {})["installer"] = kind
         self.project.save()
         self.main.stage_label.setText("Installer: {}".format(self.kind.currentText()))
+        if not self.project.has_rootfs():
+            return
+        proj = self.project
+        there = self.calamares().installed()
+        yes = QMessageBox.StandardButton.Yes
+        if kind == "calamares" and not there:
+            if QMessageBox.question(self, "Installer", "Calamares is not in the system yet. Install it now "
+                                    "(internet needed)?") == yes:
+                self.install()
+        elif kind in ("none", "debs") and there:
+            why = ("The ISO becomes a live system only." if kind == "none" else
+                   "Your own installer takes its place.")
+            if QMessageBox.question(self, "Installer", "Calamares is in the system. Take it out?\n\n" + why +
+                                    " The Debian-Installer entries of the boot menu are removed on the Build "
+                                    "step (Remove Debian-Installer entries).") == yes:
+                self.task("Calamares removed", lambda t: cal.Calamares(proj).remove(), lambda _r: self.refresh())
+        if kind == "debs":
+            if sorted(self._debs_dir().glob("*.deb")):
+                self.install_debs()
+            else:
+                QMessageBox.information(self, "Installer", "Drop your .deb files on the box, then press "
+                                        "'Install them now'.")
 
     def install_debs(self):
         debs = sorted(self._debs_dir().glob("*.deb"))
@@ -280,6 +309,10 @@ class CalamaresPage(Page):
         self.brand_combo.setCurrentText(c.branding_name())
         self.editor.set_root(c.etc if c.etc.exists() else None)
         if not ok:
+            return
+        if self.main.pending_for(self):
+            # The image does not have the waiting changes yet: the form keeps what was chosen.
+            self.state.setText(self.state.text() + " <b>Your changes on this page wait in Review & Apply.</b>")
             return
         br = c.branding()
         strings = br.get("strings") or {}

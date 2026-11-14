@@ -80,6 +80,9 @@ class Pipeline:
                 out.append((False, "live-build makes ISO images only: use the D!sco method for {}".format(p.name)))
             if b["family"] == "devuan":
                 out.append((False, "live-build is Debian's tool: use the D!sco method for Devuan"))
+            if b["init"] == "openrc":
+                out.append((False, "live-build cannot set up OpenRC: choose systemd, sysvinit or runit, or use "
+                                   "the D!sco method"))
         for tool, package, why in platforms.host_requirements(p, b["method"]):
             out.append((False, "{} is missing ({}): sudo apt install {}".format(tool, why, package)))
         if platforms.is_foreign(p.arch):
@@ -111,6 +114,8 @@ class Pipeline:
         for name in FOLDERS:
             (Path(p.path) / name).mkdir(exist_ok=True)
         readme = Path(p.path) / "overlay" / "README.txt"
+        if readme.is_symlink():
+            readme.unlink()          # never write through a link put in a folder of the user
         if not readme.exists():
             readme.write_text("Files in this folder are copied into the system as they are, for example\n"
                               "overlay/etc/skel/.bashrc becomes /etc/skel/.bashrc (owner root).\n"
@@ -185,6 +190,12 @@ class Pipeline:
             if not cal.installed():
                 self.stage("Installing the Calamares installer")
                 cal.install()
+        elif b["installer"] == "none":
+            from disco.core.calamares import Calamares
+            cal = Calamares(p)
+            if cal.installed():
+                self.stage("Removing the Calamares installer (live system only)")
+                cal.remove()
         self._done("packages")
         self.progress(100)
         return installed, skipped

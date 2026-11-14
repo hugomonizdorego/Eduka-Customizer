@@ -1,6 +1,6 @@
 # Changelog
 
-## D!sco 0.11.1 — 2026-11-15
+## D!sco 0.11.1 — 2026-11-14
 
 A fix release that makes D!sco easy again: one clear path from the ISO to the finished image.
 
@@ -11,6 +11,22 @@ A fix release that makes D!sco easy again: one clear path from the ISO to the fi
 * Starting D!sco with an ISO argument opened the wrong page and failed.
 * Starting a terminal or a sound preview that cannot run showed an error dialog instead of a message.
 * Closing D!sco while the internet check was running could abort the program.
+* Pages no longer throw away what you typed when they are shown again (System files, Files, Raspberry Pi,
+  Installer); a change that waits in Review & Apply is shown as waiting.
+* The installer choice is honored: *None* or *My own .deb packages* takes Calamares out of the system (after
+  asking), *Calamares* offers to install it.
+* SD-card images: the account with the well-known password (or no password) logs in over SSH with a key only,
+  until you set a password of your own; the Raspberry Pi page says so.
+* Copying a settings folder into /etc/skel leaves passwords, cookies, keys, tokens, histories and sessions on
+  this computer, keeps private files private and refuses folders such as ~/.ssh and ~/.gnupg.
+* Presets and identity values can no longer add lines to scripts, apt sources or os-release (line breaks,
+  unsafe mirrors, desktop or display manager ids are refused; the host name is quoted).
+* live-build: a failed `lb build` is reported as failed (the log pipe hid it); OpenRC is refused there.
+* Package lists from a preset are checked before they replace yours; `name:arch` entries install.
+* Not locked Chromium settings are only recommended, so users can change them; browser policies, user
+  folders and the overlay README never follow a link out of the image or project.
+* The README PDF on the desktop had tiny text; the SD-card image is unpacked through a temporary file.
+* The file editors refuse files outside their folder (links and mounts of this computer).
 
 ### Changed
 * **The Builder page and the Quick Wizard are gone.** D!sco starts with **Welcome** (about, support,

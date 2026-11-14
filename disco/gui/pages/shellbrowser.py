@@ -61,6 +61,19 @@ class ShellBrowserPage(Page):
                    button("Use it", self.set_browser, "primary")))
         self._prompt_changed()
 
+    def project_changed(self):
+        """Another project: nothing of the project before is applied to it."""
+        for w in (self.motd, self.bookmarks):
+            w.clear()
+        for w in (self.custom, self.home):
+            w.clear()
+        for w in (self.dynamic, self.locked, self.telemetry):
+            w.setChecked(False)
+        self.ff.setChecked(True)
+        self.ch.setChecked(True)
+        self.search.setCurrentIndex(0)
+        self.prompt.setCurrentIndex(max(0, self.prompt.findData("color")))
+
     def refresh(self):
         if not self.project:
             return

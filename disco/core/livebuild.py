@@ -57,14 +57,37 @@ def usable(ver=None):
     return True, "live-build {}".format(ver)
 
 
+# lb's own exit status counts: behind a pipe into tee only tee's would (and a failed build would pass).
+AUTO_BUILD = """#!/bin/sh
+set -e
+rm -f .lb-failed
+{ lb build noauto "${@}" 2>&1 || echo "$?" > .lb-failed; } | tee build.log
+if [ -s .lb-failed ]; then
+    status=$(cat .lb-failed)
+    rm -f .lb-failed
+    exit "$status"
+fi
+"""
+
+
 def identity(project):
     """(name, os id) of the distribution for live-build (there is no image yet to read them from)."""
     import re
     b = _builder(project)
     ident = project.state.get("identity") or {}
     name = ident.get("name") or b["distro_name"] or project.display_name()
-    os_id = ident.get("id") or re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-") or "linux"
-    return name, os_id[:30]
+    os_id = ident.get("id") or ""
+    if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,29}", os_id):
+        os_id = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")[:30].strip("-") or "linux"
+    return name, os_id
+
+
+def hostname(project):
+    """The host name of the live system: the one of the Identity page when it is a valid one."""
+    import re
+    host = (project.state.get("identity") or {}).get("hostname") or ""
+    return host if re.fullmatch(r"[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?", host) else identity(project)[1].replace(
+        ".", "-").replace("_", "-").strip("-") or "linux"
 
 
 def _builder(project):
@@ -88,12 +111,11 @@ def config_args(project):
     if codename in ("bullseye", "buster"):
         areas = " ".join(a for a in areas.split() if a != "non-free-firmware")
     flavour = plat.kernel[len("linux-image-"):]
-    ident = project.state.get("identity") or {}
     name, os_id = identity(project)
-    from disco.core.users import Users
+    from disco.core.users import Users, check_username
     live = Users(project).live()
-    append = "boot=live components quiet splash hostname={} username={}".format(
-        ident.get("hostname") or os_id, live["username"])
+    check_username(live["username"])
+    append = "boot=live components quiet splash hostname={} username={}".format(hostname(project), live["username"])
     comp = (project.state.get("build", {}) or {}).get("compression") or cfg.get("build", "compression")
     args = ["--mode", "debian", "--system", "live", "--distribution", codename,
             "--architecture", plat.arch, "--linux-flavours", flavour,
@@ -103,7 +125,7 @@ def config_args(project):
             "--updates", "true" if b["suite"] != "sid" else "false",
             "--binary-images", "iso-hybrid", "--debian-installer", "none",
             "--bootloaders", "syslinux,grub-efi" if plat.arch in ("amd64", "i386") else "grub-efi",
-            "--initsystem", "systemd" if b["init"] == "systemd" else ("runit" if b["init"] == "runit" else "sysvinit"),
+            "--initsystem", _initsystem(b["init"]),
             "--apt-recommends", "true", "--memtest", "none",
             "--iso-application", name, "--iso-publisher", name, "--iso-volume", project.volume_label(),
             "--image-name", os_id,
@@ -112,6 +134,13 @@ def config_args(project):
     if plat.arch in ("amd64", "i386"):
         args += ["--firmware-chroot", "true", "--firmware-binary", "true"]
     return args
+
+
+def _initsystem(init):
+    if init not in ("systemd", "sysvinit", "runit"):
+        raise ValueError("live-build cannot set up {}: choose systemd, sysvinit or runit, or use the D!sco "
+                         "method".format(init))
+    return init
 
 
 def write_config(project):
@@ -126,7 +155,7 @@ def write_config(project):
     lines += ["    {} \\".format(" ".join(shlex.quote(a) for a in args[i:i + 2])) for i in range(0, len(args), 2)]
     lines += ['    "${@}"', ""]
     _script(lb / "auto/config", "\n".join(lines))
-    _script(lb / "auto/build", "#!/bin/sh\nset -e\nlb build noauto \"${@}\" 2>&1 | tee build.log\n")
+    _script(lb / "auto/build", AUTO_BUILD)
     _script(lb / "auto/clean", "#!/bin/sh\nset -e\nlb clean noauto \"${@}\"\nrm -f config/binary config/bootstrap "
                                "config/chroot config/common config/source build.log\n")
     # Package lists
@@ -191,7 +220,7 @@ def _identity_hook(project):
         "ID_LIKE": "debian", "HOME_URL": ident.get("home_url", ""), "SUPPORT_URL": ident.get("support_url", ""),
         "BUG_REPORT_URL": ident.get("bug_url", "")}.items() if v})
     lsb = format_lsb_release(name, version, "", pretty)
-    host = ident.get("hostname") or os_id
+    host = hostname(project)
     return ("#!/bin/sh\n# The name of the distribution (written by D!sco)\nset -e\n"
             "cat > /usr/lib/os-release <<'DISCO_EOF'\n{osr}DISCO_EOF\n"
             "ln -sf ../usr/lib/os-release /etc/os-release\n"
@@ -199,7 +228,7 @@ def _identity_hook(project):
             "printf '%s\\n' 'Welcome to {pretty_sh} - \\n \\l' '' > /etc/issue\n"
             "printf '%s\\n' 'Welcome to {pretty_sh}' > /etc/issue.net\n"
             "echo {host} > /etc/hostname\n").format(osr=osr, lsb=lsb, pretty_sh=pretty.replace("'", ""),
-                                                     host=host)
+                                                     host=shlex.quote(host))
 
 
 def _script(path, text):

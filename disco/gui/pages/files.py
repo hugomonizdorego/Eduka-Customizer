@@ -71,8 +71,12 @@ class FilesPage(Page):
             self.folders.addTopLevelItem(it)
         self._root_changed()
 
+    def project_changed(self):
+        self.editor.set_root(None)
+
     def _root_changed(self):
         if self.project:
+            # The same folder again keeps the open file and what was typed (FileTreeEditor.set_root).
             self.editor.set_root(Path(self.project.path) / self.where.currentData())
 
     def _selected(self):
