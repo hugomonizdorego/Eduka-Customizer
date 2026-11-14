@@ -1,5 +1,42 @@
 # Changelog
 
+## D!sco 0.11.1 — 2026-11-15
+
+A fix release that makes D!sco easy again: one clear path from the ISO to the finished image.
+
+### Fixed
+* The Builder page crashed when its step buttons were pressed (`TypeError: 'int' object is not callable`:
+  the window gave every page a `step` attribute that hid the Builder's `step()` method). Pages now get
+  `nav_step` and `nav_section`, names no page uses.
+* Starting D!sco with an ISO argument opened the wrong page and failed.
+* Starting a terminal or a sound preview that cannot run showed an error dialog instead of a message.
+* Closing D!sco while the internet check was running could abort the program.
+
+### Changed
+* **The Builder page and the Quick Wizard are gone.** D!sco starts with **Welcome** (about, support,
+  *Show this page when D!sco starts*), then **Start**: *Customize an ISO* (extract it into a new project) or
+  *Continue a project* (opens the step where you stopped). Other ways to start (download Debian, a new system
+  without an ISO for PC, ARM64, Raspberry Pi or RISC-V, a copy of this computer) are below.
+* Eleven steps with **Back / Next / Finish** at the bottom: Start, System, Software, Startup, Branding,
+  Look & Feel, Boot, Installer, Files & Terminal, Review & Apply, Build.
+* The internet connection is checked on Start (recommended for packages, desktops, Flatpaks and kernels).
+* Everything in US English, including the guide and the menu entry; docs/PANDUAN.md became
+  docs/QUICKSTART.md.
+
+### New
+* **Startup** step: services that start with the system and programs that start after login, switched on or
+  off with a tick (systemd, SysVinit, OpenRC, runit; XDG autostart). Essential services stay on.
+* **Files** page: your folders (overlay, hooks, branding, debs, iso, output) belong to you, so your own file
+  manager can change them without administrator rights; the system is edited as administrator in D!sco.
+* **Wallpaper & Logo**: choose a picture, *Set as default*, *Apply* — for the desktop wallpaper, the logo
+  (icons, os-release LOGO, login screen, installer, boot splash), the login screen, the boot menus and the
+  picture of new users.
+* **Popular applications** with tick boxes on the Packages page.
+* The Build page makes the SD-card image for Raspberry Pi projects; finished images belong to you.
+* New logo: a penguin tinkering with a computer.
+* A test that presses every button of every page (with and without a project) and runs the work behind
+  them.
+
 ## D!sco 0.11 — 2026-11-14
 
 The program is now **D!sco (Distro Custom)**. Version numbers start again (0.11 = November); the commands

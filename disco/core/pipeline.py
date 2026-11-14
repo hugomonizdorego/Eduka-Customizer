@@ -1,4 +1,4 @@
-"""The build, step by step, as on the Builder page:
+"""Automated builds from the command line (disco step, disco build-all), step by step:
 
   1. Prepare      check the choices and this computer, write the first package lists
   2. Build base   a new Debian or Devuan system (mmdebstrap or debootstrap), its init

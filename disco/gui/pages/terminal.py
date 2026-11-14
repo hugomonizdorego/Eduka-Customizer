@@ -274,7 +274,10 @@ class TerminalPage(Page):
         if not cmd:
             QMessageBox.warning(self, "Terminal", "No terminal emulator found. Install qterminal or xterm.")
             return
-        subprocess.Popen(cmd, start_new_session=True)
+        try:
+            subprocess.Popen(cmd, start_new_session=True)
+        except OSError as e:
+            QMessageBox.warning(self, "Terminal", "The terminal could not be started: {}".format(e))
 
     def open_folder(self, path):
         from disco.gui.opener import open_url

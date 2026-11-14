@@ -19,8 +19,8 @@ COMMAND = "disco"
 OLD_NAMES = [("DistroForge", "0.9 Beta to 0.9.5 Beta"), ("Eduka-Customizer", "up to 0.17 Alpha")]
 OLD_NAME = OLD_NAMES[0][0]
 # D!sco starts its own numbering: 0.11 is the release of November 2026.
-VERSION = "0.11"
-VERSION_LABEL = "0.11"
+VERSION = "0.11.1"
+VERSION_LABEL = "0.11.1"
 HOMEPAGE = "https://github.com/hugomonizdorego/Eduka-Customizer"
 DONATE_URL = "https://paypal.me/hugocenturion0311"
 FACEBOOK_URL = "https://facebook.com/hugomonizdorego"

@@ -1,5 +1,5 @@
 # D!sco (Distro Custom) - build your own Debian-based distribution (ISO and SD-card images)
-VERSION   = 0.11
+VERSION   = 0.11.1
 PYTHON   ?= python3
 DESTDIR  ?=
 PREFIX   ?= /usr

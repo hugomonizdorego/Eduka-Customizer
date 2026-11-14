@@ -1,10 +1,10 @@
-"""Presets: everything the Builder page asks, saved under a name.
+"""Presets for automated builds (disco presets, disco build-all), saved under a name.
 
 A preset holds the choices of a distribution (name, platform, Debian or Devuan
 release, desktop, init system, installer, method) and its package lists. The
 presets that come with D!sco are in /usr/share/disco/presets; your own are saved
-in <projects folder>/presets. Both are plain JSON files: "File..." on the Builder
-page imports or exports one.
+in <projects folder>/presets. Both are plain JSON files: "disco presets export" writes
+one, "disco presets apply NAME --file FILE" reads one.
 """
 
 import json

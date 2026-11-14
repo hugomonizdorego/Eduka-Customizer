@@ -10,8 +10,7 @@
     (debootstrap or mmdebstrap, chroot, squashfs, xorriso, live-build): a hybrid live ISO for PCs and
     UEFI machines, or an SD-card image for the Raspberry Pi. Other processors (ARM64, ARM, RISC-V) are
     built on this computer through qemu-user.</p>
-    <p>The Builder page holds the whole distribution: a preset, the platform, release, desktop, init
-    system, installer and package lists with tick boxes, then Build all. Every part can be refined:
+    <p>Open the ISO, go through the steps with Next and press Finish. Every part can be changed:
     identity and system files, users, language, kernel, boot loaders, boot menu, Plymouth, login screen,
     themes, sounds, welcome screen, bash prompt, browser policies and the Calamares installer.</p>
   </description>
@@ -25,6 +24,13 @@
   <url type="donation">https://paypal.me/hugocenturion0311</url>
   <url type="homepage">https://github.com/hugomonizdorego/Eduka-Customizer</url>
   <releases>
+    <release version="0.11.1" date="2026-11-15" type="development">
+      <description>
+        <p>One clear path: Welcome, Start (extract an ISO or continue a project), then eleven steps with Back,
+        Next and Finish. New Startup step, Files page and easy Wallpaper &amp; Logo. Fixes the crash of the
+        Builder page, which is removed.</p>
+      </description>
+    </release>
     <release version="0.11" date="2026-11-14" type="development">
       <description>
         <p>Renamed to D!sco (Distro Custom). New Builder page with presets, package lists and Build all;

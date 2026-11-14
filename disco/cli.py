@@ -1127,17 +1127,19 @@ def build_parser():
                     "image for the Raspberry Pi, with Debian's own tools.".format(APP_NAME, VERSION_LABEL),
         epilog="""The commands in the order of the work (most need sudo):
 
-  1  Builder          new [--preset], presets, builder, lists, step, build-all, live-build,
-                      platforms, download, info
-  2  System           sources, brand identity, users, language, init
-  3  Desktop & Apps   desktop, eduka-desktop, purpose, apt, flatpak, apps
-  4  Boot             kernel, boot-loader, bootmenu, grub-theme (Raspberry Pi: builder, build)
+  1  Start            new, download, info, platforms
+  2  System           sources, brand identity, users, language
+  3  Software         desktop, eduka-desktop, purpose, apt, flatpak, apps
+  4  Startup          (in the window)
   5  Branding         branding, wallpapers, plymouth
   6  Look & Feel      themes, assets, sounds, welcome
-  7  Installer        calamares
-  8  Advanced         shell, run, hook, live, workshop, recipe
-  9  Review & Apply   (only in the window: the commands apply at once)
- 10  Check & Build    check [--fix], build [--target-size 500], test, clean --keep-iso
+  7  Boot             kernel, boot-loader, init, bootmenu, grub-theme
+  8  Installer        calamares
+  9  Files & Terminal shell, run, hook, live, workshop, recipe
+ 10  Review & Apply   (only in the window: the commands apply at once)
+ 11  Build            check [--fix], build [--target-size 500], test, clean --keep-iso
+
+Automated builds: presets, builder, lists, step, build-all, live-build.
 
 Other: gui (the window), doctor (tools of this computer), clean, about.
 Help for one command: disco COMMAND --help""")
@@ -1171,14 +1173,14 @@ Help for one command: disco COMMAND --help""")
     s = sub.add_parser("platforms", help="the computers and boards D!sco builds for (PC, ARM64, Raspberry Pi, RISC-V)")
     s.set_defaults(func=cmd_platforms)
 
-    s = sub.add_parser("presets", help="presets: everything of the Builder page saved under a name")
+    s = sub.add_parser("presets", help="presets for automated builds: the choices and package lists of a distribution")
     s.add_argument("action", nargs="?", default="list", choices=["list", "show", "apply", "save", "delete", "export"])
     s.add_argument("name", nargs="?", help="preset name (list shows them)")
     s.add_argument("--file", help="export: write the preset to this file; apply: read it from this file")
     s.add_argument("--description", default="")
     s.set_defaults(func=cmd_presets)
 
-    s = sub.add_parser("builder", help="show or change the choices of the Builder page")
+    s = sub.add_parser("builder", help="show or change the choices used by build-all (automated builds)")
     s.add_argument("--name", dest="distro_name", help="name of the distribution")
     s.add_argument("--platform")
     s.add_argument("--family", choices=["debian", "devuan"])

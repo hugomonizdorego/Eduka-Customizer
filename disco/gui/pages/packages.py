@@ -14,9 +14,21 @@ class PackagesPage(Page):
     subtitle = ("Every Debian package of the image: search, tick to add, untick to remove. You can also "
                 "remove the applications that came with the ISO. Your changes wait in Review & Apply.")
     icon_names = ("system-software-install", "package-x-generic")
-    CHANGES = ('Apply package changes', 'Autoremove', 'Install .deb files', 'Remove applications', 'Upgrade all packages')
+    CHANGES = ('Apply package changes', 'Autoremove', 'Install .deb files', 'Remove applications', 'Upgrade all packages',
+               'Install applications')
 
     def build(self):
+        c = self.card("Popular applications", "Tick the programs your distribution should have and press 'Install "
+                                              "ticked'. Ticked and grayed out: already in the system. Needs internet.")
+        from disco.qt.widgets import QTreeWidget
+        self.catalog = QTreeWidget()
+        self.catalog.setHeaderLabels(["Program", "Package", "What it is"])
+        self.catalog.setColumnWidth(0, 230)
+        self.catalog.setColumnWidth(1, 170)
+        self.catalog.setMinimumHeight(280)
+        c.add(self.catalog)
+        c.add(hbox(None, button("Install ticked", self.install_catalog, "primary")))
+
         c = self.card("Maintenance")
         c.add(hbox(button("Refresh package lists", self.update_lists, "primary",
                           tooltip="apt update inside the image (needs internet)"),
@@ -64,7 +76,56 @@ class PackagesPage(Page):
     def reload(self):
         self.browser.load(self.project.rootfs)
         self.remover.load(self.project.rootfs)
+        self._fill_catalog()
         self._loaded_for = self._stamp()
+
+    def _fill_catalog(self):
+        from disco.qt.core import Qt
+        from disco.qt.widgets import QTreeWidgetItem
+        from disco.core.pkglists import catalog
+        have = {p[0] for p in Packages(self.project).installed()}
+        self.catalog.clear()
+        for cat in catalog():
+            top = QTreeWidgetItem([cat["name"], "", ""])
+            self.catalog.addTopLevelItem(top)
+            for pkg, name, desc in cat["apps"]:
+                it = QTreeWidgetItem([name, pkg, desc])
+                if pkg in have:
+                    it.setCheckState(0, Qt.CheckState.Checked)
+                    it.setFlags(it.flags() & ~Qt.ItemFlag.ItemIsEnabled)
+                else:
+                    it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                    it.setCheckState(0, Qt.CheckState.Unchecked)
+                top.addChild(it)
+        self.catalog.collapseAll()
+        if self.catalog.topLevelItemCount():
+            self.catalog.topLevelItem(0).setExpanded(True)
+
+    def install_catalog(self):
+        from disco.qt.core import Qt
+        names = []
+        for i in range(self.catalog.topLevelItemCount()):
+            top = self.catalog.topLevelItem(i)
+            for j in range(top.childCount()):
+                it = top.child(j)
+                if it.flags() & Qt.ItemFlag.ItemIsEnabled and it.checkState(0) == Qt.CheckState.Checked:
+                    names.append(it.text(1))
+        if not names:
+            QMessageBox.information(self, "Applications", "Tick the programs to install first.")
+            return
+        proj = self.project
+
+        def work(t):
+            pk = Packages(proj)
+            with pk.chroot:
+                pk.update()
+                known = pk.available(names)
+                missing = [n for n in names if n not in known]
+                if missing:
+                    from disco.core.log import log
+                    log.warning("Not in the repositories of this system, skipped: %s", " ".join(missing))
+                pk.install([n for n in names if n in known], update=False)
+        self.task("Install applications: " + " ".join(names[:6]) + (" ..." if len(names) > 6 else ""), work)
 
     # Actions ---------------------------------------------------------------------
     def tick_names(self):

@@ -243,17 +243,20 @@ from disco.gui.main_window import MainWindow, SECTIONS
 w = MainWindow()
 keys = [s.key for s in w.sections]
 assert keys == [s[0] for s in SECTIONS]
-assert [s.step for s in w.steps] == list(range(1, 11))
+assert [s.step for s in w.steps] == list(range(1, 12))
+assert keys[0] == "welcome" and w.steps[0].key == "start" and w.steps[-1].key == "build"
 assert not w.section_open(w.sections[keys.index("system")])
 w.project = Project.open(sys.argv[1])
 w.update_state()
 open_ = [s.key for s in w.sections if w.section_open(s)]
-assert open_ == ["start", "system", "settings"], open_
+assert open_ == ["welcome", "start", "system", "settings"], open_
 w.next_step(w.steps[1], w.steps[2])
 assert w.section_open(w.sections[keys.index("software")])
 assert not w.section_open(w.sections[keys.index("boot")])
 w.go("BoardPage")
 assert w.stack.currentWidget().key == "software"   # Boot is not open yet
+w.continue_project()
+assert w.stack.currentWidget().key == "software"   # where the project stopped
 w.go("UsersPage")
 sec = w.stack.currentWidget()
 assert sec.key == "system" and sec.current().__class__.__name__ == "UsersPage"
@@ -276,7 +279,7 @@ def test_gui_steps_and_merged_menus(tmp_path):
     res = subprocess.run([sys.executable, "-c", GUI_STEPS, str(p.path)], capture_output=True, text=True,
                          env=env, timeout=120)
     assert res.returncode == 0, res.stderr[-3000:]
-    assert res.stdout.startswith("ok 32 11")
+    assert res.stdout.startswith("ok 34 13")
 
 
 def test_cli_check_and_apps(project):

@@ -70,12 +70,13 @@ class BoardPage(Page):
 
     def refresh(self):
         if not self.project:
-            self.note.setText("Open or create a project on the Builder page first.")
+            self.note.setText("Start a project first (step 1).")
             return
         plat = platforms.of_project(self.project)
         if plat.output != "img":
-            self.note.setText("This project builds an ISO for {}. Choose a Raspberry Pi platform on the Builder page "
-                              "to make an SD-card image.".format(plat.name))
+            self.note.setText("This project builds an ISO for {}. For a Raspberry Pi, start a new project with "
+                              "Start → Other ways to start → New system (no ISO) and choose a Raspberry Pi."
+                              .format(plat.name))
         else:
             self.note.setText("<b>{}</b> — {}{}".format(plat.name, plat.description, " " + plat.note if plat.note
                                                          else ""))
@@ -119,7 +120,8 @@ class BoardPage(Page):
 
     def build_image(self):
         if not self._board():
-            QMessageBox.information(self, "Raspberry Pi", "Choose a Raspberry Pi platform on the Builder page first.")
+            QMessageBox.information(self, "Raspberry Pi", "This project is not for a Raspberry Pi. Start a new "
+                                    "project with Start → Other ways to start → New system (no ISO).")
             return
         o = self.save(quiet=True)
         if o is None:

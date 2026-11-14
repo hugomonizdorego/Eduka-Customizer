@@ -1,6 +1,6 @@
 """The live-build route: Debian's own tool makes the whole ISO.
 
-D!sco turns the choices of the Builder page into a live-build configuration in
+D!sco turns the choices of a project (disco builder) into a live-build configuration in
 <project>/live-build and runs Debian's live-build there:
 
   auto/config                            the `lb config` command with every choice
@@ -121,7 +121,7 @@ def write_config(project):
     lb = folder(project)
     (lb / "auto").mkdir(parents=True, exist_ok=True)
     args = config_args(project)
-    lines = ["#!/bin/sh", "# Written by D!sco from the Builder page; it is written again before every build.",
+    lines = ["#!/bin/sh", "# Written by D!sco from the project's choices; it is written again before every build.",
              "set -e", "", "lb config noauto \\"]
     lines += ["    {} \\".format(" ".join(shlex.quote(a) for a in args[i:i + 2])) for i in range(0, len(args), 2)]
     lines += ['    "${@}"', ""]

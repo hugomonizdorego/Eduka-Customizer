@@ -120,7 +120,7 @@ def for_arch(arch, output=None):
 
 
 def of_project(project):
-    """The platform a project builds for (stored by the Builder, else from the image's architecture)."""
+    """The platform a project builds for (chosen when its system was made, else from the image's processor)."""
     pid = project.state.get("builder", {}).get("platform")
     if pid in BY_ID:
         return BY_ID[pid]

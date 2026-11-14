@@ -1,138 +1,108 @@
-# D!sco 0.11 — Distro Custom
+# D!sco 0.11.1 — Distro Custom
 
-<img src="icons/hicolor/128x128/apps/disco.png" align="right" width="96" alt="">
+<img src="icons/hicolor/128x128/apps/disco.png" align="right" width="110" alt="D!sco: a penguin tinkering with a computer">
 
-**D!sco (Distro Custom)** builds **your own Linux distribution** from **Debian** (stable, testing, sid)
-or **Devuan**, for **PCs, 64-bit ARM, the Raspberry Pi and RISC-V**. It uses Debian's own tools only —
-`debootstrap`/`mmdebstrap`, `chroot`, `mksquashfs`, `xorriso` and, if you like, `live-build` — and
-nothing of Ubuntu (no casper, no PPAs, no Ubuntu bases).
+**D!sco (Distro Custom)** turns a **Debian** or **Devuan** live ISO into **your own Linux distribution**,
+step by step: open the ISO, change what you like, press **Finish**. It is made to be easy for beginners and
+complete for experts, and it uses Debian's own tools only — `live-boot`, `mksquashfs`, `xorriso`,
+`mmdebstrap`/`debootstrap`, `chroot` and Calamares — nothing of Ubuntu (no casper, no PPAs).
 
-Choose a preset, tick the package lists, press **Build all**: D!sco makes the base system, installs the
-desktop and your programs, copies your files, runs your scripts and writes a **hybrid live ISO** (BIOS +
-UEFI, with the Calamares installer) or an **SD-card image** for the Raspberry Pi. Every part can then be
-refined: identity and the files of `/etc`, users, language, kernel, boot loaders, boot menu, Plymouth,
-login screen, themes, sounds, a welcome screen, the bash prompt, browser policies, a PDF about your system
-on every desktop, and the installer.
+The result is a **hybrid live ISO** (BIOS + UEFI, with the Calamares installer) for PCs, or an **SD-card
+image** for the Raspberry Pi. ARM64 and RISC-V systems can be made too.
 
-![The Builder](docs/screenshots/01-builder.png)
+![Welcome](docs/screenshots/01-welcome.png)
 
 **Step-by-step guide (PDF):** [docs/Disco-Guide.pdf](docs/Disco-Guide.pdf) ·
-**Same guide as text:** [docs/manual.md](docs/manual.md) ·
-**Panduan singkat (Bahasa Indonesia):** [docs/PANDUAN.md](docs/PANDUAN.md)
+**Same guide as text:** [docs/manual.md](docs/manual.md) · **Quick start:** [docs/QUICKSTART.md](docs/QUICKSTART.md)
 
 **Support the project:** [Donate with PayPal](https://paypal.me/hugocenturion0311) ·
 [Facebook](https://facebook.com/hugomonizdorego)
 
-> D!sco is free and open source software (GPL-3.0-or-later). It was called **DistroForge** (0.9 Beta)
-> and **Eduka-Customizer** (up to 0.17 Alpha); the version numbers start again with D!sco (0.11 = November).
-> It is not affiliated with Debian, Devuan or Raspberry Pi Ltd.
+> D!sco is free and open source software (GPL-3.0-or-later). It was called **DistroForge** (0.9 Beta) and
+> **Eduka-Customizer** (up to 0.17 Alpha). It is not affiliated with Debian, Devuan or Raspberry Pi Ltd.
 
-## What it builds
+## How it works
 
-| Platform | Processor | Kernel | Result |
-|---|---|---|---|
-| PC, 64-bit (Intel/AMD) | amd64 | linux-image-amd64 | ISO, BIOS + UEFI (+ Secure Boot) |
-| Older PC, 32-bit (Debian 12) | i386 | linux-image-686-pae | ISO, BIOS + UEFI |
-| ARM 64-bit with UEFI | arm64 | linux-image-arm64 | ISO, UEFI (GPT EFI partition for USB) |
-| Raspberry Pi 3, 4, 400 | arm64 | linux-image-arm64 | SD-card image |
-| Raspberry Pi 5 (experimental) | arm64 | linux-image-arm64 | SD-card image |
-| Raspberry Pi 2, 3 (32-bit) | armhf | linux-image-armmp | SD-card image |
-| Raspberry Pi 1, Zero, Zero W | armel | linux-image-rpi | SD-card image |
-| RISC-V 64 with UEFI (experimental) | riscv64 | linux-image-riscv64 | ISO, UEFI |
+| Step | What you do there |
+|---|---|
+| Welcome | What D!sco does, recommendations, support (and *Show this page when D!sco starts*) |
+| 1 Start | **Extract an ISO** into a new project, or **continue a project** where you stopped |
+| 2 System | Repositories, name of the system, system files (os-release, issue, hostname, motd...), users, language |
+| 3 Software | Desktop, popular applications with tick boxes, every Debian package, Flatpak, default apps |
+| 4 Startup | What starts by itself: services and programs after login, on or off with a tick |
+| 5 Branding | Wallpaper & logo (choose → *Set as default* → *Apply*), login screen, boot splash, a PDF on every desktop |
+| 6 Look & Feel | Themes, sounds, welcome screen, bash prompt, browser home page and bookmarks |
+| 7 Boot | Kernel, boot loader, boot menu, init system (systemd, SysVinit, OpenRC, runit), Raspberry Pi |
+| 8 Installer | Calamares, no installer, or your own .deb packages |
+| 9 Files & Terminal | Your folders (no administrator rights needed), the system as administrator, a terminal |
+| 10 Review & Apply | The list of your changes, applied all at once |
+| 11 Build | **Finish**: checks, then the ISO or SD-card image |
 
-Bases for another processor are made on your computer through **qemu-user** (binfmt_misc): mmdebstrap,
-debootstrap and the chroot work exactly as for a PC. SD-card images are laid out like Debian's own Raspberry
-Pi images (`RASPIFIRM` FAT boot partition written by Debian's `raspi-firmware`, `RASPIROOT` ext4 system
-partition that grows to the whole card at the first start, `sysconf.txt` for the host name and an SSH key).
+Every step has **Back** and **Next** at the bottom. Your work is saved in the project folder: close D!sco at
+any time and continue later from Start.
 
-## New in 0.11
+## Before you start
 
-* **Builder** (step 1), in the spirit of the classic distro builders but modern: **presets** (Load, Save,
-  File, Delete, New), distro name, build path, **platform**, Debian/Devuan release, desktop, init system,
-  installer, method and repository; **application package lists** with tick boxes and a catalog of programs
-  by category; the steps **Prepare → Build base → Install packages → Overlay & scripts → Make image**, or
-  **Build all**; QEMU, a chroot terminal, the desktop in a window, Synaptic and tools.
-* **ARM64, Raspberry Pi and RISC-V** (see the table), **SD-card images** without loop devices, ARM64/RISC-V
-  UEFI ISOs, QEMU tests for ARM.
-* **live-build route**: D!sco writes `auto/config`, the package lists, includes and hooks, and runs
-  `lb config` / `lb build` (Debian's live-build).
-* **System files**: `os-release` (with `LOGO`), `lsb-release`, `issue` ("Welcome to ..."), `issue.net`,
-  `hostname`, `hosts`, `motd`; the picture of new users and settings folders into `/etc/skel`;
-  `GRUB_BACKGROUND` of installed systems.
-* **Terminal & Browser**: message after login (static or dynamic), bash prompt presets, **Firefox ESR and
-  Chromium policies** (home page, lock, bookmarks, telemetry, search engine).
-* **Desktop document**: a PDF about your system with **any title**, put on every user's desktop at the first
-  login and into the menu.
-* **Installer**: Calamares, none (live only) or **your own .deb packages**.
-* **Ten steps** in the sidebar, each with its pages as tabs; a new icon.
-* About 50 fixes from a full code review (see [CHANGELOG.md](CHANGELOG.md)).
-
-## Install
+* **An internet connection** (recommended): installing packages, desktops, Flatpak applications and kernels
+  needs it. Extracting and editing work offline; D!sco shows the connection on the Start page.
+* Debian 12 or newer (or a Debian-based system), 4 GB of memory, about 20 GB of free disk space.
+* An ISO to start from: the small **Debian live standard ISO** (no desktop) is the cleanest start.
 
 ```sh
-sudo apt install ./disco_0.11_all.deb
-sudo apt install qemu-user-static binfmt-support    # to build for ARM or RISC-V on a PC
-sudo apt install live-build                          # optional: the live-build route
+sudo apt install ./disco_0.11.1_all.deb
+sudo apt install qemu-user-static binfmt-support    # only to make ARM or RISC-V systems on a PC
 ```
 
-Start **D!sco** from the menu, or `disco` in a terminal (it asks for the administrator password). D!sco
-runs on Debian 12 or newer and Debian derivatives; it needs about 4 GB of memory and free disk space of
-three times the finished image.
-
-## Quick start
-
-1. **1. Builder** → choose a preset (for example *Debian Xfce desktop (PC 64-bit)* or *Raspberry Pi
-   desktop*) → **Load**.
-2. Type the distro name; check the build path.
-3. Tick the package lists (double-click a list to add programs from the catalog).
-4. **Prepare** — it lists anything missing on this computer with the command that installs it.
-5. **Build all**.
-6. **Test in QEMU**, then write the image (check the device with `lsblk` first):
+## Writing the image
 
 ```sh
+lsblk     # find the USB stick or SD card first, for example /dev/sdb
 sudo dd if=mylinux-1.0-stable-amd64.iso of=/dev/sdX bs=4M status=progress oflag=sync
 xzcat mypi-1.0-stable-arm64.img.xz | sudo dd of=/dev/sdX bs=4M status=progress conv=fsync
 ```
 
-> **Warning:** `dd` overwrites the whole device named in `of=`. A wrong letter erases your own disk.
+> **Warning:** `dd` erases the whole device named in `of=` without asking. Check the name with `lsblk` first.
+
+## What is new in 0.11.1
+
+* **Fixed:** the Builder page of 0.11 crashed when its step buttons were pressed
+  (`'int' object is not callable`). The Builder and the Quick Wizard are gone: there is one clear path now.
+* **Welcome** page first (about, PayPal donation, *Show this page when D!sco starts*), then **Start**:
+  extract an ISO or continue a project, with an internet check.
+* **Next / Back / Finish** at the bottom of every step.
+* **Startup** step, **Files** page, easy **Wallpaper & Logo**, **Popular applications**.
+* New logo: a penguin tinkering with a computer.
+* A test presses **every button of every page** (500+) and runs the work behind them; every script was
+  checked again (shellcheck, pyflakes, two code reviews).
+* Everything in US English (window, guide, screenshots, documents).
 
 ## Command line
 
 ```sh
-sudo disco new --preset "Raspberry Pi desktop (Pi 3, 4, 400)" /home/disco/mypi
-cd /home/disco/mypi
-sudo disco builder --name "My Pi Linux" --desktop xfce
-sudo disco lists add applications thonny python3-gpiozero
-sudo disco build-all
-sudo disco test
-disco platforms        # what D!sco builds for
-disco presets          # the presets
+sudo disco new --iso debian-live-13.1.0-amd64-standard.iso /home/disco/mylinux
+cd /home/disco/mylinux
+sudo disco brand identity name="My Linux" version=1.0
+sudo disco apt install vlc gimp
+sudo disco build --target-size 700
 disco --help           # every command
 ```
 
 ## Building from source
 
 ```sh
-make check             # tests (pytest)
-make install           # into /usr/local
-dpkg-buildpackage -us -uc -b     # the Debian package
-QT_QPA_PLATFORM=offscreen python3 tools/screenshots.py    # the screenshots of the guide
-QT_QPA_PLATFORM=offscreen python3 tools/make_guide.py     # docs/Disco-Guide.pdf and docs/manual.md
+make check                         # compile, lint and tests
+dpkg-buildpackage -us -uc -b       # the Debian package
+QT_QPA_PLATFORM=offscreen python3 tools/screenshots.py   # the screenshots of the guide
+QT_QPA_PLATFORM=offscreen python3 tools/make_guide.py    # docs/Disco-Guide.pdf and docs/manual.md
 ```
 
-The code: `disco/core` (everything that changes or builds a system, usable without the GUI),
-`disco/gui` (PyQt6, PyQt5 as fallback), `disco/cli.py`, `data/` (catalogs, presets, scripts that go into the
-images), `tests/`.
-
-## History
-
-D!sco is a complete rewrite of *Customizer* (Ivailo Monev, Mubiin Kimura, Graham Cantin and contributors) and
-takes ideas from *Cubic*, *remastersys*, *penguins-eggs* and the classic distro builders. Its earlier names
-were Eduka-Customizer (0.10–0.17 Alpha) and DistroForge (0.9 Beta); see [CHANGELOG.md](CHANGELOG.md) and
-[docs/ROADMAP.md](docs/ROADMAP.md).
+`disco/core` holds everything that changes or builds a system (usable without the window), `disco/gui` the
+window (PyQt6, PyQt5 as fallback), `disco/cli.py` the commands, `data/` the catalogs and the scripts that go
+into the images, `tests/` the tests.
 
 ## License
 
 GPL-3.0-or-later. Menu icons: Papirus (GPL-3.0) and own icons (GPL-3.0-or-later), see
 `data/icons/menu/README.md`. Debian is a registered trademark of Software in the Public Interest, Inc.;
-Raspberry Pi is a trademark of Raspberry Pi Ltd; Linux® is the registered trademark of Linus Torvalds.
+Raspberry Pi is a trademark of Raspberry Pi Ltd; Linux® is the registered trademark of Linus Torvalds. The
+penguin of the D!sco logo is a friend of Tux, the Linux mascot.

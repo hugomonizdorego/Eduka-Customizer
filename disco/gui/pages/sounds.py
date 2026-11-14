@@ -18,9 +18,12 @@ def play_on_host(path):
     for cmd in (["pw-play"], ["paplay"], ["ogg123", "-q"], ["aplay", "-q"]):
         exe = shutil.which(cmd[0])
         if exe and not (cmd[0] == "aplay" and not str(path).endswith(".wav")):
-            subprocess.Popen([exe] + cmd[1:] + [str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                             start_new_session=True)
-            return True
+            try:
+                subprocess.Popen([exe] + cmd[1:] + [str(path)], stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL, start_new_session=True)
+                return True
+            except OSError:
+                continue
     return False
 
 

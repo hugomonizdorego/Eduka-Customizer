@@ -30,6 +30,8 @@ DEFAULTS = {
         # The look of the window: sidebar dark | light; accent blue | teal | purple | orange | green | graphite.
         "sidebar": "dark",
         "accent": "blue",
+        # yes: the Welcome page opens when D!sco starts; no: Start opens.
+        "show_welcome": "yes",
     },
     "debian": {
         # Codenames change with every Debian release; update them here.

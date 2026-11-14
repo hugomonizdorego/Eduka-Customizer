@@ -1,6 +1,6 @@
 """Look and feel of the D!sco window.
 
-Calm slate and blue: a dark slate sidebar, white cards on a cool light grey, and
+Calm slate and blue: a dark slate sidebar, white cards on a cool light gray, and
 one blue accent for what you press. Green, amber and red only say how something
 went (done, look at it, problem), so the colors keep their meaning. Text keeps
 a contrast of at least 4.5:1 (WCAG AA) in both themes.

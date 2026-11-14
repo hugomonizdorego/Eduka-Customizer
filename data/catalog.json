@@ -32,7 +32,7 @@
       ["krita", "Krita", "Digital painting"],
       ["shotwell", "Shotwell", "Photo manager"],
       ["darktable", "darktable", "RAW photo development"],
-      ["blender", "Blender", "3D modelling and animation"],
+      ["blender", "Blender", "3D modeling and animation"],
       ["kolourpaint", "KolourPaint", "Simple paint program"],
       ["gthumb", "gThumb", "Image viewer and browser"]
     ]},

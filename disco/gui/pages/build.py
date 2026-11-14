@@ -168,6 +168,9 @@ class BuildPage(Page):
         self._folders()
         # The options are read from the project once (and after a build saved them); refreshing the page
         # after other tasks must not undo what was just chosen here.
+        from disco.core import platforms
+        board = platforms.of_project(self.project).output == "img"
+        self.build_btn.setText("Build SD-card image" if board else "Build ISO image")
         key = (str(self.project.path), self.project.state.get("last_iso"))
         if getattr(self, "_opts_for", None) != key:
             self._opts_for = key
@@ -245,15 +248,31 @@ class BuildPage(Page):
 
     def _build(self, opts):
         proj = self.project
+        from disco.core import permissions, platforms
+        board = platforms.of_project(proj).output == "img"
+
+        def work(t):
+            if board:
+                from disco.core import imgbuild
+                out = imgbuild.build(proj, None, t.set_progress, t.set_stage)
+            else:
+                out = build(proj, opts, t.set_progress, t.set_stage)
+            permissions.give_to_user(proj.output)   # the finished image belongs to you
+            return out
 
         def done(out):
             self.test_iso.setText(str(out))
             self.main.built_iso = str(out)
             self.refresh()
-            QMessageBox.information(self, "ISO ready", "Your ISO image is ready:\n{}\n\nTry it with 'Boot ISO' below. "
-                                    "When you are happy with it, 'Keep only the ISO' frees the disk space of the "
-                                    "build folders.".format(out))
-        self.task("Build ISO", lambda t: build(proj, opts, t.set_progress, t.set_stage), done)
+            if board:
+                from disco.core import imgbuild
+                how = "Write it to an SD card with:\n{}\n\nWARNING: dd overwrites the whole device: check its " \
+                      "name with lsblk first.".format(imgbuild.flash_command(out))
+            else:
+                how = "Try it with 'Boot ISO' below. When you are happy with it, 'Keep only the ISO' frees the " \
+                      "disk space of the build folders."
+            QMessageBox.information(self, "Image ready", "Your image is ready:\n{}\n\n{}".format(out, how))
+        self.task("Build SD-card image" if board else "Build ISO", work, done)
 
     # Checks -----------------------------------------------------------------------
     MARKS = {"ok": "✔ OK", "info": "ℹ Info", "warn": "⚠ Warning", "fail": "✘ Problem"}

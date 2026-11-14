@@ -1,4 +1,4 @@
-.TH DISCO 1 "November 2026" "D!sco 0.11" "D!sco (Distro Custom)"
+.TH DISCO 1 "November 2026" "D!sco 0.11.1" "D!sco (Distro Custom)"
 .SH NAME
 disco \- D!sco (Distro Custom): build your own Debian or Devuan distribution
 .SH SYNOPSIS
@@ -34,10 +34,10 @@ List what D!sco builds for: pc64, pc32, arm64-efi, rpi-arm64, rpi5, rpi-armhf,
 rpi-armel, riscv64-efi.
 .TP
 .B presets [list|show|apply|save|delete|export] [NAME] [\-\-file FILE]
-Presets: every choice of the Builder page and the package lists, saved under a name.
+Presets for automated builds: the choices of a distribution and its package lists, saved under a name.
 .TP
 .B builder [\-\-name N] [\-\-platform ID] [\-\-family debian|devuan] [\-\-suite S] [\-\-desktop ID|none] [\-\-init I] [\-\-installer calamares|none|debs] [\-\-method disco|live-build] [\-\-mirror URL]
-Show or change the choices of the Builder page.
+Show or change the choices used by build-all (automated builds from the command line).
 .TP
 .B lists [show|new|add|remove|on|off|delete|install|catalog] [LIST] [PACKAGE...]
 The package lists of the distribution (\fIlists/NN-name.list\fR): one package per

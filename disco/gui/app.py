@@ -63,11 +63,12 @@ def run(project=None, iso=None):
     win.show()
     if project:
         win.open_project(project)
-    else:
-        recent = settings().recent_projects()
-        if recent:
-            win.open_project(recent[0])
-    win.pages[0].refresh()
+    start = next(p for p in win.pages if p.__class__.__name__ == "ProjectPage")
     if iso:
-        win.pages[0].iso.setText(iso)
+        start.iso.setText(iso)
+        win.go("ProjectPage")
+    elif project and win.project:
+        win.continue_project()
+    else:
+        win.first_page()     # Welcome (or Start): the person chooses the ISO or the project to continue
     return app.exec()

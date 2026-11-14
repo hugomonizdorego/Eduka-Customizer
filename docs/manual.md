@@ -1,412 +1,315 @@
-# D!sco Step-by-step Guide · 0.11
+# D!sco Step-by-step Guide · 0.11.1
 
-Build your own Debian or Devuan distribution for PCs, ARM64, Raspberry Pi and RISC-V.
+Customize a Debian live ISO into your own distribution: open the ISO, change what you like, press Finish.
 
 The same guide as a PDF with pictures: [Disco-Guide.pdf](Disco-Guide.pdf).
 
 ## Contents
 
 1. What is D!sco?
-2. Installing D!sco
-3. Quick start: a distribution in six clicks
-4. Step 1 · The Builder
-5. Package lists and the catalog
-6. The build steps in detail
-7. ARM, Raspberry Pi and RISC-V
-8. Debian and Devuan repositories
-9. The live-build route
-10. Step 2 · System
-11. Step 3 · Desktop & Apps
-12. Step 4 · Boot
-13. Step 5 · Branding
-14. Step 6 · Look & Feel
-15. Step 7 · Installer
-16. Steps 8 to 10 · Advanced, Review & Apply, Check & Build
-17. Testing and writing the ISO
-18. Command line
-19. Troubleshooting
-20. Cleaning up
-21. License, trademarks and support
+2. Before you start
+3. Step 1 · Start
+4. Moving through the steps
+5. Step 2 · System
+6. Step 3 · Software
+7. Step 4 · Startup
+8. Step 5 · Branding
+9. Step 6 · Look & Feel
+10. Step 7 · Boot
+11. Step 8 · Installer
+12. Step 9 · Files & Terminal
+13. Step 10 · Review & Apply
+14. Step 11 · Build: Finish
+15. Testing and writing the image
+16. Raspberry Pi, ARM64 and RISC-V
+17. Command line
+18. Troubleshooting
+19. Cleaning up
+20. License, trademarks and support
 
 ## 1. What is D!sco?
 
-**D!sco (Distro Custom)** is free and open source software (GPL-3.0-or-later) to build your own Linux distribution from **Debian** (stable, testing, sid) or **Devuan**. It uses Debian's own tools only: `debootstrap` or `mmdebstrap`, `chroot`, `mksquashfs`, `xorriso` and, if you like, `live-build`. Nothing of Ubuntu is used: no casper, no PPAs, no Ubuntu bases.
+**D!sco (Distro Custom)** is free and open source software (GPL-3.0-or-later) that makes your own Linux distribution from a **Debian** or **Devuan** live ISO. It is made to be easy: you go through the steps with **Next**, change only what you want, and press **Finish**. The result is a live ISO (BIOS and UEFI) with the Calamares installer, or an SD-card image for the Raspberry Pi.
 
-The result is a **hybrid live ISO** (BIOS and UEFI) for PCs and UEFI machines, installed with Calamares, or an **SD-card image** for the Raspberry Pi. Other processors are built on your computer through **qemu-user**.
+D!sco uses Debian's own tools only: `live-boot`, `mksquashfs`, `xorriso`, `mmdebstrap`/`debootstrap`, `chroot` and Calamares. Nothing of Ubuntu is used (no casper, no PPAs).
 
-| Platform | Processor | Kernel package | Result |
-|---|---|---|---|
-| PC, 64-bit | amd64 | linux-image-amd64 | ISO (BIOS + UEFI) |
-| Older PC, 32-bit (Debian 12) | i386 | linux-image-686-pae | ISO (BIOS + UEFI) |
-| ARM 64-bit with UEFI | arm64 | linux-image-arm64 | ISO (UEFI) |
-| Raspberry Pi 3, 4, 400 | arm64 | linux-image-arm64 | SD-card image |
-| Raspberry Pi 5 (experimental) | arm64 | linux-image-arm64 | SD-card image |
-| Raspberry Pi 2, 3 (32-bit) | armhf | linux-image-armmp | SD-card image |
-| Raspberry Pi 1, Zero, Zero W | armel | linux-image-rpi | SD-card image |
-| RISC-V 64 with UEFI (experimental) | riscv64 | linux-image-riscv64 | ISO (UEFI) |
-
-The work is split into **ten steps** in the sidebar; each step has its pages as tabs. Step 1, the **Builder**, can build the whole distribution on its own with **Build all**; the other steps refine it.
-
-- 1 Builder · 2 System · 3 Desktop & Apps · 4 Boot · 5 Branding
-- 6 Look & Feel · 7 Installer · 8 Advanced · 9 Review & Apply · 10 Check & Build
-
-
-## 2. Installing D!sco
-
-1. Install the package and every tool it needs:
-2. For other processors (ARM64, Raspberry Pi, RISC-V) also install qemu-user and binfmt:
-3. For the live-build route install Debian's live-build:
-4. Start D!sco from the menu (**D!sco**) or a terminal.
-
-```sh
-sudo apt install ./disco_0.11_all.deb
-sudo apt install qemu-user-static binfmt-support      # ARM and RISC-V
-sudo apt install live-build                            # optional
-disco                  # the window (asks for the administrator password)
-sudo disco --help      # the command line
-```
-
-Needs Debian 12 or newer (or a derivative), 4 GB of memory and free disk space of about three times the size of the finished image. The old commands `distroforge` and `eduka-customizer` still open D!sco; old settings are read automatically.
-
-
-## 3. Quick start: a distribution in six clicks
-
-1. Open **1. Builder**. Choose a preset, for example **Debian Xfce desktop (PC 64-bit)** or **Raspberry Pi desktop**, and press **Load**.
-2. Type the **Distro name** and check the **Build path** (one folder per distribution).
-3. Tick the package lists you want (double-click a list to add programs from the catalog).
-4. Press **Prepare**: D!sco checks the choices and this computer and lists what is missing.
-5. Press **Build all**. It makes the base system, installs the desktop and the lists, copies the overlay, runs your scripts and makes the ISO or SD-card image.
-6. Test it in QEMU (**Test in QEMU**) and write it to a USB stick or SD card.
-
-![The Builder: preset, distribution and the build steps](screenshots/01-builder.png)
-
-
-## 4. Step 1 · The Builder
-
-The Builder holds the whole distribution, like the classic distro builders, in one modern page:
-
-| Field | What it is |
+| Step | What you do there |
 |---|---|
-| Preset | Load, Save, File (import/export), Delete, New. ★ presets come with D!sco. |
-| Distro name | The name of your distribution (os-release, boot menu, installer). |
-| Build path | The project folder: system, lists, overlay, scripts and output. |
-| Platform | What the system is for: PC, ARM64, Raspberry Pi, RISC-V (see chapter 1). |
-| Distro base | Debian or Devuan, and the release: stable, testing, sid or oldstable. |
-| GUI system | A desktop (Xfce, GNOME, KDE Plasma, ...), a window manager, or none. |
-| Init system | systemd, SysVinit, OpenRC or runit (Devuan: never systemd). |
-| Installer | Calamares, none (live only) or your own .deb packages. |
-| Method | D!sco (debootstrap → chroot → squashfs → xorriso) or Debian live-build. |
-| Repository | Another Debian or Devuan mirror (default: the Settings page). |
-
-The **Build** card shows the five steps and when each one was last finished. A step can be run again at any time, for example **Install packages** after changing a list.
-
-![Package lists with tick boxes](screenshots/01b-builder-lists.png)
-
-Under the lists: **Edit / view** (repositories, overlay folder, scripts, system files), **After the build** (QEMU, a terminal in the system, the desktop in a window, Synaptic) and **Tools** (open the build folder, unmount everything, delete the build, this guide).
-
-![Edit / view, after the build and tools](screenshots/01c-builder-tools.png)
+| Welcome | What D!sco does, recommendations, support. |
+| 1 Start | Extract an ISO into a new project, or continue a project. |
+| 2 System | Repositories, name of the system, system files, users, language. |
+| 3 Software | Desktop, applications by category, Flatpak, default applications. |
+| 4 Startup | What starts by itself: services and programs after login. |
+| 5 Branding | Wallpaper and logo, login screen, boot splash, a PDF on every desktop. |
+| 6 Look & Feel | Themes, sounds, welcome screen, terminal prompt and browser. |
+| 7 Boot | Kernel, boot loader, boot menu, init system, Raspberry Pi. |
+| 8 Installer | Calamares, no installer, or your own packages. |
+| 9 Files & Terminal | Your folders (no root needed), the system as administrator, a terminal. |
+| 10 Review & Apply | The list of your changes, applied all at once. |
+| 11 Build | Finish: checks, then the ISO or SD-card image. |
 
 
-## 5. Package lists and the catalog
+## 2. Before you start
 
-Each list is a plain text file in `lists/` of the build path, installed in the order of its number. One Debian package per line; `#` starts a comment and `-name` removes a package. Lists that are switched off stay in the folder.
+1. Install D!sco (it brings every tool it needs):
+2. Connect to the internet. Extracting and editing work offline, but installing packages, desktops, Flatpak applications and kernels needs internet.
+3. Download an ISO to start from. Recommended: the small **Debian live standard ISO** (no desktop), then add the desktop you want in step 3.
+4. Start **D!sco** from the menu. It asks for the administrator password: it needs it to build systems.
 
 ```sh
-# Title: Applications
-# Programs for the menu: tick them in the catalog or type their names.
-firefox-esr
-libreoffice
-vlc
--nano
+sudo apt install ./disco_0.11.1_all.deb
 ```
 
-Double-click a list (or press **Edit**) to tick programs in the catalog: Internet, Office, Graphics, Audio & Video, Education & Science, Programming, System Tools, Accessories, Games, Electronics & Raspberry Pi, Accessibility and Network & Server. Packages that your release or processor does not have are skipped with a note instead of stopping the build.
-
-![Editing a list with the catalog](screenshots/01d-list-editor.png)
-
-
-## 6. The build steps in detail
-
-1. **Prepare** writes the first lists, makes the folders `lists`, `overlay`, `hooks` and `debs`, switches qemu-user on for other processors and lists every missing tool with the command that installs it.
-2. **Build base** makes a new system with mmdebstrap (or debootstrap), checks the Debian keyring, gives the system its own host name and empty resolv.conf, switches to the chosen init system and writes the name of your distribution.
-3. **Install packages** installs the desktop, every list that is on, and the installer.
-4. **Overlay & scripts** copies `overlay/` into the system (owner root) and runs every `hooks/*.sh` inside it, in name order.
-5. **Make image** cleans the system, makes the initramfs and builds the ISO or the SD-card image.
-
-What **Build base** does, by hand:
-
-```sh
-sudo mmdebstrap --variant=important --architectures=amd64 \
-    --components=main,contrib,non-free,non-free-firmware \
-    --include=systemd-sysv,live-boot,live-config,linux-image-amd64 \
-    --include=sudo,network-manager \
-    trixie /home/disco/mylinux/rootfs http://deb.debian.org/debian
-```
-
-The overlay folder mirrors the system: `overlay/etc/skel/.bashrc` becomes `/etc/skel/.bashrc`. A script in `hooks/` runs as root inside the system:
-
-```
-#!/bin/sh
-# hooks/20-defaults.sh
-set -e
-apt-get install -y --no-install-recommends fastfetch
-echo 'fastfetch' >> /etc/skel/.bashrc
-```
-
-
-## 7. ARM, Raspberry Pi and RISC-V
-
-On a PC, the programs of an ARM or RISC-V system run through **qemu-user** with binfmt_misc. D!sco switches it on itself; to check it by hand:
-
-```sh
-sudo apt install qemu-user-static binfmt-support
-update-binfmts --display qemu-aarch64     # 'enabled', flags include F
-ls /proc/sys/fs/binfmt_misc/               # qemu-aarch64, qemu-arm, qemu-riscv64
-```
-
-**Raspberry Pi images** are laid out like Debian's own:
-
-| Partition | Label | File system | Holds |
-|---|---|---|---|
-| 1 (from 4 MiB) | RASPIFIRM | FAT32 | firmware, kernel, initrd, device trees, config.txt, cmdline.txt, sysconf.txt |
-| 2 | RASPIROOT | ext4 | the system; grows to the whole card at the first start |
-
-Debian's `raspi-firmware` package writes the boot partition again after every kernel update. Your own lines are kept: config.txt lines in `/etc/default/raspi-firmware-custom`, kernel options in `/etc/default/raspi-extra-cmdline` (page **4. Boot → Raspberry Pi**).
-
-![The Raspberry Pi page](screenshots/04d-raspberry-pi.png)
-
-At the first start the card grows to its full size, new SSH host keys and a machine id are made, and `sysconf.txt` on the boot partition is read (edit it on any computer before the first start):
-
-```sh
-hostname=mypi
-root_authorized_key=ssh-ed25519 AAAA... you@laptop
-```
-
-Write the card (the image is compressed with xz):
-
-```sh
-# find the card, for example /dev/mmcblk0 or /dev/sdb
-lsblk
-xzcat mylinux-1.0-stable-arm64.img.xz | \
-    sudo dd of=/dev/sdX bs=4M status=progress conv=fsync
-```
-
-> **WARNING: dd overwrites the WHOLE device named in of= without asking. Check the name with lsblk (unplug and plug the card to see which name appears) and never name the disk of your computer. Raspberry Pi Imager (Use custom) and GNOME Disks (Restore Disk Image) are safer.**
-
-**ARM64 and RISC-V ISOs** start with UEFI only: D!sco makes GRUB for the processor (`grub-mkstandalone -O arm64-efi`, `bootaa64.efi`) and gives the ISO a GPT with an EFI partition, so it also starts from a USB stick.
-
-
-## 8. Debian and Devuan repositories
-
-| Suite | Debian | Devuan | Notes |
-|---|---|---|---|
-| oldstable | bookworm (12) | daedalus (5) | 32-bit PCs; turn on in Settings for others |
-| stable | trixie (13) | excalibur (6) | recommended |
-| testing | forky | freia | newer, changes every day |
-| unstable | sid | ceres | for developers |
-
-| Repository | Address |
+| Recommended | Why |
 |---|---|
-| Debian | http://deb.debian.org/debian |
-| Debian security | http://security.debian.org/debian-security |
-| Devuan (all) | http://deb.devuan.org/merged |
-| Debian backports | http://deb.debian.org/debian (suite trixie-backports) |
+| Internet connection | packages, desktops, Flatpaks, kernels, updates |
+| Debian 12 or newer (or a Debian-based system) | the computer that runs D!sco |
+| 4 GB of memory, about 20 GB free disk space | the system, the ISO and the compressed copy |
+| The Debian live standard ISO | a small, clean start |
 
-D!sco writes clean deb822 files, for example `/etc/apt/sources.list.d/debian.sources`:
+The **Welcome** page opens first. Untick **Show this page when D!sco starts** to go straight to Start next time. **Donate with PayPal** supports the project.
 
-```
-Types: deb
-URIs: http://deb.debian.org/debian
-Suites: trixie trixie-updates
-Components: main contrib non-free non-free-firmware
-Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-```
-
-A third-party repository always gets its own key (page **2. System → Repositories → Add**):
-
-```sh
-wget -qO- https://repo.example.org/key.asc | gpg --dearmor | \
-    sudo tee /etc/apt/keyrings/example.gpg >/dev/null
-# Signed-By: /etc/apt/keyrings/example.gpg in the .sources file
-```
+![The Welcome page](screenshots/01-welcome.png)
 
 
-## 9. The live-build route
+## 3. Step 1 · Start
 
-Choose **Method: Debian live-build** on the Builder (ISO platforms with Debian only). D!sco writes `live-build/` in the build path and runs it:
+**Customize an ISO** (left):
 
-- `auto/config` — `lb config` with every choice (release, architecture, kernel flavour, archive areas, boot loaders, compression, boot options)
-- `config/package-lists/*.list.chroot` — your lists, the desktop and the live system
-- `config/includes.chroot/` — the overlay folder
-- `config/hooks/normal/*.hook.chroot` — your scripts, the name of the system and the packages the lists remove
+1. Press **Browse...** next to **ISO file** and choose the ISO.
+2. Type a **Name** for your distribution; the **Folder** of the project follows it.
+3. Optionally choose the **Language** of the system.
+4. Press **Extract and start**. When it is done, D!sco opens step 2.
 
-The same by hand (you can change the files first):
+**Continue a project** (right): choose a project from the list and press **Continue**. D!sco opens the step where you stopped. Projects are kept: close D!sco at any time.
 
-```sh
-cd /home/disco/mylinux/live-build
-sudo lb clean
-sudo lb config
-sudo lb build
-```
+The line at the top shows whether the internet connection works.
 
-Debian's live-build of 2021 or later is needed (Debian 11+): D!sco checks the version.
+![Start: customize an ISO or continue a project](screenshots/02b-start-continue.png)
+
+**Other ways to start**: download an official Debian ISO (checked with Debian's SHA256SUMS), make a **new system without an ISO** for a PC, an ARM64 machine, a Raspberry Pi or RISC-V, or copy this computer.
 
 
-## 10. Step 2 · System
+## 4. Moving through the steps
 
-Tabs: **Repositories**, **Identity**, **System files**, **Users**, **Language** and **Init System**.
+Every step has a bar at the bottom: **Back** goes to the step before, **Next** marks the step done and opens the next one. Skip what you do not want to change: just press Next. The last step has **Finish**, which builds the image.
 
-**System files** edits the files that tell who the system is. **Template from Identity** fills a file from the Identity tab; change it as you like, then **Save to the system**.
+Most changes do not change the system at once: they wait in **Review & Apply** (step 10), so you can check them first. The blue button at the top shows how many wait.
+
+A step opens after the one before it is done. Experts can open every step at any time: **Settings → Open every menu at any time**.
+
+
+## 5. Step 2 · System
+
+Tabs: **Repositories** (Debian or Devuan release, mirror, extra repositories with their keys), **Identity** (name, version, website, computer name), **System files**, **Users** (the live user, passwords, more accounts) and **Language** (language, keyboard, time zone).
+
+**System files** edits the files that tell who the system is. **Template from Identity** fills a file for you; change it, then **Save to the system**.
 
 | File | Example |
 |---|---|
-| /etc/os-release | NAME="My Linux" · VERSION="1.0 (Aurora)" · ID=mylinux · PRETTY_NAME="My Linux 1.0 (Aurora)" · HOME_URL=... · LOGO=mylinux-logo |
-| /etc/lsb-release | DISTRIB_ID="My Linux" · DISTRIB_RELEASE=1.0 · DISTRIB_DESCRIPTION="My Linux 1.0" |
+| /etc/os-release | NAME="My Linux" · VERSION="1.0" · ID=mylinux · PRETTY_NAME · HOME_URL · LOGO |
+| /etc/lsb-release | DISTRIB_ID="My Linux" · DISTRIB_RELEASE=1.0 · DISTRIB_DESCRIPTION |
 | /etc/issue | Welcome to My Linux 1.0 - \n \l |
 | /etc/issue.net | Welcome to My Linux 1.0 |
 | /etc/hostname, /etc/hosts | mylinux · 127.0.1.1 mylinux |
 | /etc/motd | the message after logging in |
 
-![System files](screenshots/02c-system-files.png)
-
-Below: the **picture of new users** (`/etc/skel/.face`, also the login screen's default picture), **settings folders** copied from this computer into /etc/skel (for example `~/.config/xfce4`: panels and shortcuts; caches and keys stay out) and the **GRUB background** of installed computers (GRUB_BACKGROUND; the installer runs update-grub).
-
-**Init System**: systemd, SysVinit, OpenRC or runit with elogind, the right live-config backend and init scripts; the installer follows. GNOME needs systemd.
+![System files](screenshots/03c-system-files.png)
 
 
-## 11. Step 3 · Desktop & Apps
+## 6. Step 3 · Software
 
-**Desktop**: a desktop or window manager in a Mini, Compact, Full or Full-with-apps edition; the login screen, X11 or Wayland and the compositor follow it. **Packages**: every package of the system. **Flatpak**: Flathub applications by category. **Replace Apps**: another browser, mail program, editor or terminal for everyone.
+**Desktop**: choose a desktop (Xfce, GNOME, KDE Plasma, Cinnamon, MATE, LXQt...) or a window manager and how complete it is. The login screen and session follow it.
 
-![Desktops and editions](screenshots/03-desktop.png)
+**Packages**: **Popular applications** lists programs by category with tick boxes: tick them and press **Install ticked**. Below it, every Debian package can be searched, added or removed, and the applications of the ISO can be removed.
 
+![Popular applications](screenshots/04b-applications.png)
 
-## 12. Step 4 · Boot
-
-**Kernel**: Debian kernels, backports or third-party kernels (paste their instructions into the kernel terminal), firmware and the initramfs. **Boot Loader**: what installed computers start with (GRUB, GRUB with Secure Boot, systemd-boot, rEFInd, EFISTUB, Syslinux). **Boot Menu**: the menu of the ISO (title, timeout, background, GRUB theme, menu designer). **Raspberry Pi**: see chapter 7.
-
-![Boot loaders of installed systems](screenshots/04b-boot-loader.png)
-
-A broken or missing initramfs is made again with:
-
-```sh
-sudo disco run update-initramfs -c -k all
-```
+**Flatpak**: applications from Flathub, in the ISO or installed at the first start. **Default apps**: another browser, mail program, editor or terminal for everyone.
 
 
-## 13. Step 5 · Branding
+## 7. Step 4 · Startup
 
-**Distro Branding** builds a package with your logo and name everywhere (base-files, lsb-release, desktop-base, logos, GRUB, Calamares). **Wallpaper & Login**: wallpapers and the LightDM greeter (`/etc/lightdm/lightdm-gtk-greeter.conf`: background, theme-name, icon-theme-name, default-user-image), SDDM and GDM. **Plymouth**: install, preview or make a boot splash from your logo; by hand:
+What starts by itself, switched on or off with a tick:
 
-```sh
-sudo disco run plymouth-set-default-theme -R mytheme
-```
+- **Services** start with the system, before anyone logs in (network, printing, SSH, Bluetooth, updates...). 🔒 marks services the system needs: they stay on.
+- **Programs after login** start on every user's desktop (/etc/xdg/autostart).
+- **Add a program**: a name and a command, for example a welcome page in the browser.
 
-**Desktop document**: a PDF about your system with the title you like. **Write a first text** describes the system from the project; change it freely. It is put into `/usr/share/doc/ID-guide/`, on every user's desktop at the first login (in the desktop folder of the user's language) and in the menu.
+Change the ticks and press **Apply the ticks**. Turning off what you do not need makes the system start faster.
 
-![Desktop document](screenshots/05d-desktop-document.png)
-
-
-## 14. Step 6 · Look & Feel
-
-**Themes & Icons**, **System Sounds**, **Welcome Screen** and **Terminal & Browser**.
-
-**Terminal & Browser**: the message after login (a fixed `/etc/motd` or a dynamic script in `/etc/update-motd.d`), the bash prompt of every user (`/etc/bash.bashrc` and `/etc/skel/.bashrc`) and the policies of Firefox ESR and Chromium:
-
-```
-{
-  "policies": {
-    "Homepage": {"URL": "https://mylinux.example.org", "Locked": false},
-    "Bookmarks": [{"Title": "Debian", "URL": "https://www.debian.org",
-                   "Placement": "toolbar"}],
-    "DisableTelemetry": true
-  }
-}
-```
-
-The file is written to `/etc/firefox-esr/policies/policies.json`, `/etc/firefox/policies/policies.json` and `/usr/lib/firefox-esr/distribution/policies.json`; Chromium's to `/etc/chromium/policies/managed/disco.json`.
-
-![Terminal & Browser](screenshots/06b-terminal-browser.png)
+![Startup](screenshots/05-startup.png)
 
 
-## 15. Step 7 · Installer
+## 8. Step 5 · Branding
 
-**Which installer**: Calamares (recommended), none (a live system only) or **your own .deb packages**: drop them on the page, they are kept in `debs/` and installed with their dependencies. Then the Calamares settings: name, images, colors, slides, users, partitions and **Check the installer**.
+**Wallpaper & Logo** is the easy way, the same for every picture:
 
-![Installer](screenshots/07-installer.png)
+1. Press **Choose...** (or drop a picture on its box).
+2. Keep **Set as default** ticked (untick it to only add the picture to the system).
+3. Press **Apply**. Pictures: desktop wallpaper, logo, login screen, boot menu, picture of new users. **Apply all chosen pictures** does them all.
+
+The **logo** goes everywhere: menu and system icon, os-release LOGO, login screen, installer and a boot splash made from it.
+
+![Wallpaper & Logo](screenshots/06-wallpaper-logo.png)
+
+The other tabs: **Wallpaper & Login** (a wallpaper gallery and login screen themes), **Boot Splash** (Plymouth themes), **Desktop document** (a PDF with any title about your system, put on every user's desktop) and **Distro Branding** (a package with your name and logo everywhere).
+
+![Desktop document](screenshots/06b-desktop-document.png)
 
 
-## 16. Steps 8 to 10 · Advanced, Review & Apply, Check & Build
+## 9. Step 6 · Look & Feel
 
-**Advanced**: a terminal inside the system, the desktop in a window (Xephyr), hooks, recipes and the Package Workshop.
+**Themes & Icons**, **System Sounds**, **Welcome Screen** (pages shown after the first login) and **Terminal & Browser**: the message after login, the bash prompt of every user, and the home page, bookmarks and privacy of Firefox ESR and Chromium.
 
-**Review & Apply**: changes of steps 2 to 8 wait here; tick them, try them in a preview, then apply them all at once. **Build all** on the Builder offers to apply them first.
-
-![Review & Apply](screenshots/09-review-apply.png)
-
-**Check & Build**: checks what would break the image (double-click a row to open its page, or **Fix automatically**), the target size, compression and the resources of this computer, then the ISO.
+![Terminal & Browser](screenshots/07b-terminal-browser.png)
 
 
-## 17. Testing and writing the ISO
+## 10. Step 7 · Boot
 
-**Test in QEMU** starts a PC ISO with BIOS, UEFI or Secure Boot, an ARM64 ISO with UEFI, and an SD-card image with its own kernel (ARM is emulated on a PC: be patient).
+**Kernel** (Debian kernels, backports, third-party kernels, firmware), **Boot Loader** (what installed computers start with: GRUB, systemd-boot, rEFInd, EFISTUB, Syslinux), **Boot Menu** (the menu of the ISO), **Init System** (systemd, SysVinit, OpenRC, runit) and **Raspberry Pi** (config.txt, kernel options, image size).
+
+![Boot loader](screenshots/08b-boot-loader.png)
+
+
+## 11. Step 8 · Installer
+
+**Which installer**: Calamares (recommended), none (a live system only), or **your own .deb packages**: drop them on the page and press **Install them now**. Below it: the name, pictures, slides and rules of Calamares, and **Check the installer**.
+
+![Installer](screenshots/09-installer.png)
+
+
+## 12. Step 9 · Files & Terminal
+
+**Your folders** belong to you: open them in your own file manager and add, change or delete anything, **no administrator rights needed**.
+
+| Folder | What it is for |
+|---|---|
+| overlay | files for the system: overlay/etc/skel/.bashrc becomes /etc/skel/.bashrc |
+| hooks | your scripts (*.sh), run inside the system |
+| branding | your pictures and documents |
+| debs | your own .deb packages |
+| iso | the boot menus and splash pictures of the ISO |
+| output | the finished ISO and SD-card images |
+
+**Copy my files into the system** copies overlay into the system with owner root; **Run my scripts** runs the scripts. **Give me full access** hands the folders to you again.
+
+![Your folders](screenshots/10-files.png)
+
+**The system** is changed as administrator, here in D!sco: choose a folder (/etc, /etc/skel, /usr/share...), select a file, change it and press **Save file**.
+
+> **WARNING: The system folder is not opened for everyone on purpose: its owners and permissions go into the ISO as they are, and a system where everyone may change every file is unsafe and does not start correctly (sudo and SSH refuse to work). Use the overlay folder instead.**
+
+**Terminal & Live**: a terminal inside the system and the desktop of the system in a window. **Package Workshop**: change the files of an installed Debian package.
+
+
+## 13. Step 10 · Review & Apply
+
+Every change of steps 2 to 9 waits here. Tick the ones you are sure about, **Try them first** in a preview if you like, then **Apply all changes**.
+
+![Review & Apply](screenshots/11-review-apply.png)
+
+
+## 14. Step 11 · Build: Finish
+
+Press **Finish: build the image** (or **Build ISO image**). D!sco checks the system first and says how to fix each problem: **Fix automatically**, or double-click a row to open the right step.
+
+Choose a target size if you like (100 MB to 4.4 GB). Compression is lossless: a smaller ISO only takes longer to build. For a Raspberry Pi project the button builds the SD-card image.
+
+![Build](screenshots/12-build.png)
+
+
+## 15. Testing and writing the image
+
+**Boot ISO** starts the ISO in a virtual machine (QEMU). Then write it to a USB stick:
 
 ```sh
 lsblk                     # find the USB stick, for example /dev/sdb
 sudo dd if=mylinux-1.0-stable-amd64.iso of=/dev/sdX bs=4M status=progress oflag=sync
 ```
 
-> **WARNING: dd erases everything on the device named in of=. A wrong letter erases your own disk: check it with lsblk first.**
+> **WARNING: dd erases everything on the device named in of= without asking. A wrong letter erases your own disk: check it with lsblk first. GNOME Disks (Restore Disk Image) is safer.**
 
-
-## 18. Command line
-
-Every step also works in a terminal:
+An SD-card image for the Raspberry Pi:
 
 ```sh
-sudo disco new --preset "Raspberry Pi desktop (Pi 3, 4, 400)" /home/disco/mypi
-cd /home/disco/mypi
-sudo disco builder --name "My Pi Linux" --desktop xfce
-sudo disco lists show
-sudo disco lists add applications thonny python3-gpiozero
-sudo disco step prepare
-sudo disco build-all
-sudo disco test
-disco platforms          # what D!sco builds for
-disco presets            # the presets
-sudo disco live-build export   # write the live-build configuration only
+xzcat mypi-1.0-stable-arm64.img.xz | \
+    sudo dd of=/dev/sdX bs=4M status=progress conv=fsync
 ```
 
-`disco --help` lists every command; `disco COMMAND --help` explains one.
+
+## 16. Raspberry Pi, ARM64 and RISC-V
+
+Start with **Other ways to start → New system (no ISO)** and choose the platform:
+
+| Platform | Processor | Result |
+|---|---|---|
+| PC, 64-bit / 32-bit (Debian 12) | amd64 / i386 | ISO, BIOS + UEFI |
+| ARM 64-bit with UEFI | arm64 | ISO, UEFI |
+| Raspberry Pi 3, 4, 400 (and 5, experimental) | arm64 | SD-card image |
+| Raspberry Pi 2, 3 (32-bit) | armhf | SD-card image |
+| Raspberry Pi 1, Zero | armel | SD-card image |
+| RISC-V 64 with UEFI (experimental) | riscv64 | ISO, UEFI |
+
+Other processors run through qemu-user on your PC:
+
+```sh
+sudo apt install qemu-user-static binfmt-support
+```
+
+SD-card images are laid out like Debian's own (RASPIFIRM boot partition, RASPIROOT system partition that grows to the whole card). Before the first start, `sysconf.txt` on the boot partition can set the computer name and an SSH key:
+
+```sh
+hostname=mypi
+root_authorized_key=ssh-ed25519 AAAA... you@laptop
+```
+
+![Raspberry Pi](screenshots/08c-raspberry-pi.png)
 
 
-## 19. Troubleshooting
+## 17. Command line
+
+Everything also works in a terminal (the commands apply each change at once):
+
+```sh
+sudo disco new --iso debian-live-13.1.0-amd64-standard.iso /home/disco/mylinux
+cd /home/disco/mylinux
+sudo disco brand identity name="My Linux" version=1.0
+sudo disco apt install vlc gimp
+sudo disco check --fix
+sudo disco build --target-size 700
+sudo disco test
+disco platforms        # what D!sco builds for
+disco --help           # every command
+```
+
+For automated builds: presets, package lists and `disco build-all`, or Debian's live-build with `disco live-build export`.
+
+
+## 18. Troubleshooting
 
 | Problem | What to do |
 |---|---|
-| NO_PUBKEY / signature errors from APT | Install the keyring of the repository (Debian: debian-archive-keyring, Devuan: devuan-keyring) and use Signed-By in its .sources file. |
-| Kernel panic or 'Unable to find a medium' at live boot | live-boot or the initramfs is missing: Install packages, then rebuild (Check & Build fixes it automatically). |
-| initrd.img-VERSION is missing | disco run update-initramfs -c -k VERSION |
-| ARM ISO does not start from USB | Built before 0.11: rebuild; the ISO now has a GPT EFI partition. |
-| Exec format error in the chroot | qemu-user is not registered: sudo apt install qemu-user-static binfmt-support, then Prepare again. |
-| raspi-firmware did not write the boot partition | D!sco writes it the same way and says so in the log; check that raspi-firmware is in the image (non-free-firmware). |
-| The system is still in use | Close the terminal or live session of the system, or Tools → Unmount everything. |
-
-Every message is in the log panel and in `/tmp/disco/disco.log`. **Send feedback** sends a report with screenshots and, if you agree, the logs.
+| No internet connection | Connect, then press Check again on Start. Editing works offline. |
+| NO_PUBKEY / signature errors from APT | Add the key of the repository (Repositories → Add) or install the keyring package (debian-archive-keyring, devuan-keyring). |
+| Kernel panic or 'Unable to find a medium' at live boot | live-boot or the initramfs is missing: Build → Fix automatically. |
+| Exec format error (ARM or RISC-V system) | sudo apt install qemu-user-static binfmt-support |
+| The system is still in use | Close the terminal or live session of the system, or Unmount everything (Files & Terminal → Terminal & Live). |
+| A button did nothing | Look at the log at the bottom (Show log) or /tmp/disco/disco.log, and use Send feedback. |
 
 
-## 20. Cleaning up
+## 19. Cleaning up
 
-The build folders are big. **Delete the build (keep ISO/IMG)** on the Builder (or closing the window after a build, or `sudo disco clean --keep-iso`) deletes everything of the project but the images and their checksums. Nothing is deleted while anything is mounted inside the project.
+The build folders are big. After a build, closing the window (or **Keep only the ISO** on Build, or `sudo disco clean --keep-iso`) deletes everything of the project but the images. Nothing is deleted while anything is mounted inside the project.
 
-> **WARNING: Never delete a project folder with rm -rf while a terminal or live session of it is open: /dev and /proc of your computer are mounted inside it. Use Unmount everything (or sudo disco clean) first.**
+> **WARNING: Never delete a project folder with rm -rf while a terminal or live session of it is open: /dev and /proc of your computer are mounted inside it.**
 
 
-## 21. License, trademarks and support
+## 20. License, trademarks and support
 
-D!sco is free software under the GNU General Public License version 3 or later, WITHOUT ANY WARRANTY. The licenses of its components are on the **About** tab. The packages in your distribution keep their own licenses (`/usr/share/doc/PACKAGE/copyright`).
+D!sco is free software under the GNU General Public License version 3 or later, WITHOUT ANY WARRANTY. The licenses of its components are on the About tab of Settings & About.
 
-Debian is a registered trademark of Software in the Public Interest, Inc.; Raspberry Pi is a trademark of Raspberry Pi Ltd; Linux® is the registered trademark of Linus Torvalds. D!sco is not affiliated with them. Give your distribution a name and logo of its own.
+Debian is a registered trademark of Software in the Public Interest, Inc.; Raspberry Pi is a trademark of Raspberry Pi Ltd; Linux® is the registered trademark of Linus Torvalds. D!sco is not affiliated with them. Give your distribution a name and logo of its own. The penguin of the D!sco logo is a friend of Tux, the Linux mascot.
 
 Made by Hugo Moniz do Rego. If D!sco helps you, a donation keeps the project going:
 

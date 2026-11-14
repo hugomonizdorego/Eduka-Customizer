@@ -17,9 +17,16 @@ FOLDERS = [
                "(as root); packages are better changed in D!sco.", True),
     ("iso", "The files of the ISO around the system: boot menus (boot/grub, isolinux), the EFI image and "
             "live/filesystem.squashfs after a build.", True),
-    ("hooks", "Your own scripts: every *.sh here runs inside the system (Advanced → Terminal & Live).", True),
+    ("overlay", "Your files for the system: overlay/etc/skel/.bashrc becomes /etc/skel/.bashrc "
+                "(Files & Terminal → Files → Copy my files into the system).", True),
+    ("hooks", "Your own scripts: every *.sh here runs inside the system (Files & Terminal → Files → Run my "
+              "scripts).", True),
+    ("debs", "Your own .deb packages (Installer → My own .deb packages).", True),
+    ("lists", "Package lists (disco lists, disco build-all).", True),
+    ("live-build", "The live-build configuration (disco live-build export).", True),
     ("workshop", "Debian packages opened in the Package Workshop.", True),
-    ("branding", "The source of your <id>-branding package (Identity & Branding).", True),
+    ("branding", "Your pictures (branding/pictures) and the source of your <id>-branding package (Branding).",
+     True),
     ("boot", "Boot files made by the build (kernel, initrd, EFI image).", False),
     ("cache", "Downloads and temporary files. Safe to delete.", False),
     ("logs", "What D!sco did in this project (disco.log, qemu.log, ...).", False),

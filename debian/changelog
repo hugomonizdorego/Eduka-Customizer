@@ -1,3 +1,23 @@
+disco (0.11.1) unstable; urgency=medium
+
+  * Fixed: the Builder page crashed when its step buttons were pressed
+    ('int' object is not callable). Pages get nav_step and nav_section.
+  * The Builder page and the Quick Wizard are removed: Welcome (about,
+    donation, show at start), then Start (extract an ISO or continue a
+    project, internet check), then eleven steps with Back, Next and Finish.
+  * New Startup step: services and programs after login, on or off with a
+    tick (systemd, SysVinit, OpenRC, runit, XDG autostart).
+  * New Files page: folders that belong to the user (no root needed) and the
+    system edited as administrator.
+  * Easy Wallpaper & Logo: choose a picture, set as default, apply (also for
+    the logo, login screen, boot menus and picture of new users).
+  * Popular applications with tick boxes; SD-card images from the Build page.
+  * New logo with a penguin tinkering with a computer.
+  * A test presses every button of every page and runs the work behind it.
+  * US English everywhere; docs/QUICKSTART.md replaces docs/PANDUAN.md.
+
+ -- Hugo Moniz do Rego <hugomonizdorego@users.noreply.github.com>  Sun, 15 Nov 2026 10:00:00 +0000
+
 disco (0.11) unstable; urgency=medium
 
   * Renamed to D!sco (Distro Custom). Version numbers start again: 0.11 is

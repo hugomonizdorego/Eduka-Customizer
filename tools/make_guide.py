@@ -24,319 +24,242 @@ SHOTS = ROOT / "docs" / "screenshots"
 EN = {
     "file": "Disco-Guide.pdf",
     "title": "Step-by-step Guide",
-    "lead": "Build your own Debian or Devuan distribution for PCs, ARM64, Raspberry Pi and RISC-V.",
+    "lead": "Customize a Debian live ISO into your own distribution: open the ISO, change what you like, press Finish.",
     "toc": "Contents",
-    "cover": "01-builder.png",
+    "cover": "01-welcome.png",
     "chapters": [
         ("What is {app}?", [
-            "<b>{app} (Distro Custom)</b> is free and open source software (GPL-3.0-or-later) to build your own "
-            "Linux distribution from <b>Debian</b> (stable, testing, sid) or <b>Devuan</b>. It uses Debian's own "
-            "tools only: <code>debootstrap</code> or <code>mmdebstrap</code>, <code>chroot</code>, "
-            "<code>mksquashfs</code>, <code>xorriso</code> and, if you like, <code>live-build</code>. Nothing of "
-            "Ubuntu is used: no casper, no PPAs, no Ubuntu bases.",
-            "The result is a <b>hybrid live ISO</b> (BIOS and UEFI) for PCs and UEFI machines, installed with "
-            "Calamares, or an <b>SD-card image</b> for the Raspberry Pi. Other processors are built on your "
-            "computer through <b>qemu-user</b>.",
-            ("table", ["Platform", "Processor", "Kernel package", "Result"], [
-                ["PC, 64-bit", "amd64", "linux-image-amd64", "ISO (BIOS + UEFI)"],
-                ["Older PC, 32-bit (Debian 12)", "i386", "linux-image-686-pae", "ISO (BIOS + UEFI)"],
-                ["ARM 64-bit with UEFI", "arm64", "linux-image-arm64", "ISO (UEFI)"],
-                ["Raspberry Pi 3, 4, 400", "arm64", "linux-image-arm64", "SD-card image"],
-                ["Raspberry Pi 5 (experimental)", "arm64", "linux-image-arm64", "SD-card image"],
-                ["Raspberry Pi 2, 3 (32-bit)", "armhf", "linux-image-armmp", "SD-card image"],
-                ["Raspberry Pi 1, Zero, Zero W", "armel", "linux-image-rpi", "SD-card image"],
-                ["RISC-V 64 with UEFI (experimental)", "riscv64", "linux-image-riscv64", "ISO (UEFI)"]]),
-            "The work is split into <b>ten steps</b> in the sidebar; each step has its pages as tabs. Step 1, the "
-            "<b>Builder</b>, can build the whole distribution on its own with <b>Build all</b>; the other steps "
-            "refine it.",
-            ("list", ["1 Builder · 2 System · 3 Desktop & Apps · 4 Boot · 5 Branding",
-                      "6 Look & Feel · 7 Installer · 8 Advanced · 9 Review & Apply · 10 Check & Build"]),
+            "<b>{app} (Distro Custom)</b> is free and open source software (GPL-3.0-or-later) that makes your own "
+            "Linux distribution from a <b>Debian</b> or <b>Devuan</b> live ISO. It is made to be easy: you go "
+            "through the steps with <b>Next</b>, change only what you want, and press <b>Finish</b>. The result "
+            "is a live ISO (BIOS and UEFI) with the Calamares installer, or an SD-card image for the Raspberry Pi.",
+            "{app} uses Debian's own tools only: <code>live-boot</code>, <code>mksquashfs</code>, "
+            "<code>xorriso</code>, <code>mmdebstrap</code>/<code>debootstrap</code>, <code>chroot</code> and "
+            "Calamares. Nothing of Ubuntu is used (no casper, no PPAs).",
+            ("table", ["Step", "What you do there"], [
+                ["Welcome", "What {app} does, recommendations, support."],
+                ["1 Start", "Extract an ISO into a new project, or continue a project."],
+                ["2 System", "Repositories, name of the system, system files, users, language."],
+                ["3 Software", "Desktop, applications by category, Flatpak, default applications."],
+                ["4 Startup", "What starts by itself: services and programs after login."],
+                ["5 Branding", "Wallpaper and logo, login screen, boot splash, a PDF on every desktop."],
+                ["6 Look & Feel", "Themes, sounds, welcome screen, terminal prompt and browser."],
+                ["7 Boot", "Kernel, boot loader, boot menu, init system, Raspberry Pi."],
+                ["8 Installer", "Calamares, no installer, or your own packages."],
+                ["9 Files & Terminal", "Your folders (no root needed), the system as administrator, a terminal."],
+                ["10 Review & Apply", "The list of your changes, applied all at once."],
+                ["11 Build", "Finish: checks, then the ISO or SD-card image."]]),
         ]),
-        ("Installing {app}", [
-            ("steps", ["Install the package and every tool it needs:",
-                       "For other processors (ARM64, Raspberry Pi, RISC-V) also install qemu-user and binfmt:",
-                       "For the live-build route install Debian's live-build:",
-                       "Start {app} from the menu (<b>D!sco</b>) or a terminal."]),
-            ("code", "sudo apt install ./disco_0.11_all.deb\n"
-                     "sudo apt install qemu-user-static binfmt-support      # ARM and RISC-V\n"
-                     "sudo apt install live-build                            # optional\n"
-                     "disco                  # the window (asks for the administrator password)\n"
-                     "sudo disco --help      # the command line"),
-            "Needs Debian 12 or newer (or a derivative), 4 GB of memory and free disk space of about three "
-            "times the size of the finished image. The old commands <code>distroforge</code> and "
-            "<code>eduka-customizer</code> still open {app}; old settings are read automatically.",
+        ("Before you start", [
+            ("steps", ["Install {app} (it brings every tool it needs):",
+                       "Connect to the internet. Extracting and editing work offline, but installing packages, "
+                       "desktops, Flatpak applications and kernels needs internet.",
+                       "Download an ISO to start from. Recommended: the small <b>Debian live standard ISO</b> (no "
+                       "desktop), then add the desktop you want in step 3.",
+                       "Start <b>D!sco</b> from the menu. It asks for the administrator password: it needs it to "
+                       "build systems."]),
+            ("code", "sudo apt install ./disco_0.11.1_all.deb"),
+            ("table", ["Recommended", "Why"], [
+                ["Internet connection", "packages, desktops, Flatpaks, kernels, updates"],
+                ["Debian 12 or newer (or a Debian-based system)", "the computer that runs {app}"],
+                ["4 GB of memory, about 20 GB free disk space", "the system, the ISO and the compressed copy"],
+                ["The Debian live standard ISO", "a small, clean start"]]),
+            "The <b>Welcome</b> page opens first. Untick <b>Show this page when D!sco starts</b> to go straight "
+            "to Start next time. <b>Donate with PayPal</b> supports the project.",
+            ("img", "01-welcome.png", "The Welcome page"),
         ]),
-        ("Quick start: a distribution in six clicks", [
-            ("steps", ["Open <b>1. Builder</b>. Choose a preset, for example <b>Debian Xfce desktop (PC 64-bit)</b> or "
-                       "<b>Raspberry Pi desktop</b>, and press <b>Load</b>.",
-                       "Type the <b>Distro name</b> and check the <b>Build path</b> (one folder per distribution).",
-                       "Tick the package lists you want (double-click a list to add programs from the catalog).",
-                       "Press <b>Prepare</b>: {app} checks the choices and this computer and lists what is missing.",
-                       "Press <b>Build all</b>. It makes the base system, installs the desktop and the lists, copies "
-                       "the overlay, runs your scripts and makes the ISO or SD-card image.",
-                       "Test it in QEMU (<b>Test in QEMU</b>) and write it to a USB stick or SD card."]),
-            ("img", "01-builder.png", "The Builder: preset, distribution and the build steps"),
+        ("Step 1 · Start", [
+            "<b>Customize an ISO</b> (left):",
+            ("steps", ["Press <b>Browse...</b> next to <b>ISO file</b> and choose the ISO.",
+                       "Type a <b>Name</b> for your distribution; the <b>Folder</b> of the project follows it.",
+                       "Optionally choose the <b>Language</b> of the system.",
+                       "Press <b>Extract and start</b>. When it is done, {app} opens step 2."]),
+            "<b>Continue a project</b> (right): choose a project from the list and press <b>Continue</b>. {app} "
+            "opens the step where you stopped. Projects are kept: close {app} at any time.",
+            "The line at the top shows whether the internet connection works.",
+            ("img", "02b-start-continue.png", "Start: customize an ISO or continue a project"),
+            "<b>Other ways to start</b>: download an official Debian ISO (checked with Debian's SHA256SUMS), make a "
+            "<b>new system without an ISO</b> for a PC, an ARM64 machine, a Raspberry Pi or RISC-V, or copy this "
+            "computer.",
         ]),
-        ("Step 1 · The Builder", [
-            "The Builder holds the whole distribution, like the classic distro builders, in one modern page:",
-            ("table", ["Field", "What it is"], [
-                ["Preset", "Load, Save, File (import/export), Delete, New. ★ presets come with {app}."],
-                ["Distro name", "The name of your distribution (os-release, boot menu, installer)."],
-                ["Build path", "The project folder: system, lists, overlay, scripts and output."],
-                ["Platform", "What the system is for: PC, ARM64, Raspberry Pi, RISC-V (see chapter 1)."],
-                ["Distro base", "Debian or Devuan, and the release: stable, testing, sid or oldstable."],
-                ["GUI system", "A desktop (Xfce, GNOME, KDE Plasma, ...), a window manager, or none."],
-                ["Init system", "systemd, SysVinit, OpenRC or runit (Devuan: never systemd)."],
-                ["Installer", "Calamares, none (live only) or your own .deb packages."],
-                ["Method", "D!sco (debootstrap → chroot → squashfs → xorriso) or Debian live-build."],
-                ["Repository", "Another Debian or Devuan mirror (default: the Settings page)."]]),
-            "The <b>Build</b> card shows the five steps and when each one was last finished. A step can be run "
-            "again at any time, for example <b>Install packages</b> after changing a list.",
-            ("img", "01b-builder-lists.png", "Package lists with tick boxes"),
-            "Under the lists: <b>Edit / view</b> (repositories, overlay folder, scripts, system files), "
-            "<b>After the build</b> (QEMU, a terminal in the system, the desktop in a window, Synaptic) and "
-            "<b>Tools</b> (open the build folder, unmount everything, delete the build, this guide).",
-            ("img", "01c-builder-tools.png", "Edit / view, after the build and tools"),
-        ]),
-        ("Package lists and the catalog", [
-            "Each list is a plain text file in <code>lists/</code> of the build path, installed in the order of its "
-            "number. One Debian package per line; <code>#</code> starts a comment and <code>-name</code> removes "
-            "a package. Lists that are switched off stay in the folder.",
-            ("code", "# Title: Applications\n"
-                     "# Programs for the menu: tick them in the catalog or type their names.\n"
-                     "firefox-esr\n"
-                     "libreoffice\n"
-                     "vlc\n"
-                     "-nano"),
-            "Double-click a list (or press <b>Edit</b>) to tick programs in the catalog: Internet, Office, "
-            "Graphics, Audio & Video, Education & Science, Programming, System Tools, Accessories, Games, "
-            "Electronics & Raspberry Pi, Accessibility and Network & Server. Packages that your release or "
-            "processor does not have are skipped with a note instead of stopping the build.",
-            ("img", "01d-list-editor.png", "Editing a list with the catalog"),
-        ]),
-        ("The build steps in detail", [
-            ("steps", ["<b>Prepare</b> writes the first lists, makes the folders <code>lists</code>, "
-                       "<code>overlay</code>, <code>hooks</code> and <code>debs</code>, switches qemu-user on for "
-                       "other processors and lists every missing tool with the command that installs it.",
-                       "<b>Build base</b> makes a new system with mmdebstrap (or debootstrap), checks the Debian "
-                       "keyring, gives the system its own host name and empty resolv.conf, switches to the chosen "
-                       "init system and writes the name of your distribution.",
-                       "<b>Install packages</b> installs the desktop, every list that is on, and the installer.",
-                       "<b>Overlay & scripts</b> copies <code>overlay/</code> into the system (owner root) and runs "
-                       "every <code>hooks/*.sh</code> inside it, in name order.",
-                       "<b>Make image</b> cleans the system, makes the initramfs and builds the ISO or the SD-card "
-                       "image."]),
-            "What <b>Build base</b> does, by hand:",
-            ("code", "sudo mmdebstrap --variant=important --architectures=amd64 \\\n"
-                     "    --components=main,contrib,non-free,non-free-firmware \\\n"
-                     "    --include=systemd-sysv,live-boot,live-config,linux-image-amd64 \\\n"
-                     "    --include=sudo,network-manager \\\n"
-                     "    trixie /home/disco/mylinux/rootfs http://deb.debian.org/debian"),
-            "The overlay folder mirrors the system: <code>overlay/etc/skel/.bashrc</code> becomes "
-            "<code>/etc/skel/.bashrc</code>. A script in <code>hooks/</code> runs as root inside the system:",
-            ("code", "#!/bin/sh\n# hooks/20-defaults.sh\nset -e\napt-get install -y --no-install-recommends fastfetch\n"
-                     "echo 'fastfetch' >> /etc/skel/.bashrc"),
-        ]),
-        ("ARM, Raspberry Pi and RISC-V", [
-            "On a PC, the programs of an ARM or RISC-V system run through <b>qemu-user</b> with binfmt_misc. "
-            "{app} switches it on itself; to check it by hand:",
-            ("code", "sudo apt install qemu-user-static binfmt-support\n"
-                     "update-binfmts --display qemu-aarch64     # 'enabled', flags include F\n"
-                     "ls /proc/sys/fs/binfmt_misc/               # qemu-aarch64, qemu-arm, qemu-riscv64"),
-            "<b>Raspberry Pi images</b> are laid out like Debian's own:",
-            ("table", ["Partition", "Label", "File system", "Holds"], [
-                ["1 (from 4 MiB)", "RASPIFIRM", "FAT32", "firmware, kernel, initrd, device trees, config.txt, "
-                                                          "cmdline.txt, sysconf.txt"],
-                ["2", "RASPIROOT", "ext4", "the system; grows to the whole card at the first start"]]),
-            "Debian's <code>raspi-firmware</code> package writes the boot partition again after every kernel "
-            "update. Your own lines are kept: config.txt lines in <code>/etc/default/raspi-firmware-custom</code>, "
-            "kernel options in <code>/etc/default/raspi-extra-cmdline</code> (page <b>4. Boot → Raspberry Pi</b>).",
-            ("img", "04d-raspberry-pi.png", "The Raspberry Pi page"),
-            "At the first start the card grows to its full size, new SSH host keys and a machine id are made, and "
-            "<code>sysconf.txt</code> on the boot partition is read (edit it on any computer before the first start):",
-            ("code", "hostname=mypi\nroot_authorized_key=ssh-ed25519 AAAA... you@laptop"),
-            "Write the card (the image is compressed with xz):",
-            ("code", "# find the card, for example /dev/mmcblk0 or /dev/sdb\n"
-                     "lsblk\n"
-                     "xzcat mylinux-1.0-stable-arm64.img.xz | \\\n"
-                     "    sudo dd of=/dev/sdX bs=4M status=progress conv=fsync"),
-            ("warn", "dd overwrites the WHOLE device named in of= without asking. Check the name with lsblk "
-                     "(unplug and plug the card to see which name appears) and never name the disk of your "
-                     "computer. Raspberry Pi Imager (Use custom) and GNOME Disks (Restore Disk Image) are safer."),
-            "<b>ARM64 and RISC-V ISOs</b> start with UEFI only: {app} makes GRUB for the processor "
-            "(<code>grub-mkstandalone -O arm64-efi</code>, <code>bootaa64.efi</code>) and gives the ISO a GPT with an "
-            "EFI partition, so it also starts from a USB stick.",
-        ]),
-        ("Debian and Devuan repositories", [
-            ("table", ["Suite", "Debian", "Devuan", "Notes"], [
-                ["oldstable", "bookworm (12)", "daedalus (5)", "32-bit PCs; turn on in Settings for others"],
-                ["stable", "trixie (13)", "excalibur (6)", "recommended"],
-                ["testing", "forky", "freia", "newer, changes every day"],
-                ["unstable", "sid", "ceres", "for developers"]]),
-            ("table", ["Repository", "Address"], [
-                ["Debian", "http://deb.debian.org/debian"],
-                ["Debian security", "http://security.debian.org/debian-security"],
-                ["Devuan (all)", "http://deb.devuan.org/merged"],
-                ["Debian backports", "http://deb.debian.org/debian (suite trixie-backports)"]]),
-            "{app} writes clean deb822 files, for example <code>/etc/apt/sources.list.d/debian.sources</code>:",
-            ("code", "Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie trixie-updates\n"
-                     "Components: main contrib non-free non-free-firmware\n"
-                     "Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg"),
-            "A third-party repository always gets its own key (page <b>2. System → Repositories → Add</b>):",
-            ("code", "wget -qO- https://repo.example.org/key.asc | gpg --dearmor | \\\n"
-                     "    sudo tee /etc/apt/keyrings/example.gpg >/dev/null\n"
-                     "# Signed-By: /etc/apt/keyrings/example.gpg in the .sources file"),
-        ]),
-        ("The live-build route", [
-            "Choose <b>Method: Debian live-build</b> on the Builder (ISO platforms with Debian only). {app} "
-            "writes <code>live-build/</code> in the build path and runs it:",
-            ("list", ["<code>auto/config</code> — <code>lb config</code> with every choice (release, architecture, "
-                      "kernel flavour, archive areas, boot loaders, compression, boot options)",
-                      "<code>config/package-lists/*.list.chroot</code> — your lists, the desktop and the live system",
-                      "<code>config/includes.chroot/</code> — the overlay folder",
-                      "<code>config/hooks/normal/*.hook.chroot</code> — your scripts, the name of the system and the "
-                      "packages the lists remove"]),
-            "The same by hand (you can change the files first):",
-            ("code", "cd /home/disco/mylinux/live-build\nsudo lb clean\nsudo lb config\nsudo lb build"),
-            "Debian's live-build of 2021 or later is needed (Debian 11+): {app} checks the version.",
+        ("Moving through the steps", [
+            "Every step has a bar at the bottom: <b>Back</b> goes to the step before, <b>Next</b> marks the step "
+            "done and opens the next one. Skip what you do not want to change: just press Next. The last step "
+            "has <b>Finish</b>, which builds the image.",
+            "Most changes do not change the system at once: they wait in <b>Review & Apply</b> (step 10), so you "
+            "can check them first. The blue button at the top shows how many wait.",
+            "A step opens after the one before it is done. Experts can open every step at any time: <b>Settings → "
+            "Free navigation</b>.",
         ]),
         ("Step 2 · System", [
-            "Tabs: <b>Repositories</b>, <b>Identity</b>, <b>System files</b>, <b>Users</b>, <b>Language</b> and "
-            "<b>Init System</b>.",
-            "<b>System files</b> edits the files that tell who the system is. <b>Template from Identity</b> fills "
-            "a file from the Identity tab; change it as you like, then <b>Save to the system</b>.",
+            "Tabs: <b>Repositories</b> (Debian or Devuan release, mirror, extra repositories with their keys), "
+            "<b>Identity</b> (name, version, website, computer name), <b>System files</b>, <b>Users</b> (the live "
+            "user, passwords, more accounts) and <b>Language</b> (language, keyboard, time zone).",
+            "<b>System files</b> edits the files that tell who the system is. <b>Template from Identity</b> fills a "
+            "file for you; change it, then <b>Save to the system</b>.",
             ("table", ["File", "Example"], [
-                ["/etc/os-release", 'NAME="My Linux" · VERSION="1.0 (Aurora)" · ID=mylinux · '
-                                    'PRETTY_NAME="My Linux 1.0 (Aurora)" · HOME_URL=... · LOGO=mylinux-logo'],
-                ["/etc/lsb-release", 'DISTRIB_ID="My Linux" · DISTRIB_RELEASE=1.0 · DISTRIB_DESCRIPTION="My Linux 1.0"'],
+                ["/etc/os-release", 'NAME="My Linux" · VERSION="1.0" · ID=mylinux · PRETTY_NAME · HOME_URL · LOGO'],
+                ["/etc/lsb-release", 'DISTRIB_ID="My Linux" · DISTRIB_RELEASE=1.0 · DISTRIB_DESCRIPTION'],
                 ["/etc/issue", "Welcome to My Linux 1.0 - \\n \\l"],
                 ["/etc/issue.net", "Welcome to My Linux 1.0"],
                 ["/etc/hostname, /etc/hosts", "mylinux · 127.0.1.1 mylinux"],
                 ["/etc/motd", "the message after logging in"]]),
-            ("img", "02c-system-files.png", "System files"),
-            "Below: the <b>picture of new users</b> (<code>/etc/skel/.face</code>, also the login screen's default "
-            "picture), <b>settings folders</b> copied from this computer into /etc/skel (for example "
-            "<code>~/.config/xfce4</code>: panels and shortcuts; caches and keys stay out) and the <b>GRUB "
-            "background</b> of installed computers (GRUB_BACKGROUND; the installer runs update-grub).",
-            "<b>Init System</b>: systemd, SysVinit, OpenRC or runit with elogind, the right live-config backend and "
-            "init scripts; the installer follows. GNOME needs systemd.",
+            ("img", "03c-system-files.png", "System files"),
         ]),
-        ("Step 3 · Desktop & Apps", [
-            "<b>Desktop</b>: a desktop or window manager in a Mini, Compact, Full or Full-with-apps edition; the "
-            "login screen, X11 or Wayland and the compositor follow it. <b>Packages</b>: every package of the "
-            "system. <b>Flatpak</b>: Flathub applications by category. <b>Replace Apps</b>: another browser, mail "
-            "program, editor or terminal for everyone.",
-            ("img", "03-desktop.png", "Desktops and editions"),
+        ("Step 3 · Software", [
+            "<b>Desktop</b>: choose a desktop (Xfce, GNOME, KDE Plasma, Cinnamon, MATE, LXQt...) or a window "
+            "manager and how complete it is. The login screen and session follow it.",
+            "<b>Packages</b>: <b>Popular applications</b> lists programs by category with tick boxes: tick them and "
+            "press <b>Install ticked</b>. Below it, every Debian package can be searched, added or removed, and "
+            "the applications of the ISO can be removed.",
+            ("img", "04b-applications.png", "Popular applications"),
+            "<b>Flatpak</b>: applications from Flathub, in the ISO or installed at the first start. <b>Default "
+            "apps</b>: another browser, mail program, editor or terminal for everyone.",
         ]),
-        ("Step 4 · Boot", [
-            "<b>Kernel</b>: Debian kernels, backports or third-party kernels (paste their instructions into the "
-            "kernel terminal), firmware and the initramfs. <b>Boot Loader</b>: what installed computers start with "
-            "(GRUB, GRUB with Secure Boot, systemd-boot, rEFInd, EFISTUB, Syslinux). <b>Boot Menu</b>: the menu of "
-            "the ISO (title, timeout, background, GRUB theme, menu designer). <b>Raspberry Pi</b>: see chapter 7.",
-            ("img", "04b-boot-loader.png", "Boot loaders of installed systems"),
-            "A broken or missing initramfs is made again with:",
-            ("code", "sudo disco run update-initramfs -c -k all"),
+        ("Step 4 · Startup", [
+            "What starts by itself, switched on or off with a tick:",
+            ("list", ["<b>Services</b> start with the system, before anyone logs in (network, printing, SSH, "
+                      "Bluetooth, updates...). 🔒 marks services the system needs: they stay on.",
+                      "<b>Programs after login</b> start on every user's desktop (/etc/xdg/autostart).",
+                      "<b>Add a program</b>: a name and a command, for example a welcome page in the browser."]),
+            "Change the ticks and press <b>Apply the ticks</b>. Turning off what you do not need makes the system "
+            "start faster.",
+            ("img", "05-startup.png", "Startup"),
         ]),
         ("Step 5 · Branding", [
-            "<b>Distro Branding</b> builds a package with your logo and name everywhere (base-files, lsb-release, "
-            "desktop-base, logos, GRUB, Calamares). <b>Wallpaper & Login</b>: wallpapers and the LightDM greeter "
-            "(<code>/etc/lightdm/lightdm-gtk-greeter.conf</code>: background, theme-name, icon-theme-name, "
-            "default-user-image), SDDM and GDM. <b>Plymouth</b>: install, preview or make a boot splash from your "
-            "logo; by hand:",
-            ("code", "sudo disco run plymouth-set-default-theme -R mytheme"),
-            "<b>Desktop document</b>: a PDF about your system with the title you like. <b>Write a first text</b> "
-            "describes the system from the project; change it freely. It is put into "
-            "<code>/usr/share/doc/ID-guide/</code>, on every user's desktop at the first login (in the desktop "
-            "folder of the user's language) and in the menu.",
-            ("img", "05d-desktop-document.png", "Desktop document"),
+            "<b>Wallpaper & Logo</b> is the easy way, the same for every picture:",
+            ("steps", ["Press <b>Choose...</b> (or drop a picture on its box).",
+                       "Keep <b>Set as default</b> ticked (untick it to only add the picture to the system).",
+                       "Press <b>Apply</b>. Pictures: desktop wallpaper, logo, login screen, boot menu, picture of "
+                       "new users. <b>Apply all chosen pictures</b> does them all."]),
+            "The <b>logo</b> goes everywhere: menu and system icon, os-release LOGO, login screen, installer and a "
+            "boot splash made from it.",
+            ("img", "06-wallpaper-logo.png", "Wallpaper & Logo"),
+            "The other tabs: <b>Wallpaper & Login</b> (a wallpaper gallery and login screen themes), <b>Boot "
+            "Splash</b> (Plymouth themes), <b>Desktop document</b> (a PDF with any title about your system, put on "
+            "every user's desktop) and <b>Distro Branding</b> (a package with your name and logo everywhere).",
+            ("img", "06b-desktop-document.png", "Desktop document"),
         ]),
         ("Step 6 · Look & Feel", [
-            "<b>Themes & Icons</b>, <b>System Sounds</b>, <b>Welcome Screen</b> and <b>Terminal & Browser</b>.",
-            "<b>Terminal & Browser</b>: the message after login (a fixed <code>/etc/motd</code> or a dynamic script "
-            "in <code>/etc/update-motd.d</code>), the bash prompt of every user (<code>/etc/bash.bashrc</code> and "
-            "<code>/etc/skel/.bashrc</code>) and the policies of Firefox ESR and Chromium:",
-            ("code", '{\n  "policies": {\n    "Homepage": {"URL": "https://mylinux.example.org", "Locked": false},\n'
-                     '    "Bookmarks": [{"Title": "Debian", "URL": "https://www.debian.org",\n'
-                     '                   "Placement": "toolbar"}],\n'
-                     '    "DisableTelemetry": true\n  }\n}'),
-            "The file is written to <code>/etc/firefox-esr/policies/policies.json</code>, "
-            "<code>/etc/firefox/policies/policies.json</code> and "
-            "<code>/usr/lib/firefox-esr/distribution/policies.json</code>; Chromium's to "
-            "<code>/etc/chromium/policies/managed/disco.json</code>.",
-            ("img", "06b-terminal-browser.png", "Terminal & Browser"),
+            "<b>Themes & Icons</b>, <b>System Sounds</b>, <b>Welcome Screen</b> (pages shown after the first login) "
+            "and <b>Terminal & Browser</b>: the message after login, the bash prompt of every user, and the home "
+            "page, bookmarks and privacy of Firefox ESR and Chromium.",
+            ("img", "07b-terminal-browser.png", "Terminal & Browser"),
         ]),
-        ("Step 7 · Installer", [
-            "<b>Which installer</b>: Calamares (recommended), none (a live system only) or <b>your own .deb "
-            "packages</b>: drop them on the page, they are kept in <code>debs/</code> and installed with their "
-            "dependencies. Then the Calamares settings: name, images, colors, slides, users, partitions and "
-            "<b>Check the installer</b>.",
-            ("img", "07-installer.png", "Installer"),
+        ("Step 7 · Boot", [
+            "<b>Kernel</b> (Debian kernels, backports, third-party kernels, firmware), <b>Boot Loader</b> (what "
+            "installed computers start with: GRUB, systemd-boot, rEFInd, EFISTUB, Syslinux), <b>Boot Menu</b> (the "
+            "menu of the ISO), <b>Init System</b> (systemd, SysVinit, OpenRC, runit) and <b>Raspberry Pi</b> "
+            "(config.txt, kernel options, image size).",
+            ("img", "08b-boot-loader.png", "Boot loader"),
         ]),
-        ("Steps 8 to 10 · Advanced, Review & Apply, Check & Build", [
-            "<b>Advanced</b>: a terminal inside the system, the desktop in a window (Xephyr), hooks, recipes and the "
-            "Package Workshop.",
-            "<b>Review & Apply</b>: changes of steps 2 to 8 wait here; tick them, try them in a preview, then "
-            "apply them all at once. <b>Build all</b> on the Builder offers to apply them first.",
-            ("img", "09-review-apply.png", "Review & Apply"),
-            "<b>Check & Build</b>: checks what would break the image (double-click a row to open its page, or "
-            "<b>Fix automatically</b>), the target size, compression and the resources of this computer, then "
-            "the ISO.",
+        ("Step 8 · Installer", [
+            "<b>Which installer</b>: Calamares (recommended), none (a live system only), or <b>your own .deb "
+            "packages</b>: drop them on the page and press <b>Install them now</b>. Below it: the name, pictures, "
+            "slides and rules of Calamares, and <b>Check the installer</b>.",
+            ("img", "09-installer.png", "Installer"),
         ]),
-        ("Testing and writing the ISO", [
-            "<b>Test in QEMU</b> starts a PC ISO with BIOS, UEFI or Secure Boot, an ARM64 ISO with UEFI, and an "
-            "SD-card image with its own kernel (ARM is emulated on a PC: be patient).",
+        ("Step 9 · Files & Terminal", [
+            "<b>Your folders</b> belong to you: open them in your own file manager and add, change or delete "
+            "anything, <b>no administrator rights needed</b>.",
+            ("table", ["Folder", "What it is for"], [
+                ["overlay", "files for the system: overlay/etc/skel/.bashrc becomes /etc/skel/.bashrc"],
+                ["hooks", "your scripts (*.sh), run inside the system"],
+                ["branding", "your pictures and documents"],
+                ["debs", "your own .deb packages"],
+                ["iso", "the boot menus and splash pictures of the ISO"],
+                ["output", "the finished ISO and SD-card images"]]),
+            "<b>Copy my files into the system</b> copies overlay into the system with owner root; <b>Run my "
+            "scripts</b> runs the scripts. <b>Give me full access</b> hands the folders to you again.",
+            ("img", "10-files.png", "Your folders"),
+            "<b>The system</b> is changed as administrator, here in {app}: choose a folder (/etc, /etc/skel, "
+            "/usr/share...), select a file, change it and press <b>Save file</b>.",
+            ("warn", "The system folder is not opened for everyone on purpose: its owners and permissions go into "
+                     "the ISO as they are, and a system where everyone may change every file is unsafe and does "
+                     "not start correctly (sudo and SSH refuse to work). Use the overlay folder instead."),
+            "<b>Terminal & Live</b>: a terminal inside the system and the desktop of the system in a window. "
+            "<b>Package Workshop</b>: change the files of an installed Debian package.",
+        ]),
+        ("Step 10 · Review & Apply", [
+            "Every change of steps 2 to 9 waits here. Tick the ones you are sure about, <b>Try them first</b> in a "
+            "preview if you like, then <b>Apply all changes</b>.",
+            ("img", "11-review-apply.png", "Review & Apply"),
+        ]),
+        ("Step 11 · Build: Finish", [
+            "Press <b>Finish: build the image</b> (or <b>Build ISO image</b>). {app} checks the system first and "
+            "says how to fix each problem: <b>Fix automatically</b>, or double-click a row to open the right step.",
+            "Choose a target size if you like (100 MB to 4.4 GB). Compression is lossless: a smaller ISO only takes "
+            "longer to build. For a Raspberry Pi project the button builds the SD-card image.",
+            ("img", "12-build.png", "Build"),
+        ]),
+        ("Testing and writing the image", [
+            "<b>Boot ISO</b> starts the ISO in a virtual machine (QEMU). Then write it to a USB stick:",
             ("code", "lsblk                     # find the USB stick, for example /dev/sdb\n"
                      "sudo dd if=mylinux-1.0-stable-amd64.iso of=/dev/sdX bs=4M status=progress oflag=sync"),
-            ("warn", "dd erases everything on the device named in of=. A wrong letter erases your own disk: check "
-                     "it with lsblk first."),
+            ("warn", "dd erases everything on the device named in of= without asking. A wrong letter erases "
+                     "your own disk: check it with lsblk first. GNOME Disks (Restore Disk Image) is safer."),
+            "An SD-card image for the Raspberry Pi:",
+            ("code", "xzcat mypi-1.0-stable-arm64.img.xz | \\\n"
+                     "    sudo dd of=/dev/sdX bs=4M status=progress conv=fsync"),
+        ]),
+        ("Raspberry Pi, ARM64 and RISC-V", [
+            "Start with <b>Other ways to start → New system (no ISO)</b> and choose the platform:",
+            ("table", ["Platform", "Processor", "Result"], [
+                ["PC, 64-bit / 32-bit (Debian 12)", "amd64 / i386", "ISO, BIOS + UEFI"],
+                ["ARM 64-bit with UEFI", "arm64", "ISO, UEFI"],
+                ["Raspberry Pi 3, 4, 400 (and 5, experimental)", "arm64", "SD-card image"],
+                ["Raspberry Pi 2, 3 (32-bit)", "armhf", "SD-card image"],
+                ["Raspberry Pi 1, Zero", "armel", "SD-card image"],
+                ["RISC-V 64 with UEFI (experimental)", "riscv64", "ISO, UEFI"]]),
+            "Other processors run through qemu-user on your PC:",
+            ("code", "sudo apt install qemu-user-static binfmt-support"),
+            "SD-card images are laid out like Debian's own (RASPIFIRM boot partition, RASPIROOT system partition "
+            "that grows to the whole card). Before the first start, <code>sysconf.txt</code> on the boot "
+            "partition can set the computer name and an SSH key:",
+            ("code", "hostname=mypi\nroot_authorized_key=ssh-ed25519 AAAA... you@laptop"),
+            ("img", "08c-raspberry-pi.png", "Raspberry Pi"),
         ]),
         ("Command line", [
-            "Every step also works in a terminal:",
-            ("code", "sudo disco new --preset \"Raspberry Pi desktop (Pi 3, 4, 400)\" /home/disco/mypi\n"
-                     "cd /home/disco/mypi\n"
-                     "sudo disco builder --name \"My Pi Linux\" --desktop xfce\n"
-                     "sudo disco lists show\n"
-                     "sudo disco lists add applications thonny python3-gpiozero\n"
-                     "sudo disco step prepare\n"
-                     "sudo disco build-all\n"
+            "Everything also works in a terminal (the commands apply each change at once):",
+            ("code", "sudo disco new --iso debian-live-13.1.0-amd64-standard.iso /home/disco/mylinux\n"
+                     "cd /home/disco/mylinux\n"
+                     "sudo disco brand identity name=\"My Linux\" version=1.0\n"
+                     "sudo disco apt install vlc gimp\n"
+                     "sudo disco check --fix\n"
+                     "sudo disco build --target-size 700\n"
                      "sudo disco test\n"
-                     "disco platforms          # what D!sco builds for\n"
-                     "disco presets            # the presets\n"
-                     "sudo disco live-build export   # write the live-build configuration only"),
-            "<code>disco --help</code> lists every command; <code>disco COMMAND --help</code> explains one.",
+                     "disco platforms        # what D!sco builds for\n"
+                     "disco --help           # every command"),
+            "For automated builds: presets, package lists and <code>disco build-all</code>, or Debian's live-build "
+            "with <code>disco live-build export</code>.",
         ]),
         ("Troubleshooting", [
             ("table", ["Problem", "What to do"], [
-                ["NO_PUBKEY / signature errors from APT", "Install the keyring of the repository (Debian: "
-                 "debian-archive-keyring, Devuan: devuan-keyring) and use Signed-By in its .sources file."],
+                ["No internet connection", "Connect, then press Check again on Start. Editing works offline."],
+                ["NO_PUBKEY / signature errors from APT", "Add the key of the repository (Repositories → Add) or "
+                 "install the keyring package (debian-archive-keyring, devuan-keyring)."],
                 ["Kernel panic or 'Unable to find a medium' at live boot", "live-boot or the initramfs is missing: "
-                 "Install packages, then rebuild (Check & Build fixes it automatically)."],
-                ["initrd.img-VERSION is missing", "disco run update-initramfs -c -k VERSION"],
-                ["ARM ISO does not start from USB", "Built before 0.11: rebuild; the ISO now has a GPT EFI partition."],
-                ["Exec format error in the chroot", "qemu-user is not registered: sudo apt install "
-                 "qemu-user-static binfmt-support, then Prepare again."],
-                ["raspi-firmware did not write the boot partition", "{app} writes it the same way and says so in "
-                 "the log; check that raspi-firmware is in the image (non-free-firmware)."],
-                ["The system is still in use", "Close the terminal or live session of the system, or Tools → "
-                 "Unmount everything."]]),
-            "Every message is in the log panel and in <code>/tmp/disco/disco.log</code>. <b>Send feedback</b> sends "
-            "a report with screenshots and, if you agree, the logs.",
+                 "Build → Fix automatically."],
+                ["Exec format error (ARM or RISC-V system)", "sudo apt install qemu-user-static binfmt-support"],
+                ["The system is still in use", "Close the terminal or live session of the system, or Unmount "
+                 "everything (Files & Terminal → Terminal & Live)."],
+                ["A button did nothing", "Look at the log at the bottom (Show log) or /tmp/disco/disco.log, and "
+                 "use Send feedback."]]),
         ]),
         ("Cleaning up", [
-            "The build folders are big. <b>Delete the build (keep ISO/IMG)</b> on the Builder (or closing the "
-            "window after a build, or <code>sudo disco clean --keep-iso</code>) deletes everything of the project "
-            "but the images and their checksums. Nothing is deleted while anything is mounted inside the project.",
+            "The build folders are big. After a build, closing the window (or <b>Keep only the ISO</b> on Build, or "
+            "<code>sudo disco clean --keep-iso</code>) deletes everything of the project but the images. Nothing is "
+            "deleted while anything is mounted inside the project.",
             ("warn", "Never delete a project folder with rm -rf while a terminal or live session of it is open: "
-                     "/dev and /proc of your computer are mounted inside it. Use Unmount everything (or sudo disco "
-                     "clean) first."),
+                     "/dev and /proc of your computer are mounted inside it."),
         ]),
         ("License, trademarks and support", [
             "{app} is free software under the GNU General Public License version 3 or later, WITHOUT ANY WARRANTY. "
-            "The licenses of its components are on the <b>About</b> tab. The packages in your distribution keep "
-            "their own licenses (<code>/usr/share/doc/PACKAGE/copyright</code>).",
+            "The licenses of its components are on the About tab of Settings & About.",
             "Debian is a registered trademark of Software in the Public Interest, Inc.; Raspberry Pi is a trademark "
             "of Raspberry Pi Ltd; Linux® is the registered trademark of Linus Torvalds. {app} is not affiliated "
-            "with them. Give your distribution a name and logo of its own.",
+            "with them. Give your distribution a name and logo of its own. The penguin of the {app} logo is a "
+            "friend of Tux, the Linux mascot.",
             "Made by {author}. If {app} helps you, a donation keeps the project going:",
             ("list", ["PayPal: {donate}", "Facebook: {facebook}", "Project: {home}"]),
         ]),
@@ -458,8 +381,9 @@ def to_markdown(guide):
 
 def main():
     from disco.qt.gui import QGuiApplication
-    app = QGuiApplication(sys.argv)  # noqa: F841 (fonts and images need it)
+    app = QGuiApplication(sys.argv)  # fonts and images need it
     write(EN, ROOT / "docs" / EN["file"])
+    app.processEvents()
     (ROOT / "docs" / "manual.md").write_text(to_markdown(EN))
     print("wrote", ROOT / "docs" / "manual.md")
 

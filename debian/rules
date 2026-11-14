@@ -15,7 +15,7 @@ override_dh_auto_install:
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/disco PREFIX=/usr
 	# Documentation and screenshots for developers who try the package.
 	install -d $(CURDIR)/debian/disco/usr/share/doc/disco/screenshots
-	install -m644 README.md CHANGELOG.md docs/manual.md docs/PANDUAN.md docs/ROADMAP.md \
+	install -m644 README.md CHANGELOG.md docs/manual.md docs/QUICKSTART.md docs/ROADMAP.md \
 		$(CURDIR)/debian/disco/usr/share/doc/disco/
 	install -m644 docs/screenshots/*.png $(CURDIR)/debian/disco/usr/share/doc/disco/screenshots/
 

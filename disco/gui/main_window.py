@@ -20,35 +20,39 @@ from disco.gui.worker import LogBridge, QtLogHandler, Task
 
 
 # Bundled Papirus icons (GPL-3.0), see data/icons/menu/README.md.
-MENU_ICONS = {"BuilderPage": "builder", "ProjectPage": "project", "WizardPage": "wizard", "SourcesPage": "sources",
-              "IdentityPage": "identity", "SystemFilesPage": "sysfiles", "UsersPage": "users",
-              "LanguagePage": "language", "InitSystemPage": "initsystem", "DesktopPage": "desktop",
-              "PackagesPage": "packages", "FlatpakPage": "flatpak", "ReplaceAppsPage": "replace",
-              "KernelPage": "kernel", "BootLoaderPage": "bootloader", "BootMenuPage": "bootmenu",
-              "BoardPage": "board", "BrandingPage": "branding", "AppearancePage": "wallpaper",
-              "PlymouthPage": "plymouth", "ReadmePage": "readme", "ThemesPage": "themes", "SoundsPage": "sounds",
-              "WelcomePage": "welcome", "ShellBrowserPage": "shellbrowser", "CalamaresPage": "calamares",
-              "TerminalPage": "terminal", "WorkshopPage": "workshop", "ReviewPage": "review", "BuildPage": "build",
-              "SettingsPage": "settings", "AboutPage": "about"}
+MENU_ICONS = {"HomePage": "home", "ProjectPage": "project", "SourcesPage": "sources", "IdentityPage": "identity",
+              "SystemFilesPage": "sysfiles", "UsersPage": "users", "LanguagePage": "language",
+              "DesktopPage": "desktop", "PackagesPage": "packages", "FlatpakPage": "flatpak",
+              "ReplaceAppsPage": "replace", "StartupPage": "startup", "EasyBrandPage": "wallpaper",
+              "AppearancePage": "branding", "PlymouthPage": "plymouth", "ReadmePage": "readme",
+              "BrandingPage": "identity", "ThemesPage": "themes", "SoundsPage": "sounds", "WelcomePage": "welcome",
+              "ShellBrowserPage": "shellbrowser", "KernelPage": "kernel", "BootLoaderPage": "bootloader",
+              "BootMenuPage": "bootmenu", "InitSystemPage": "initsystem", "BoardPage": "board",
+              "CalamaresPage": "calamares", "FilesPage": "files", "TerminalPage": "terminal",
+              "WorkshopPage": "workshop", "ReviewPage": "review", "BuildPage": "build", "SettingsPage": "settings",
+              "AboutPage": "about"}
 
-# The sidebar, in the order of the work: ten steps, each a menu with its pages as tabs.
-# (key, menu title, icon, page classes, is a numbered step)
+# The sidebar: Welcome, then the steps in the order of the work (Back / Next / Finish at the
+# bottom of each), then Settings. (key, menu title, icon, page classes, is a numbered step)
 SECTIONS = [
-    ("start", "Builder", "builder", ["builder.BuilderPage", "project.ProjectPage", "wizard.WizardPage"], True),
+    ("welcome", "Welcome", "home", ["home.HomePage"], False),
+    ("start", "Start", "project", ["project.ProjectPage"], True),
     ("system", "System", "identity", ["sources.SourcesPage", "identity.IdentityPage", "sysfiles.SystemFilesPage",
-                                      "users.UsersPage", "language.LanguagePage", "initsystem.InitSystemPage"], True),
-    ("software", "Desktop & Apps", "desktop", ["desktop.DesktopPage", "packages.PackagesPage", "flatpak.FlatpakPage",
-                                              "replace_apps.ReplaceAppsPage"], True),
-    ("boot", "Boot", "kernel", ["kernel.KernelPage", "bootloader.BootLoaderPage", "bootmenu.BootMenuPage",
-                                "board.BoardPage"], True),
-    ("branding", "Branding", "branding", ["branding.BrandingPage", "appearance.AppearancePage",
-                                          "plymouth.PlymouthPage", "readme.ReadmePage"], True),
+                                      "users.UsersPage", "language.LanguagePage"], True),
+    ("software", "Software", "desktop", ["desktop.DesktopPage", "packages.PackagesPage", "flatpak.FlatpakPage",
+                                         "replace_apps.ReplaceAppsPage"], True),
+    ("startup", "Startup", "startup", ["startup.StartupPage"], True),
+    ("branding", "Branding", "wallpaper", ["easybrand.EasyBrandPage", "appearance.AppearancePage",
+                                           "plymouth.PlymouthPage", "readme.ReadmePage", "branding.BrandingPage"], True),
     ("look", "Look & Feel", "themes", ["themes.ThemesPage", "sounds.SoundsPage", "welcome.WelcomePage",
                                        "shellbrowser.ShellBrowserPage"], True),
+    ("boot", "Boot", "kernel", ["kernel.KernelPage", "bootloader.BootLoaderPage", "bootmenu.BootMenuPage",
+                                "initsystem.InitSystemPage", "board.BoardPage"], True),
     ("installer", "Installer", "calamares", ["calamares.CalamaresPage"], True),
-    ("advanced", "Advanced", "terminal", ["terminal.TerminalPage", "workshop.WorkshopPage"], True),
+    ("files", "Files & Terminal", "files", ["files.FilesPage", "terminal.TerminalPage", "workshop.WorkshopPage"],
+     True),
     ("review", "Review & Apply", "review", ["review.ReviewPage"], True),
-    ("build", "Check & Build", "build", ["build.BuildPage"], True),
+    ("build", "Build", "build", ["build.BuildPage"], True),
     ("settings", "Settings & About", "settings", ["settings_page.SettingsPage", "about.AboutPage"], False),
 ]
 
@@ -78,7 +82,7 @@ class Section(QWidget):
         else:
             lay.addWidget(pages[0], 1)
         for page in pages:
-            page.section = self
+            page.nav_section = self
         self.bar = None
 
     @property
@@ -102,18 +106,21 @@ class Section(QWidget):
         h = QHBoxLayout(bar)
         h.setContentsMargins(28, 8, 28, 10)
         if prev:
-            h.addWidget(button("◀  Back: {}. {}".format(prev.step, prev.title.replace("&", "&&")),
-                               lambda: self.main.go_section(prev)))
+            back = button("◀  Back", lambda: self.main.go_section(prev))
+            back.setToolTip("Step {}: {}".format(prev.step, prev.title))
+            h.addWidget(back)
         self.state = QLabel("")
         self.state.setObjectName("muted")
         h.addStretch(1)
         h.addWidget(self.state)
         if nxt:
-            self.next_btn = button("Done — next step: {}. {}  ▶".format(nxt.step, nxt.title.replace("&", "&&")),
+            self.next_btn = button("Next: {}  ▶".format(nxt.title.replace("&", "&&")),
                                    lambda: self.main.next_step(self, nxt), "primary")
-            h.addWidget(self.next_btn)
+            self.next_btn.setToolTip("This step is done: go to step {}".format(nxt.step))
         else:
-            self.next_btn = None
+            self.next_btn = button("Finish: build the image  ✔", self.main.finish, "primary")
+            self.next_btn.setToolTip("Check the system and build the ISO (or the SD-card image)")
+        h.addWidget(self.next_btn)
         self.layout().addWidget(bar)
         self.bar = bar
 
@@ -150,6 +157,7 @@ class MainWindow(QMainWindow):
         self.pending = []  # changes waiting in Review & Apply
         self.built_iso = None  # set after a build: closing offers to keep only the ISO
         self.live = None
+        self.online = None     # internet connection (checked on the Start page)
         self._file_handler = None
         self._task_started = 0
         self.setWindowTitle("{} {}".format(APP_NAME, VERSION_LABEL))
@@ -317,7 +325,7 @@ class MainWindow(QMainWindow):
                 self.pages.append(page)
             sec = Section(self, key, title, pages, len(self.steps) + 1 if is_step else 0)
             for page in pages:
-                page.step = sec.step
+                page.nav_step = sec.step
             if is_step:
                 self.steps.append(sec)
             self.sections.append(sec)
@@ -400,9 +408,9 @@ class MainWindow(QMainWindow):
         if not self.section_open(sec):
             first = self.first_open_step()
             if sec.needs_rootfs and not (self.project and self.project.has_rootfs()):
-                self.stage_label.setText("Open or create a project with a system first (step 1)")
+                self.stage_label.setText("Start first: extract an ISO or continue a project (step 1)")
             elif first:
-                self.stage_label.setText("Finish step {}. {} first (press 'Done — next step')".format(
+                self.stage_label.setText("Step {}. {} comes first: press Next at its bottom".format(
                     first.step, first.title))
             self.nav.blockSignals(True)
             self.nav.setCurrentRow(self.stack.currentIndex())
@@ -453,12 +461,43 @@ class MainWindow(QMainWindow):
         if not self.project:
             return
         if sec.key == "start" and not self.project.has_rootfs():
-            QMessageBox.information(self, APP_NAME, "Step 1 is done when the project has a system: extract an "
-                                    "ISO, bootstrap Debian or snapshot this computer.")
+            QMessageBox.information(self, APP_NAME, "Extract an ISO first (or continue a project): then Next "
+                                    "opens step 2.")
             return
         self.project.mark_step(sec.key)
         self.update_state()
         self.go_section(nxt)
+
+    def continue_project(self):
+        """Go on where the open project stopped: the first step that is not done (or Build)."""
+        self.update_state()
+        first = self.first_open_step()
+        self.go_section(first or self.steps[-1])
+
+    def finish(self):
+        """The last button: check the system and build the image."""
+        page = next((p for p in self.pages if p.__class__.__name__ == "BuildPage"), None)
+        if page is None or not self.project or not self.project.has_rootfs():
+            return
+        if self.pending and QMessageBox.question(
+                self, APP_NAME, "{} change(s) still wait in Review & Apply and would not be in the image. Build "
+                                "anyway?".format(len(self.pending))) != QMessageBox.StandardButton.Yes:
+            self.go("ReviewPage")
+            return
+        self.project.mark_step("build")
+        self.update_state()
+        self.go("BuildPage")
+        page.start_build()
+
+    def first_page(self):
+        """Welcome when it is wanted at start, else Start (or the step the open project stopped at)."""
+        from disco.gui.pages.home import show_at_start
+        if show_at_start():
+            self.go("HomePage")
+        elif self.project and self.project.has_rootfs():
+            self.continue_project()
+        else:
+            self.go("ProjectPage")
 
     def update_state(self):
         for i, sec in enumerate(self.sections):
@@ -554,7 +593,7 @@ class MainWindow(QMainWindow):
         return settings().get("general", "apply_mode") != "now"
 
     def queue_change(self, name, func, done=None, page=None):
-        sec = getattr(page, "section", None)
+        sec = getattr(page, "nav_section", None)
         where = sec.title if sec else ""
         if sec and len(sec.pages) > 1:
             where = "{} → {}".format(sec.title, getattr(page, "nav_title", page.title))

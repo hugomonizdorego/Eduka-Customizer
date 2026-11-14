@@ -161,9 +161,9 @@ class ReviewPage(Page):
                         pass
             del self.main.pending[:len(changes)]
             self.refresh()
-            if QMessageBox.question(self, "Review & Apply", "All {} change(s) were applied. Continue to Check & "
-                                    "Build?".format(len(changes))) == QMessageBox.StandardButton.Yes:
-                self.main.next_step(self.section, self.main.steps[self.section.step])
+            if QMessageBox.question(self, "Review & Apply", "All {} change(s) were applied. Continue to the last "
+                                    "step, Build?".format(len(changes))) == QMessageBox.StandardButton.Yes:
+                self.main.next_step(self.nav_section, self.main.steps[self.nav_section.step])
         task = self.task("Apply all changes", work, done)
         if task is not None:
             # A failed change: the ones before it are applied and leave the list, the rest stay.

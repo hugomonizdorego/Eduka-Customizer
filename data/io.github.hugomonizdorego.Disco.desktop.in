@@ -2,10 +2,7 @@
 Type=Application
 Name=D!sco
 GenericName=Distro Custom
-GenericName[id]=Pembuat Distro Kustom
-Comment=Build your own Debian-based distribution: live ISO for PCs, SD-card image for Raspberry Pi
-Comment[id]=Buat distribusi berbasis Debian sendiri: ISO live untuk PC, image kartu SD untuk Raspberry Pi
-Comment[pt]=Crie a sua própria distribuição baseada em Debian como imagem ISO live
+Comment=Customize a Debian live ISO step by step: your own distribution for PCs and Raspberry Pi
 Exec=@PREFIX@/bin/disco-pkexec %f
 Icon=disco
 Terminal=false

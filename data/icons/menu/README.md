@@ -51,3 +51,6 @@ D!sco itself (GPL-3.0-or-later):
 | System files | sysfiles.svg |
 | Terminal & Browser | shellbrowser.svg |
 | Desktop document | readme.svg |
+| Welcome (the D!sco mascot) | home.svg |
+| Startup | startup.svg |
+| Files | files.svg |
