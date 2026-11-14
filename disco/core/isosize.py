@@ -100,8 +100,9 @@ def savers(project):
     out.append(("locales", cleanup.OPTIONS["locales"][0], sum(preflight.tree_size(d) for d in drop)))
     out.append(("apt_lists", cleanup.OPTIONS["apt_lists"][0], size("var/lib/apt/lists")))
     ks = cleanup.kernels(r)
+    keep = {ks[-1] if ks else None, cleanup.chosen_kernel(project)}
     old = sum(preflight.tree_size(r / "usr/lib/modules" / k) + preflight.tree_size(r / "boot" / ("vmlinuz-" + k))
-              for k in ks[:-1])
+              for k in ks if k not in keep)
     out.append(("old_kernels", cleanup.OPTIONS["old_kernels"][0], old))
     return [x for x in out if x[2] > 0]
 

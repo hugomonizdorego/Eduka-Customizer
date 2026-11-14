@@ -18,7 +18,10 @@ EXCLUDES = [
     "/var/lib/docker/*", "/var/lib/containers/*", "/var/lib/machines/*", "/var/lib/libvirt/images/*",
     "/var/log/*", "/root/.cache", "/root/.bash_history", "/snap", "/var/lib/snapd",
 ]
-PERSONAL = ["/home/*"]
+# Personal data: never in a distribution made for others ("dist" mode). /root holds the
+# administrator's keys (.ssh, .gnupg), shell history and settings of this computer.
+PERSONAL = ["/home/*", "/root/*", "/root/.*", "/var/mail/*", "/var/spool/mail/*", "/var/spool/cron/crontabs/*",
+            "/etc/ssh/ssh_known_hosts", "/etc/wpa_supplicant/*.conf"]
 
 
 def snapshot(project, mode="dist"):
@@ -45,11 +48,32 @@ def snapshot(project, mode="dist"):
     fstab.write_text("# /etc/fstab: the installer writes the real table\n")
     if mode == "dist":
         _reset_users(rootfs)
+        _lock_root(rootfs)
     project.state["source"].update({"kind": "snapshot", "path": "/", "label": info.pretty_name,
                                     "boot_mode": "generate"})
     project.state["distro"] = info.to_dict()
     project.record("snapshot", mode)
     return info
+
+
+def _lock_root(rootfs):
+    """No password of this computer in the copy: root is locked (sudo is used instead),
+    and every password left in /etc/shadow is removed."""
+    shadow = rootfs / "etc/shadow"
+    if shadow.exists():
+        lines = []
+        for line in shadow.read_text().splitlines():
+            parts = line.split(":")
+            if len(parts) > 1 and parts[1] not in ("*", "!", "!*", "") and not parts[1].startswith("!"):
+                parts[1] = "!" if parts[0] == "root" else "*"
+                line = ":".join(parts)
+            lines.append(line)
+        shadow.write_text("\n".join(lines) + "\n")
+    (rootfs / "root").mkdir(mode=0o700, exist_ok=True)
+    for name, text in ((".bashrc", "/etc/skel/.bashrc"), (".profile", "/etc/skel/.profile")):
+        src = rootfs / text.lstrip("/")
+        if src.exists() and not (rootfs / "root" / name).exists():
+            (rootfs / "root" / name).write_text(src.read_text(errors="replace"))
 
 
 def _reset_users(rootfs):

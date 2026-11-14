@@ -36,7 +36,10 @@ install:
 	for old in distroforge eduka-customizer; do \
 		ln -sf disco $(DESTDIR)$(PREFIX)/bin/$$old; \
 		ln -sf disco-pkexec $(DESTDIR)$(PREFIX)/bin/$$old-pkexec; done
-	$(INSTALL) -m644 data/exclude.list data/desktops.json data/languages.json data/profiles.json data/apps.json data/themes.json $(DESTDIR)$(DATADIR)/
+	$(INSTALL) -m644 data/exclude.list data/desktops.json data/languages.json data/profiles.json data/apps.json data/themes.json data/catalog.json $(DESTDIR)$(DATADIR)/
+	$(INSTALL) -d $(DESTDIR)$(DATADIR)/presets $(DESTDIR)$(DATADIR)/board
+	$(INSTALL) -m644 data/presets/*.json $(DESTDIR)$(DATADIR)/presets/
+	$(INSTALL) -m755 data/board/disco-firstboot $(DESTDIR)$(DATADIR)/board/
 	$(INSTALL) -m644 data/disco.conf $(DESTDIR)/etc/disco/disco.conf
 	sed -e 's|@PREFIX@|$(PREFIX)|g' data/io.github.hugomonizdorego.Disco.desktop.in \
 		> $(DESTDIR)$(PREFIX)/share/applications/io.github.hugomonizdorego.Disco.desktop

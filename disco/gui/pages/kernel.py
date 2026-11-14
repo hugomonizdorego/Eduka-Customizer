@@ -235,17 +235,18 @@ class KernelPage(Page):
         cmd = command if isinstance(command, str) else self.console_in.toPlainText().strip()
         if not cmd:
             return
-        self._history.append(cmd)
-        if not isinstance(command, str):
-            self.console_in.clear()
-        for line in Kernels.clean_script(cmd).splitlines():
-            self.console_out.appendPlainText("root@image:~# " + line)
         proj = self.project
 
         def done(out):
             self.console_out.appendPlainText((out or "").rstrip())
             self.show_temp_repos()
-        self.task("Terminal: " + cmd.splitlines()[0][:60], lambda t: Kernels(proj).console(cmd), done)
+        if not self.task("Terminal: " + cmd.splitlines()[0][:60], lambda t: Kernels(proj).console(cmd), done):
+            return   # another task runs: the script stays in the box
+        self._history.append(cmd)
+        if not isinstance(command, str):
+            self.console_in.clear()
+        for line in Kernels.clean_script(cmd).splitlines():
+            self.console_out.appendPlainText("root@image:~# " + line)
 
     def console_update(self):
         self.run_console("apt-get update")

@@ -1,0 +1,148 @@
+{
+  "comment": "Applications offered with tick boxes in D!sco's package lists, by category. Every name is a Debian package; packages your release or processor does not have are skipped with a note when the list is installed.",
+  "categories": [
+    {"id": "internet", "name": "Internet", "icon": "applications-internet", "apps": [
+      ["firefox-esr", "Firefox ESR", "Web browser (Extended Support Release)"],
+      ["chromium", "Chromium", "Web browser"],
+      ["thunderbird", "Thunderbird", "E-mail, calendar and contacts"],
+      ["evolution", "Evolution", "E-mail and calendar for GNOME"],
+      ["transmission-gtk", "Transmission", "BitTorrent client"],
+      ["filezilla", "FileZilla", "FTP and SFTP client"],
+      ["remmina", "Remmina", "Remote desktop (RDP, VNC, SSH)"],
+      ["hexchat", "HexChat", "IRC chat"],
+      ["telegram-desktop", "Telegram", "Messenger"]
+    ]},
+    {"id": "office", "name": "Office", "icon": "applications-office", "apps": [
+      ["libreoffice", "LibreOffice (complete)", "Writer, Calc, Impress, Draw, Base, Math"],
+      ["libreoffice-writer", "LibreOffice Writer", "Word processor only"],
+      ["libreoffice-calc", "LibreOffice Calc", "Spreadsheet only"],
+      ["libreoffice-impress", "LibreOffice Impress", "Presentations only"],
+      ["gnumeric", "Gnumeric", "Light spreadsheet"],
+      ["evince", "Document Viewer (Evince)", "PDF viewer for GNOME"],
+      ["okular", "Okular", "PDF and document viewer for KDE"],
+      ["atril", "Atril", "PDF viewer for MATE and Xfce"],
+      ["calibre", "Calibre", "E-book library and reader"],
+      ["scribus", "Scribus", "Desktop publishing"],
+      ["xournalpp", "Xournal++", "Handwritten notes and PDF annotation"],
+      ["simple-scan", "Document Scanner", "Scan documents"]
+    ]},
+    {"id": "graphics", "name": "Graphics", "icon": "applications-graphics", "apps": [
+      ["gimp", "GIMP", "Photo editing"],
+      ["inkscape", "Inkscape", "Vector drawing"],
+      ["krita", "Krita", "Digital painting"],
+      ["shotwell", "Shotwell", "Photo manager"],
+      ["darktable", "darktable", "RAW photo development"],
+      ["blender", "Blender", "3D modelling and animation"],
+      ["kolourpaint", "KolourPaint", "Simple paint program"],
+      ["gthumb", "gThumb", "Image viewer and browser"]
+    ]},
+    {"id": "multimedia", "name": "Audio & Video", "icon": "applications-multimedia", "apps": [
+      ["vlc", "VLC", "Plays almost every audio and video file"],
+      ["mpv", "mpv", "Light video player"],
+      ["celluloid", "Celluloid", "Video player for GNOME (mpv)"],
+      ["audacious", "Audacious", "Light music player"],
+      ["rhythmbox", "Rhythmbox", "Music library"],
+      ["strawberry", "Strawberry", "Music library"],
+      ["audacity", "Audacity", "Audio editor"],
+      ["kdenlive", "Kdenlive", "Video editor"],
+      ["shotcut", "Shotcut", "Video editor"],
+      ["obs-studio", "OBS Studio", "Screen recording and live streaming"],
+      ["handbrake", "HandBrake", "Video converter"]
+    ]},
+    {"id": "education", "name": "Education & Science", "icon": "applications-education", "apps": [
+      ["gcompris-qt", "GCompris", "Activities for children aged 2 to 10"],
+      ["tuxpaint", "Tux Paint", "Drawing for children"],
+      ["tuxmath", "Tux Math", "Arithmetic game"],
+      ["kalzium", "Kalzium", "Periodic table"],
+      ["stellarium", "Stellarium", "Planetarium"],
+      ["marble", "Marble", "Virtual globe and atlas"],
+      ["kgeography", "KGeography", "Geography learning"],
+      ["ktouch", "KTouch", "Touch typing tutor"],
+      ["klavaro", "Klavaro", "Touch typing tutor (GTK)"],
+      ["kturtle", "KTurtle", "Programming for children"],
+      ["step", "Step", "Physics simulator"],
+      ["thonny", "Thonny", "Python editor for beginners"]
+    ]},
+    {"id": "development", "name": "Programming", "icon": "applications-development", "apps": [
+      ["git", "Git", "Version control"],
+      ["build-essential", "Build tools", "gcc, make and friends"],
+      ["python3-pip", "Python tools", "pip for Python 3"],
+      ["geany", "Geany", "Light IDE"],
+      ["codeblocks", "Code::Blocks", "C and C++ IDE"],
+      ["meld", "Meld", "Compare files and folders"],
+      ["gitk", "gitk", "Git history browser"]
+    ]},
+    {"id": "system", "name": "System Tools", "icon": "applications-system", "apps": [
+      ["gparted", "GParted", "Partition editor"],
+      ["synaptic", "Synaptic", "Package manager"],
+      ["htop", "htop", "Process viewer"],
+      ["btop", "btop", "Resource monitor"],
+      ["timeshift", "Timeshift", "System snapshots"],
+      ["baobab", "Disk Usage Analyzer", "See what fills the disk"],
+      ["gnome-disk-utility", "Disks", "Disks, partitions and images"],
+      ["gsmartcontrol", "GSmartControl", "Disk health"],
+      ["bleachbit", "BleachBit", "Free disk space"],
+      ["fastfetch", "fastfetch", "System information in the terminal"]
+    ]},
+    {"id": "accessories", "name": "Accessories", "icon": "applications-accessories", "apps": [
+      ["file-roller", "Archive Manager", "Zip, tar and more (GNOME)"],
+      ["engrampa", "Engrampa", "Archive manager (MATE, Xfce)"],
+      ["galculator", "Galculator", "Calculator"],
+      ["gnome-calculator", "GNOME Calculator", "Calculator"],
+      ["keepassxc", "KeePassXC", "Password manager"],
+      ["flameshot", "Flameshot", "Screenshots with annotations"],
+      ["mousepad", "Mousepad", "Text editor"],
+      ["gnome-text-editor", "Text Editor", "Text editor for GNOME"]
+    ]},
+    {"id": "games", "name": "Games", "icon": "applications-games", "apps": [
+      ["supertuxkart", "SuperTuxKart", "Kart racing"],
+      ["supertux", "SuperTux", "Platform game"],
+      ["0ad", "0 A.D.", "Real-time strategy"],
+      ["frozen-bubble", "Frozen Bubble", "Bubble puzzle"],
+      ["aisleriot", "AisleRiot", "Card games"],
+      ["gnome-mines", "Mines", "Minesweeper"],
+      ["gnome-sudoku", "Sudoku", "Sudoku puzzles"],
+      ["kpat", "KPatience", "Card games for KDE"]
+    ]},
+    {"id": "electronics", "name": "Electronics & Raspberry Pi", "icon": "applications-engineering", "apps": [
+      ["python3-gpiozero", "GPIO Zero", "Control GPIO pins from Python"],
+      ["i2c-tools", "I2C tools", "Talk to I2C devices"],
+      ["arduino", "Arduino IDE", "Program Arduino boards"],
+      ["fritzing", "Fritzing", "Electronics prototyping"],
+      ["picocom", "picocom", "Serial terminal"],
+      ["minicom", "minicom", "Serial terminal"]
+    ]},
+    {"id": "accessibility", "name": "Accessibility", "icon": "preferences-desktop-accessibility", "apps": [
+      ["orca", "Orca", "Screen reader"],
+      ["espeak-ng", "eSpeak NG", "Speech synthesizer"],
+      ["onboard", "Onboard", "On-screen keyboard"]
+    ]},
+    {"id": "network", "name": "Network & Server", "icon": "network-server", "apps": [
+      ["openssh-server", "SSH server", "Log in from other computers"],
+      ["avahi-daemon", "Avahi", "Find this computer as name.local"],
+      ["samba", "Samba", "Share folders with Windows"],
+      ["cups", "CUPS", "Printing"],
+      ["system-config-printer", "Printers", "Set up printers"],
+      ["nginx", "nginx", "Web server"],
+      ["ufw", "ufw", "Simple firewall"]
+    ]}
+  ],
+  "debian_sections": {
+    "internet": ["net", "web", "mail", "comm", "news"],
+    "office": ["text", "editors", "tex", "doc"],
+    "graphics": ["graphics"],
+    "multimedia": ["sound", "video"],
+    "education": ["education", "science", "math", "electronics", "hamradio"],
+    "development": ["devel", "python", "perl", "ruby", "javascript", "java", "rust", "golang", "php", "vcs", "interpreters", "lisp", "haskell", "ocaml", "httpd"],
+    "system": ["admin", "utils", "otherosfs", "kernel", "shells", "database", "embedded"],
+    "desktop": ["x11", "gnome", "kde", "xfce", "fonts", "localization"],
+    "games": ["games"],
+    "libraries": ["libs", "libdevel", "oldlibs"],
+    "other": ["misc", "metapackages", "introspection", "translations", "debug", "zope", "cli-mono", "gnu-r", "gnustep", "ocaml", "tasks"]
+  },
+  "section_names": {
+    "internet": "Internet", "office": "Office & Text", "graphics": "Graphics", "multimedia": "Audio & Video",
+    "education": "Education & Science", "development": "Programming", "system": "System", "desktop": "Desktop & Fonts",
+    "games": "Games", "libraries": "Libraries", "other": "Other"
+  }
+}

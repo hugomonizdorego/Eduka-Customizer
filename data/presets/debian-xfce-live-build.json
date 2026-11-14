@@ -1,0 +1,35 @@
+{
+ "name": "Debian Xfce with live-build (PC 64-bit)",
+ "description": "The same Xfce desktop made by Debian's own live-build (lb config, lb build). Good for automated builds.",
+ "builder": {
+  "distro_name": "My Linux",
+  "platform": "pc64",
+  "family": "debian",
+  "suite": "stable",
+  "desktop": "xfce",
+  "dm": "lightdm",
+  "init": "systemd",
+  "installer": "calamares",
+  "method": "live-build"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "firefox-esr",
+    "libreoffice",
+    "vlc",
+    "gimp",
+    "evince",
+    "file-roller",
+    "gnome-calculator",
+    "synaptic",
+    "gparted",
+    "mousepad",
+    "ristretto",
+    "atril"
+   ],
+   "comment": "Programs for the menu."
+  }
+ }
+}

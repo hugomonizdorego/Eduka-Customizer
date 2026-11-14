@@ -160,6 +160,15 @@ class DesktopPage(Page):
             text += "<br><i>{}</i>".format(d["note"])
         self.desc.setText(text)
 
+    def project_changed(self):
+        """Another project: show its own desktop choices, not those of the project before."""
+        self.group.setExclusive(False)
+        for b in self.tiles.values():
+            b.blockSignals(True)
+            b.setChecked(False)
+            b.blockSignals(False)
+        self.group.setExclusive(True)
+
     def _selected(self):
         for de_id, b in self.tiles.items():
             if b.isChecked():

@@ -10,7 +10,7 @@ from disco import APP_NAME, VERSION_LABEL
 from disco.core import log as logmod
 from disco.core.log import log
 
-NO_ROOT = {"doctor", "gui", "info", "test", "download", None}
+NO_ROOT = {"doctor", "gui", "info", "test", "download", "about", "platforms", "presets", None}
 
 
 def _project(args, create=False):
@@ -79,7 +79,7 @@ def cmd_shell(args):
         return 1
     print("Entering the image. Type 'exit' to leave.")
     print("Everything you change here is saved to the next ISO build.")
-    rc = Chroot(p.rootfs).interactive(args.command or None)
+    rc = Chroot(p.rootfs).interactive(args.argv or None)
     p.mark_initramfs_dirty()
     p.record("shell")
     return rc
@@ -88,7 +88,9 @@ def cmd_shell(args):
 def cmd_run(args):
     from disco.core import hooks
     p = _locked(args)
-    hooks.run_command(p, " ".join(args.command))
+    if not args.argv:
+        raise SystemExit("Name the command to run, for example: disco run apt-get update")
+    hooks.run_command(p, " ".join(args.argv))
     return 0
 
 
@@ -898,7 +900,9 @@ def cmd_clean(args):
     from disco.core.chroot import Chroot, safe_rmtree, unmount_all
     p = _project(args)
     Chroot(p.rootfs).force_release()
-    unmount_all(p.path)
+    from disco.core.preview import leftover
+    leftover(p)                              # a preview left by a crash ends first
+    unmount_all(p.path, include_self=False)  # the project folder may be the mount point of a disk
     if args.unmount_only:
         return 0
     if args.keep_iso:
@@ -1007,12 +1011,13 @@ Help for one command: disco COMMAND --help""")
 
     sub.add_parser("info", help="show project information").set_defaults(func=cmd_info)
 
+    # "argv", not "command": that name holds the subcommand itself (sub.dest).
     s = sub.add_parser("shell", help="open an interactive shell inside the image")
-    s.add_argument("command", nargs=argparse.REMAINDER)
+    s.add_argument("argv", nargs=argparse.REMAINDER, metavar="command")
     s.set_defaults(func=cmd_shell)
 
     s = sub.add_parser("run", help="run a command inside the image")
-    s.add_argument("command", nargs=argparse.REMAINDER)
+    s.add_argument("argv", nargs=argparse.REMAINDER, metavar="command")
     s.set_defaults(func=cmd_run)
 
     s = sub.add_parser("hook", help="run hook scripts inside the image (default: <project>/hooks/*)")

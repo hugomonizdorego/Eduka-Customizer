@@ -99,11 +99,19 @@ class Preview(QFrame):
         self.setObjectName("welcomePreview")
         self.lay = QVBoxLayout(self)
 
-    def show_page(self, d, n):
-        while self.lay.count():
-            item = self.lay.takeAt(0)
+    @staticmethod
+    def _clear(layout):
+        """Remove everything of a layout, also inside its nested layouts."""
+        while layout.count():
+            item = layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
+            elif item.layout():
+                Preview._clear(item.layout())
+                item.layout().deleteLater()
+
+    def show_page(self, d, n):
+        self._clear(self.lay)
         colors = d.get("colors", {})
         p = d["pages"][n]
         bg = p.get("background") or colors.get("background", "#ffffff")

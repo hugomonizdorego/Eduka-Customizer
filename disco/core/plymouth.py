@@ -185,6 +185,10 @@ class Plymouth:
             log.info("Installing plymouth-x11 (needed to show themes in a window)")
             Packages(self.project).install(["plymouth-x11"])
         old = self.current()
+        # The preview must not change the boot splash: plymouthd.conf and the default.plymouth
+        # alternative are put back exactly as they were.
+        conf = self.rootfs / CONF
+        saved_conf = conf.read_bytes() if conf.is_file() else None
         seconds = max(3, min(60, int(seconds)))
         with self.chroot:
             self.branding.write_plymouth_default(name)
@@ -202,6 +206,11 @@ class Plymouth:
             if old and self.current() != old:
                 with self.chroot:
                     self.branding.write_plymouth_default(old)
+            if saved_conf is None:
+                if conf.is_file():
+                    conf.unlink()
+            elif not conf.is_file() or conf.read_bytes() != saved_conf:
+                conf.write_bytes(saved_conf)
 
 
 PREVIEW = (

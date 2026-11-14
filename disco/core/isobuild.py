@@ -23,8 +23,9 @@ COMPRESSORS = {
     "lz4": (0, 0, 0, None),
     "lzo": (1, 9, 8, "-Xcompression-level"),
 }
-KERNEL_PACKAGE = {"amd64": "linux-image-amd64", "i386": "linux-image-686-pae",
-                  "arm64": "linux-image-arm64"}
+from disco.core import platforms  # noqa: E402
+
+KERNEL_PACKAGE = {p.arch: p.kernel for p in reversed(platforms.PLATFORMS)}
 LIVE_PACKAGES = ["live-boot", "live-config", "live-config-systemd"]
 
 
@@ -140,10 +141,11 @@ def squashfs_args(opts, arch):
         level = int(opts.level or default)
         args += [flag, str(min(hi, max(lo, level)))]
     if comp == "xz":
+        # Branch filters help xz with program code; squashfs-tools has none for ARM64 or RISC-V.
         if arch in ("amd64", "i386"):
             args += ["-Xbcj", "x86"]
-        elif arch in ("arm64", "armhf"):
-            args += ["-Xbcj", "arm"]
+        elif arch in ("armhf", "armel"):
+            args += ["-Xbcj", "arm,armthumb"]
         args += ["-Xdict-size", "100%"]
     if comp == "lz4":
         args += ["-Xhc"]
@@ -201,8 +203,15 @@ class Builder:
         pkgs = Packages(self.project)
         from disco.core import initsystem
         missing = [x for x in initsystem.live_packages(rootfs) if not pkgs.is_installed(x)]
+        arch = self.project.distro.arch or "amd64"
         if not list(Path(rootfs, "boot").glob("vmlinuz-*")):
-            missing.append(KERNEL_PACKAGE.get(self.project.distro.arch, "linux-image-amd64"))
+            missing.append(KERNEL_PACKAGE.get(arch, "linux-image-amd64"))
+        # A UEFI-only ISO for another processor takes GRUB's modules from the image.
+        grub_pkg = platforms.ARCHES.get(arch, ("", "", "", "", ""))[4]
+        if arch not in ("amd64", "i386") and grub_pkg:
+            fmt = platforms.ARCHES[arch][2]
+            if not Path("/usr/lib/grub", fmt, "normal.mod").exists() and not pkgs.is_installed(grub_pkg):
+                missing.append(grub_pkg)
         if missing:
             self.stage("Installing live boot support")
             log.info("Missing for a bootable live system: %s", " ".join(missing))
@@ -211,9 +220,10 @@ class Builder:
     def initramfs(self):
         mode = self.opts.initramfs
         dirty = self.project.state.get("initramfs_dirty")
-        kernels = cleanup.kernels(self.project.rootfs)
-        newest = kernels[-1] if kernels else None
-        initrd_ok = newest and Path(self.project.rootfs, "boot/initrd.img-" + newest).exists()
+        version = cleanup.chosen_kernel(self.project)   # the same kernel boot_files() puts on the ISO
+        if not version:
+            raise RuntimeError("No kernel found in /boot of the root filesystem")
+        initrd_ok = Path(self.project.rootfs, "boot/initrd.img-" + version).exists()
         if mode == "never" and initrd_ok:
             return
         if mode == "always" or dirty or not initrd_ok:
@@ -221,16 +231,14 @@ class Builder:
             if initrd_ok:
                 self.chroot.run(["update-initramfs", "-u", "-k", "all"])
             else:
-                self.chroot.run(["update-initramfs", "-c", "-k", newest])
+                self.chroot.run(["update-initramfs", "-c", "-k", version])
             self.project.state["initramfs_dirty"] = False
             self.project.save()
 
     def boot_files(self):
         self.stage("Preparing boot files")
         p = self.project
-        kernels = cleanup.kernels(p.rootfs)
-        wanted = p.state.get("boot", {}).get("kernel")
-        version = wanted if wanted in kernels else (kernels[-1] if kernels else None)
+        version = cleanup.chosen_kernel(p)
         if not version:
             raise RuntimeError("No kernel found in /boot of the root filesystem")
         vmlinuz = p.rootfs / "boot" / ("vmlinuz-" + version)
@@ -315,9 +323,9 @@ class Builder:
         self.stage("Compressing the root filesystem ({})".format(self.opts.compression))
         if target.exists():
             target.unlink()
-        args = ["mksquashfs", p.rootfs, target, "-noappend", "-wildcards",
-                "-ef", data_file("exclude.list"), "-e", "boot/efi"]
+        args = ["mksquashfs", p.rootfs, target, "-noappend", "-wildcards", "-ef", data_file("exclude.list")]
         args += squashfs_args(self.opts, p.distro.arch)
+        args += ["-e", "boot/efi"]   # -e takes every argument after it: it must come last
         from disco.core import resources
         rp = resources.plan(self.opts.resources, self.opts.compression, self.opts.level)
         log.info("Compression: %s", rp["text"])
@@ -399,9 +407,15 @@ class Builder:
             self.ensure_live_stack()
             from disco.core import initsystem
             initsystem.sync_services(self.project)
+            from disco.core.calamares import Calamares
+            cal = Calamares(p)
+            if cal.installed():
+                cal.rewire()   # the installer follows the boot loader and init system of the image
             self.initramfs()
             self.stage("Cleaning up")
             cleanup.run(p, self.opts.cleanup)
+        from disco.core.chroot import check_released
+        check_released(p.rootfs)
         self.boot_files()
         size = self.manifests()
         self.check_space(size)

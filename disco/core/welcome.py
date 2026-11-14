@@ -174,10 +174,11 @@ class Welcome:
             missing = [p for p in PACKAGES if not pk.is_installed(p)]
             if missing:
                 with pk.chroot:
+                    pk.update()   # a new base (or a cleaned image) has no package lists yet
                     ok = pk.available(missing)
                     if "python3-gi" in missing and "python3-gi" not in ok:
                         raise RuntimeError("python3-gi is not available in the image's APT sources")
-                    pk.install([p for p in missing if p in ok])
+                    pk.install([p for p in missing if p in ok], update=False)
         render(d, r / DATA)
         (r / APP).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(app_source(), r / APP)

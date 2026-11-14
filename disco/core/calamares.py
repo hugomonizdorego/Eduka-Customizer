@@ -54,6 +54,16 @@ class Calamares:
             self.set_locale(tz)
         except (OSError, ValueError) as e:
             log.warning("Could not set the installer's time zone: %s", e)
+        self.rewire()
+
+    def rewire(self):
+        """Choices made before Calamares was in the image (boot loader, init system) reach it now."""
+        from disco.core import initsystem
+        from disco.core.bootchoice import BootChoice
+        loader_id = self.project.state.get("boot", {}).get("installed_loader")
+        if loader_id:
+            BootChoice(self.project).wire_calamares(loader_id)
+        initsystem.wire_calamares(self.project, initsystem.current(self.rootfs))
 
     def version(self):
         status = self.rootfs / "var/lib/dpkg/status"

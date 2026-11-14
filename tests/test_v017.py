@@ -25,7 +25,7 @@ def test_grub_from_the_iso_pool_is_not_a_problem(cal):
 
 def test_fix_rules():
     label, _f = fixes.find("/etc/calamares/modules/bootloader.conf: grub needs /usr/sbin/grub-install in the image")
-    assert "grub-efi-amd64-bin" in label
+    assert "GRUB" in label and "processor" in label   # GRUB of the image's own processor (0.11)
     assert fixes.find("xfs needs mkfs.xfs (xfsprogs) in the image")[0] == "Install xfsprogs"
     assert "try_remove" in fixes.find("'remove: foo' is not installed: apt would fail")[0]
     assert fixes.find("/home has teacher: everything there ends up in the ISO.") is None

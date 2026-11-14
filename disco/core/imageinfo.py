@@ -30,15 +30,12 @@ def os_release(rootfs):
 
 
 def _inside(rootfs, path):
-    """Resolve *path* (absolute inside the image, links followed) to a file of the image."""
-    rootfs = Path(rootfs)
-    p = rootfs / str(path).lstrip("/")
-    for _ in range(10):
-        if not p.is_symlink():
-            break
-        target = os.readlink(p)
-        p = rootfs / target.lstrip("/") if target.startswith("/") else p.parent / target
-    return p if p.is_file() else None
+    """Resolve *path* (absolute inside the image, links followed) to a file of the image.
+    Every part of the path is followed inside the image (Debian's alternatives use absolute
+    links, for example usr/share/desktop-base/active-theme)."""
+    from disco.core.distro import resolve_in_root
+    p = resolve_in_root(rootfs, str(path))
+    return p if p and p.is_file() else None
 
 
 def identity(project):

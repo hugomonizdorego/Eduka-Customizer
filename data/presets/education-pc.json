@@ -1,0 +1,17 @@
+{
+ "name": "School desktop (PC 64-bit, Education)",
+ "description": "Xfce for schools: learning programs (GCompris, Kalzium, Stellarium...), office, accessibility. Installer: Calamares.",
+ "builder": {
+  "distro_name": "My School Linux",
+  "platform": "pc64",
+  "family": "debian",
+  "suite": "stable",
+  "desktop": "xfce",
+  "dm": "lightdm",
+  "init": "systemd",
+  "installer": "calamares",
+  "method": "disco",
+  "profile": "education"
+ },
+ "lists": {}
+}

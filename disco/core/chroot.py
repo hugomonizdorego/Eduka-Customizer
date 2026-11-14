@@ -37,28 +37,61 @@ def _unescape_mount(path):
     return path.replace("\\040", " ").replace("\\011", "\t").replace("\\012", "\n").replace("\\134", "\\")
 
 
-def mounts_under(path):
+def mounts_under(path, include_self=True):
+    """Mount points at *path* (unless include_self is False) and below it."""
     path = os.path.realpath(str(path))
     found = []
     try:
         with open("/proc/self/mountinfo") as fh:
             for line in fh:
                 mp = _unescape_mount(line.split()[4])
-                if mp == path or mp.startswith(path.rstrip("/") + "/"):
+                if (include_self and mp == path) or mp.startswith(path.rstrip("/") + "/"):
                     found.append(mp)
     except OSError:
         pass
     return found
 
 
-def unmount_all(path):
-    """Unmount everything below *path*, deepest first."""
-    for mp in sorted(set(mounts_under(path)), key=lambda m: m.count("/"), reverse=True):
+def mount_type(path):
+    """The file system type of the mount visible at *path* ('' when it is not a mount point)."""
+    path = os.path.realpath(str(path))
+    fstype = ""
+    try:
+        with open("/proc/self/mountinfo") as fh:
+            for line in fh:
+                fields = line.split()
+                if _unescape_mount(fields[4]) == path and "-" in fields:
+                    fstype = fields[fields.index("-") + 1]   # the last one listed is on top
+    except OSError:
+        pass
+    return fstype
+
+
+def check_released(rootfs):
+    """Refuse to pack a system that another program still uses: its mounts, the
+    service blocker (policy-rc.d) and the borrowed resolv.conf would end up in the image."""
+    rootfs = Path(rootfs)
+    left = mounts_under(rootfs)
+    try:
+        blocked = POLICY_MARK in (rootfs / POLICY_RC).read_text(errors="replace")
+    except OSError:
+        blocked = False
+    backup = rootfs / "etc/resolv.conf.eduka-backup"
+    if left or blocked or backup.exists() or backup.is_symlink():
+        raise RuntimeError("The system is still in use by another program (a terminal, a live session or another "
+                           "D!sco window): close it, then build again.{}".format(
+                               " Still mounted: " + ", ".join(left) if left else ""))
+
+
+def unmount_all(path, include_self=True):
+    """Unmount everything below *path* (and *path* itself unless include_self is False), deepest first.
+    A project folder may itself be the mount point of a disk: that one must stay."""
+    for mp in sorted(set(mounts_under(path, include_self)), key=lambda m: m.count("/"), reverse=True):
         log.debug("Unmounting %s", mp)
         try:
-            runner.run(["umount", mp], quiet=True)
+            runner.run(["umount", mp], quiet=True, cancellable=False)
         except runner.CommandError:
-            runner.run(["umount", "-l", mp], quiet=True, check=False)
+            runner.run(["umount", "-l", mp], quiet=True, check=False, cancellable=False)
 
 
 def safe_rmtree(path):
@@ -161,8 +194,19 @@ class Chroot:
                 self._write_users([])
                 self._teardown()
 
+    def _check_arch(self):
+        """Programs of another processor (an ARM image on a PC) run through qemu-user: make sure they can."""
+        from disco.core import distro, platforms
+        arch = distro.elf_arch(self.rootfs)
+        if not arch or arch == "unknown" or not platforms.is_foreign(arch):
+            return
+        ok, how = platforms.enable_binfmt(arch)
+        if not ok:
+            raise RuntimeError(how)
+
     def _setup(self):
         log.debug("Preparing chroot %s", self.rootfs)
+        self._check_arch()
         for source, rel, fstype, opts in PSEUDO_FS:
             target = self.rootfs / rel
             target.mkdir(parents=True, exist_ok=True)
@@ -241,7 +285,7 @@ class Chroot:
     def _unbind_x11(self):
         target = self.rootfs / "tmp/.X11-unix"
         if os.path.ismount(target):
-            runner.run(["umount", "-l", target], quiet=True, check=False)
+            runner.run(["umount", "-l", target], quiet=True, check=False, cancellable=False)
 
     # Running commands --------------------------------------------------
     def env(self, extra=None, interactive=False):

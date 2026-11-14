@@ -54,13 +54,16 @@ def check_cancel():
 
 
 def run(cmd, cwd=None, env=None, input=None, check=True, capture=False,
-        quiet=False, progress=None, ok_codes=(0,)):
+        quiet=False, progress=None, ok_codes=(0,), cancellable=True):
     """Run *cmd* (a list) and stream its output to the log.
 
-    capture  -- return stdout as text instead of logging it.
-    progress -- callable receiving a float percentage parsed from output.
+    capture     -- return stdout as text instead of logging it.
+    progress    -- callable receiving a float percentage parsed from output.
+    cancellable -- False for clean-up commands (umount...), which must also run
+                   after the user pressed Cancel.
     """
-    check_cancel()
+    if cancellable:
+        check_cancel()
     cmd = [str(c) for c in cmd]
     log.debug("$ %s", " ".join(shlex.quote(c) for c in cmd))
     proc = subprocess.Popen(
@@ -95,7 +98,8 @@ def run(cmd, cwd=None, env=None, input=None, check=True, capture=False,
             if CANCEL.wait(0.3):
                 _kill(proc)
                 return
-    threading.Thread(target=watchdog, daemon=True).start()
+    if cancellable:
+        threading.Thread(target=watchdog, daemon=True).start()
 
     buf = b""
     while True:
@@ -117,7 +121,7 @@ def run(cmd, cwd=None, env=None, input=None, check=True, capture=False,
     proc.wait()
     if capture:
         err_thread.join(1)
-    if CANCEL.is_set():
+    if cancellable and CANCEL.is_set():
         raise Canceled()
     out = b"".join(captured).decode("utf-8", "replace")
     if check and proc.returncode not in ok_codes:

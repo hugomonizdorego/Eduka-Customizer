@@ -32,6 +32,15 @@ class RepoDialog(QDialog):
         bb.rejected.connect(self.reject)
         f.addRow(bb)
 
+    def accept(self):
+        """Check the fields first: the dialog stays open (with everything typed) until they are right."""
+        missing = [label for label, w in (("Name", self.name), ("URI", self.uri), ("Suites", self.suites))
+                   if not w.text().strip()]
+        if missing:
+            QMessageBox.warning(self, "Add repository", "Please fill in: {}.".format(", ".join(missing)))
+            return
+        super().accept()
+
 
 class SourcesPage(Page):
     title = "Repositories"

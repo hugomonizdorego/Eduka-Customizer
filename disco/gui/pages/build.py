@@ -159,10 +159,23 @@ class BuildPage(Page):
         if self.project:
             self.preview.setText("→ {}".format(iso_filename(self.iso_name.text(), self.project)))
 
+    def project_changed(self):
+        self._opts_for = None   # fill the options from the newly opened project
+
     def refresh(self):
         if not self.project:
             return
         self._folders()
+        # The options are read from the project once (and after a build saved them); refreshing the page
+        # after other tasks must not undo what was just chosen here.
+        key = (str(self.project.path), self.project.state.get("last_iso"))
+        if getattr(self, "_opts_for", None) != key:
+            self._opts_for = key
+            self._load_options()
+        self._show_result()
+        self._preview()
+
+    def _load_options(self):
         o = BuildOptions.from_project(self.project)
         self.iso_name.setText(o.iso_name)
         self.label_.setText(o.volume_label)
@@ -184,6 +197,8 @@ class BuildPage(Page):
         self.target.blockSignals(False)
         for k, cb in self.clean.items():
             cb.setChecked(bool(o.cleanup.get(k, cleanup.OPTIONS[k][1])))
+
+    def _show_result(self):
         last = self.project.state.get("last_iso")
         if last and Path(last).exists():
             size = Path(last).stat().st_size / 1024 ** 3
@@ -194,7 +209,6 @@ class BuildPage(Page):
                                 "oflag=sync</code>".format(last, size, digest, last))
             if not self.test_iso.text():
                 self.test_iso.setText(last)
-        self._preview()
 
     def options(self):
         o = BuildOptions.from_project(self.project)
@@ -317,7 +331,7 @@ class BuildPage(Page):
         fill(self.checks, [(self.MARKS[x.level], x.title, x.detail,
                             ("Automatic: " + x.fix) if x.fix else ("By hand (double-click)" if x.page and
                                                                   x.level in ("warn", "fail") else ""))
-                           for x in results])
+                           for x in results], sort=False)   # rows must stay in the order of self._results
         self.checks.setSortingEnabled(False)
         self.checks.resizeColumnToContents(0)
         self.checks.resizeColumnToContents(1)

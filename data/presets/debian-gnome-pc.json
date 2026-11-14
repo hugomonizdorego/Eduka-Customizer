@@ -1,0 +1,32 @@
+{
+ "name": "Debian GNOME desktop (PC 64-bit)",
+ "description": "GNOME on Wayland with GDM, for modern PCs (needs systemd). Installer: Calamares.",
+ "builder": {
+  "distro_name": "My Linux",
+  "platform": "pc64",
+  "family": "debian",
+  "suite": "stable",
+  "desktop": "gnome",
+  "dm": "gdm3",
+  "init": "systemd",
+  "installer": "calamares",
+  "method": "disco"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "firefox-esr",
+    "libreoffice",
+    "libreoffice-gnome",
+    "celluloid",
+    "gnome-text-editor",
+    "gnome-calculator",
+    "evince",
+    "file-roller",
+    "gnome-disk-utility"
+   ],
+   "comment": "Programs for the menu."
+  }
+ }
+}

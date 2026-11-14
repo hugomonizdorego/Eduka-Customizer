@@ -340,16 +340,28 @@ class FileTreeEditor(QWidget):
                 self.editor.setPlainText("(symbolic link to {})".format(p.readlink()))
                 self.editor.setReadOnly(True)
                 return
+            size = p.stat().st_size
             data = p.read_bytes()[:TEXT_LIMIT]
             if b"\0" in data[:8192]:
                 self.editor.setPlainText("(binary file, {} bytes) - use 'Add / replace from disk' "
-                                         "to replace it".format(p.stat().st_size))
+                                         "to replace it".format(size))
                 self.editor.setReadOnly(True)
-            else:
-                self.editor.setPlainText(data.decode("utf-8", "replace"))
-                self.editor.setReadOnly(False)
+                return
+            try:
+                text = data.decode("utf-8")
+                exact = size <= TEXT_LIMIT
+            except UnicodeDecodeError:
+                text, exact = data.decode("utf-8", "replace"), False
+            self.editor.setPlainText(text)
+            # Saving writes the editor's text as the whole file: only when it is the whole file, unchanged.
+            self.editor.setReadOnly(not exact)
+            if not exact:
+                self.path_label.setText("{} (read only: {})".format(
+                    self.path_label.text(), "larger than {} MiB".format(TEXT_LIMIT >> 20) if size > TEXT_LIMIT
+                    else "not UTF-8 text"))
         except OSError as e:
             self.editor.setPlainText(str(e))
+            self.editor.setReadOnly(True)
 
     def save(self):
         if self.current and not self.editor.isReadOnly():

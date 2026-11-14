@@ -293,9 +293,10 @@ class Sounds:
             from disco.core.apt import Packages
             pk = Packages(self.project)
             with pk.chroot:
+                pk.update()   # a new base (or a cleaned image) has no package lists yet
                 ok = pk.available(packages)
                 if ok:
-                    pk.install([p for p in packages if p in ok])
+                    pk.install([p for p in packages if p in ok], update=False)
         # Player and default theme name
         (r / LIB).mkdir(parents=True, exist_ok=True)
         (r / PLAYER).write_text(PLAYER_SH)

@@ -158,6 +158,10 @@ def sysv_from_unit(project, unit_path):
         return m.group(1).strip() if m else ""
     start = value("ExecStart") or "true"
     stop = value("ExecStop") or "true"
+    # systemd skips such units in the live session (ConditionKernelCommandLine=!boot=live): so must we.
+    for cond in re.findall(r"(?m)^ConditionKernelCommandLine=!(\S+)$", text):
+        if re.match(r"^[A-Za-z0-9_.=-]+$", cond):
+            start = "grep -qw '{}' /proc/cmdline && exit 0; {}".format(cond, start)
     network = " $network" if "network" in text else ""
     if "flatpak" in name:
         start = "({} &)".format(start)  # waits for the network: never hold up the boot
@@ -175,7 +179,9 @@ def sync_services(project, chroot=None):
     if current(r) == "systemd":
         return []
     names = []
-    for unit in sorted(Path(r, "etc/systemd/system").glob("eduka-*.service")):
+    units = list(Path(r, "etc/systemd/system").glob("eduka-*.service")) + \
+        list(Path(r, "etc/systemd/system").glob("disco-*.service"))
+    for unit in sorted(units):
         wants = Path(r, "etc/systemd/system/multi-user.target.wants", unit.name)
         if not (wants.exists() or wants.is_symlink()):
             continue

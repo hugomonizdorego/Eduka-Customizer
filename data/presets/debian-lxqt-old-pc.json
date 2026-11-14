@@ -1,0 +1,29 @@
+{
+ "name": "Old PCs: LXQt (PC 32-bit, Debian 12)",
+ "description": "Very light LXQt desktop for 32-bit PCs. Debian 12 (bookworm) is the last release with 32-bit PC kernels.",
+ "builder": {
+  "distro_name": "My Linux",
+  "platform": "pc32",
+  "family": "debian",
+  "suite": "oldstable",
+  "desktop": "lxqt",
+  "dm": "sddm",
+  "init": "systemd",
+  "installer": "calamares",
+  "method": "disco"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "firefox-esr",
+    "abiword",
+    "gnumeric",
+    "mpv",
+    "featherpad",
+    "qpdfview"
+   ],
+   "comment": "Light programs for old computers."
+  }
+ }
+}

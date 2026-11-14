@@ -85,8 +85,11 @@ class SoundsPage(Page):
 
     # Helpers ----------------------------------------------------------------------
     def _sounds(self):
-        if self.theme.text().strip():
-            self.project.state.setdefault("sounds", {})["theme"] = self.theme.text().strip()
+        name = self.theme.text().strip()
+        st = self.project.state.setdefault("sounds", {})
+        if name and st.get("theme") != name:
+            st["theme"] = name
+            self.project.save()   # the project is read again after every task: keep the name
         return sounds.Sounds(self.project)
 
     def refresh(self):

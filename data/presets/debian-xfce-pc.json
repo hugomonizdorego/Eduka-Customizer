@@ -1,0 +1,36 @@
+{
+ "name": "Debian Xfce desktop (PC 64-bit)",
+ "description": "A light, complete desktop for most PCs and laptops: Xfce, LightDM, Firefox, LibreOffice, VLC. Installer: Calamares.",
+ "builder": {
+  "distro_name": "My Linux",
+  "platform": "pc64",
+  "family": "debian",
+  "suite": "stable",
+  "desktop": "xfce",
+  "dm": "lightdm",
+  "init": "systemd",
+  "installer": "calamares",
+  "method": "disco"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "firefox-esr",
+    "libreoffice",
+    "vlc",
+    "gimp",
+    "evince",
+    "file-roller",
+    "gnome-calculator",
+    "synaptic",
+    "gparted",
+    "mousepad",
+    "ristretto",
+    "xfce4-screenshooter",
+    "atril"
+   ],
+   "comment": "Programs for the menu: tick them in the catalog or type their names."
+  }
+ }
+}

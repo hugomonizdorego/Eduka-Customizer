@@ -36,6 +36,28 @@ def split_hostname(value, fallback="debian"):
 USERNAME = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
 
 
+def _dconf_set(path, section, key, value):
+    """Set key=value in [section] of a dconf keyfile, replacing a commented example line."""
+    path = Path(path)
+    text = path.read_text(errors="replace") if path.exists() else ""
+    header = "[{}]".format(section)
+    lines = text.splitlines()
+    try:
+        start = next(i for i, l in enumerate(lines) if l.strip() == header)
+    except StopIteration:
+        lines += ["", header, "{}={}".format(key, value)]
+    else:
+        end = next((i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith("[")), len(lines))
+        for i in range(start + 1, end):
+            if re.match(r"^\s*#?\s*{}\s*=".format(re.escape(key)), lines[i]):
+                lines[i] = "{}={}".format(key, value)
+                break
+        else:
+            lines.insert(start + 1, "{}={}".format(key, value))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines).lstrip("\n") + "\n")
+
+
 def _ini_set(path, section, values, preserve_case=True):
     path = Path(path)
     cp = configparser.ConfigParser(interpolation=None, strict=False)
@@ -99,6 +121,9 @@ class Branding:
             "HOME_URL": ident.get("home_url", ""),
             "SUPPORT_URL": ident.get("support_url", ""),
             "BUG_REPORT_URL": ident.get("bug_url", ""),
+            # The icon name of the logo (freedesktop): set when the image has that icon.
+            "LOGO": ident.get("logo") or (os_id + "-logo" if any(
+                (self.rootfs / "usr/share/icons/hicolor").glob("*/apps/{}-logo.*".format(os_id))) else ""),
         }
         data = {k: v for k, v in data.items() if v}
         target = self.rootfs / "usr/lib/os-release"
@@ -110,12 +135,13 @@ class Branding:
             if etc.exists():
                 etc.unlink()
             etc.symlink_to("../usr/lib/os-release")
-        issue = "{} \\n \\l\n\n".format(data["PRETTY_NAME"])
-        (self.rootfs / "etc/issue").write_text(issue)
-        (self.rootfs / "etc/issue.net").write_text(data["PRETTY_NAME"] + "\n")
-        lsb = self.rootfs / "etc/lsb-release"
-        lsb.write_text('DISTRIB_ID="{}"\nDISTRIB_RELEASE="{}"\nDISTRIB_CODENAME="{}"\n'
-                       'DISTRIB_DESCRIPTION="{}"\n'.format(name, version, debian_code, data["PRETTY_NAME"]))
+        # The login prompt of the text consoles (getty: \\n is the host name, \\l the console).
+        issue = ident.get("issue") or "Welcome to {} - \\n \\l\n\n".format(data["PRETTY_NAME"])
+        (self.rootfs / "etc/issue").write_text(issue if issue.endswith("\n") else issue + "\n")
+        (self.rootfs / "etc/issue.net").write_text("Welcome to {}\n".format(data["PRETTY_NAME"]))
+        from disco.core.distro import format_lsb_release
+        (self.rootfs / "etc/lsb-release").write_text(
+            format_lsb_release(name, version, debian_code or "", data["PRETTY_NAME"]))
         self.set_hostname(ident.get("hostname") or os_id, os_id)
         ident["hostname"] = split_hostname(ident.get("hostname") or os_id, os_id)[0]
         from disco.core.users import Users
@@ -123,6 +149,7 @@ class Branding:
         # Keep the live user chosen on the Users page unless the caller names one.
         self.set_live_user(ident.get("live_user") or live["username"],
                            ident.get("live_fullname") or live["fullname"], ident["hostname"])
+        ident["id"] = os_id   # worked out from the name when empty: the ISO name, folders and packages use it
         self.project.state["identity"].update(ident)
         self.project.record("identity", data["PRETTY_NAME"])
         log.info("Identity set to %s", data["PRETTY_NAME"])
@@ -252,8 +279,10 @@ class Branding:
             m = re.search(r"(?m)^Theme=(\S+)", conf.read_text())
             if m:
                 return m.group(1)
-        default = self.rootfs / "usr/share/plymouth/themes/default.plymouth"
-        if default.exists():
+        # default.plymouth is an alternative with an absolute link: follow it inside the image.
+        from disco.core.distro import resolve_in_root
+        default = resolve_in_root(self.rootfs, "usr/share/plymouth/themes/default.plymouth")
+        if default and default.is_file():
             m = re.search(r"(?m)^ImageDir=.*/themes/([^/\s]+)", default.read_text(errors="replace"))
             if m:
                 return m.group(1)
@@ -481,7 +510,8 @@ class Branding:
             bg_path = "/" + str(dest.relative_to(self.rootfs))
         logo_path = ""
         if greeter_logo:
-            dest = self.rootfs / BACKGROUNDS / ("logo" + Path(greeter_logo).suffix.lower())
+            dest = self.rootfs / BACKGROUNDS.format(id=self.project.os_id()) / (
+                "logo" + Path(greeter_logo).suffix.lower())
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(greeter_logo, dest)
             logo_path = "/" + str(dest.relative_to(self.rootfs))
@@ -521,6 +551,9 @@ class Branding:
                          "General", {"background": bg_path, "type": "image"})
         if dm == "gdm3" or (self.rootfs / "usr/sbin/gdm3").exists():
             if logo_path:
+                # Debian's GDM reads its greeter settings from this dconf file, which wins over schemas.
+                _dconf_set(self.rootfs / "etc/gdm3/greeter.dconf-defaults", "org/gnome/login-screen",
+                           "logo", "'{}'".format(logo_path))
                 (self.rootfs / "usr/share/glib-2.0/schemas/91_eduka-customizer-gdm.gschema.override").write_text(
                     "[org.gnome.login-screen]\nlogo='{}'\n".format(logo_path))
                 self.chroot.run(["glib-compile-schemas", "/usr/share/glib-2.0/schemas"],

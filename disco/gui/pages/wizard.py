@@ -566,11 +566,13 @@ class WizardPage(Page):
         data = self.recipe()
         kind = self.src_kind.currentData()
         folder = self.folder.text().strip()
-        if kind != "current" or not self.project or str(self.project.path) != os.path.realpath(folder):
+        same = bool(self.project) and str(self.project.path) == os.path.realpath(folder)
+        if kind != "current" or not same:
             if kind == "current":
                 kind = "iso"
-            if not self.main.open_project(folder, create=not Path(folder, "project.json").exists(),
-                                          name=self.w_name.text().strip()):
+            # The project that is open already stays open (opening it twice would fail on its own lock).
+            if not same and not self.main.open_project(folder, create=not Path(folder, "project.json").exists(),
+                                                       name=self.w_name.text().strip()):
                 return
         proj = self.main.project
         if kind in ("iso", "bootstrap") and proj.has_rootfs():

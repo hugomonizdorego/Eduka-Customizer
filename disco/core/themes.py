@@ -207,13 +207,39 @@ class Themes:
             pass
         get = lambda k: cp.get("Settings", k, fallback="")
         cursor = ""
-        idx = self.rootfs / "usr/share/icons/default/index.theme"
-        if idx.exists():
+        # Debian links this file to the x-cursor-theme alternative with an absolute path:
+        # follow it inside the image, never on this computer.
+        from disco.core.distro import resolve_in_root
+        idx = resolve_in_root(self.rootfs, "usr/share/icons/default/index.theme")
+        if idx and idx.is_file():
             m = re.search(r"(?m)^Inherits=(\S+)", idx.read_text(errors="replace"))
             cursor = m.group(1) if m else ""
         return {"gtk": get("gtk-theme-name"), "icons": get("gtk-icon-theme-name"),
                 "cursor": cursor or get("gtk-cursor-theme-name"), "font": get("gtk-font-name"),
                 "dark": get("gtk-application-prefer-dark-theme") in ("1", "true")}
+
+    CURSOR_FILE = "etc/X11/cursors/disco.theme"
+
+    def _set_cursor(self, cursor):
+        """The default cursor, the Debian way: an x-cursor-theme alternative of our own
+        (/usr/share/icons/default/index.theme points to it), so packages keep working.
+        Never written through the link, which is absolute and would lead to this computer."""
+        r = self.rootfs
+        own = r / self.CURSOR_FILE
+        own.parent.mkdir(parents=True, exist_ok=True)
+        own.write_text("[Icon Theme]\nInherits={}\n".format(cursor))
+        idx = r / "usr/share/icons/default/index.theme"
+        if (r / "usr/bin/update-alternatives").exists() and (r / "var/lib/dpkg").is_dir():
+            target = "/" + self.CURSOR_FILE
+            with Chroot(r) as ch:
+                ch.run(["update-alternatives", "--install", "/usr/share/icons/default/index.theme",
+                        "x-cursor-theme", target, "95"], quiet=True)
+                ch.run(["update-alternatives", "--set", "x-cursor-theme", target], quiet=True)
+            return
+        if idx.is_symlink():
+            idx.unlink()
+        idx.parent.mkdir(parents=True, exist_ok=True)
+        idx.write_text(own.read_text())
 
     # Apply --------------------------------------------------------------
     def apply(self, gtk="", icons="", cursor="", font="", dark=False, lxqt_theme="",
@@ -254,9 +280,7 @@ class Themes:
             (r / "etc/gtk-2.0").mkdir(parents=True, exist_ok=True)
             (r / "etc/gtk-2.0/gtkrc").write_text("\n".join(gtk2) + "\n")
         if cursor:
-            idx = r / "usr/share/icons/default/index.theme"
-            idx.parent.mkdir(parents=True, exist_ok=True)
-            idx.write_text("[Icon Theme]\nInherits={}\n".format(cursor))
+            self._set_cursor(cursor)
             (r / "etc/X11/Xresources").mkdir(parents=True, exist_ok=True)
             (r / "etc/X11/Xresources/90-eduka-cursor").write_text(
                 "Xcursor.theme: {}\nXcursor.size: {}\n".format(cursor, cursor_size))

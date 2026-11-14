@@ -16,9 +16,8 @@ lost+found
 swapfile
 swap.img
 
-# Chroot helpers
+# Chroot helpers (the build also refuses to start while a chroot is still in use)
 etc/resolv.conf.eduka-backup
-usr/sbin/policy-rc.d.eduka
 
 # Machine specific data
 etc/fstab.d/*

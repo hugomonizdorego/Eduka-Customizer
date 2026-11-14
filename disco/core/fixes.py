@@ -48,8 +48,30 @@ def _remove_policy(project):
 
 
 def _unmount(project):
-    from disco.core.chroot import unmount_all
-    unmount_all(project.rootfs)
+    # force_release also forgets the users of the chroot, so the next one mounts everything again.
+    from disco.core.chroot import Chroot
+    Chroot(project.rootfs).force_release()
+
+
+# GRUB for the processor of the image (the BIOS GRUB exists for PCs only).
+GRUB_PACKAGES = {"amd64": ["grub-efi-amd64-bin", "grub-pc-bin"], "i386": ["grub-efi-ia32-bin", "grub-pc-bin"],
+                 "arm64": ["grub-efi-arm64-bin"], "armhf": ["grub-efi-arm-bin"],
+                 "riscv64": ["grub-efi-riscv64-bin"]}
+
+
+def _arch(project):
+    from disco.core.distro import elf_arch
+    return project.state.get("distro", {}).get("arch") or elf_arch(project.rootfs) or "amd64"
+
+
+def _install_grub(project):
+    _install("grub2-common", "efibootmgr", *GRUB_PACKAGES.get(_arch(project), []))(project)
+
+
+def _install_kernel(project):
+    from disco.core import platforms
+    plat = platforms.of_project(project)
+    _install(platforms.kernel_package(_arch(project), plat.id if plat.arch == _arch(project) else None))(project)
 
 
 def _host_tools(project):
@@ -152,10 +174,10 @@ RULES = [
     (r"choose the boot loader again|is chosen but not installed in the image",
      "Set up the chosen boot loader again", lambda m: _boot_loader_again),
     (r"(efistub|syslinux) needs /", "Install the {1} packages", lambda m: _install_loader_tools(m.group(1))),
-    (r"(?:grub|sb-shim) needs /usr/sbin/grub-install", "Install GRUB (grub2-common, grub-efi-amd64-bin, grub-pc-bin, "
-     "efibootmgr)", lambda m: _install("grub2-common", "grub-efi-amd64-bin", "grub-pc-bin", "efibootmgr")),
+    (r"(?:grub|sb-shim) needs /usr/sbin/grub-install", "Install GRUB for the processor of the image (grub2-common, "
+     "the GRUB EFI and BIOS files, efibootmgr)", lambda m: _install_grub),
     (r"systemd-boot needs", "Install systemd-boot", lambda m: _install("systemd-boot")),
-    (r"refind needs", "Install rEFInd", lambda m: _install("refind")),
+    (r"refind needs", "Install rEFInd", lambda m: _install_loader_tools("refind")),
     (r"efibootmgr is not installed", "Install efibootmgr", lambda m: _install("efibootmgr")),
     (r"needs (mkfs\.\w+) \(([\w.+-]+)\)", "Install {2}", lambda m: _install(m.group(2))),
     (r"'remove: (\S+)' is not installed", "Change 'remove: {1}' to 'try_remove'", lambda m: _try_remove(m.group(1))),
@@ -187,7 +209,7 @@ RULES = [
      lambda m: _live_stack),
     (r"(live-config-\w+) is missing: live-config", "Install {1}", lambda m: _install(m.group(1))),
     (r"elogind is missing", "Install elogind and libpam-elogind", lambda m: _install("elogind", "libpam-elogind")),
-    (r"No kernel in /boot", "Install the Debian kernel (linux-image-amd64)", lambda m: _install("linux-image-amd64")),
+    (r"No kernel in /boot", "Install the Debian kernel for the processor of the image", lambda m: _install_kernel),
 ]
 
 

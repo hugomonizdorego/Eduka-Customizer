@@ -17,7 +17,6 @@ installed into the image. Their Debian source trees live in
 PROJECT/branding/ and can be edited and rebuilt, or published later.
 """
 
-import glob
 import json
 import os
 import re
@@ -31,6 +30,9 @@ from disco.core.distro import format_os_release
 from disco.core.log import log
 
 SAFE_ID = re.compile(r"^[a-z0-9][a-z0-9-]{1,30}$")
+# IDs whose files (/etc/<id>_version, distro-info/<id>.csv) belong to the base system's packages.
+RESERVED_IDS = {"debian", "devuan", "ubuntu", "linux"}
+DEB_VERSION = re.compile(r"^[0-9][A-Za-z0-9.+~]*$")
 
 # Images shipped by Debian (desktop-base, plymouth, icon themes) that show
 # the Debian swirl. Each one found in the image is replaced by your logo.
@@ -52,6 +54,27 @@ ALTERNATIVES = [
     ("desktop-grub", "/usr/share/images/desktop-base/desktop-grub.png", "grub.png"),
     ("desktop-login-background", "/usr/share/images/desktop-base/login-background.png", "login.png"),
 ]
+
+
+def glob_in_root(rootfs, pattern):
+    """glob() of *pattern* inside the image: folders that are links are followed inside the image."""
+    from disco.core.distro import resolve_in_root
+    rootfs = Path(rootfs)
+    current = [rootfs]
+    parts = Path(pattern).parts
+    for i, part in enumerate(parts):
+        last = i == len(parts) - 1
+        nxt = []
+        for folder in current:
+            for c in (sorted(folder.glob(part)) if any(ch in part for ch in "*?[") else [folder / part]):
+                if c.is_symlink() and not last:
+                    real = resolve_in_root(rootfs, str(c.relative_to(rootfs)))
+                    if real is not None and real.is_dir():
+                        nxt.append(real)
+                elif c.is_symlink() or c.exists():
+                    nxt.append(c)
+        current = nxt
+    return current
 
 
 @dataclass
@@ -88,8 +111,10 @@ class BrandingSpec:
                    version=ident.get("version") or project.distro.version_id or "1.0",
                    codename=ident.get("codename", ""), home_url=ident.get("home_url", ""),
                    support_url=ident.get("support_url", ""), bug_url=ident.get("bug_url", ""))
+        identity_keys = {"name", "os_id", "version", "codename", "home_url", "support_url", "bug_url"}
         for k, v in project.state.get("branding", {}).get("spec", {}).items():
-            if hasattr(spec, k):
+            # Name, ID and version always come from the Identity page (they may have changed since).
+            if hasattr(spec, k) and k not in identity_keys:
                 setattr(spec, k, v)
         if not spec.maintainer:
             spec.maintainer = "{} developers <{}@localhost>".format(spec.name or "Distribution", spec.os_id or "root")
@@ -98,6 +123,12 @@ class BrandingSpec:
     def validate(self):
         if not SAFE_ID.match(self.os_id):
             raise ValueError("The OS ID must be lower case letters, digits and '-' (e.g. mylinux)")
+        if self.os_id in RESERVED_IDS:
+            raise ValueError("The OS ID '{0}' belongs to the base system (base-files owns /etc/{0}_version): "
+                             "choose your own ID on the Identity page, for example mylinux".format(self.os_id))
+        if not DEB_VERSION.match(self.version or ""):
+            raise ValueError("The version '{}' cannot be a package version: start with a digit and use only "
+                             "letters, digits and . + ~ (for example 1.0 or 2.1~beta)".format(self.version))
         if not self.name.strip():
             raise ValueError("The system name is empty")
         for c in (self.accent, self.dark):
@@ -165,9 +196,8 @@ class DistroBranding:
         divert("/etc/issue.net", pretty + "\n")
         etc = files / "etc"
         etc.mkdir(parents=True, exist_ok=True)
-        divert("/etc/lsb-release", 'DISTRIB_ID="{}"\nDISTRIB_RELEASE="{}"\nDISTRIB_CODENAME="{}"\n'
-                                   'DISTRIB_DESCRIPTION="{}"\n'.format(spec.name, spec.version,
-                                                                      info.debian_codename, pretty))
+        from disco.core.distro import format_lsb_release
+        divert("/etc/lsb-release", format_lsb_release(spec.name, spec.version, info.debian_codename or "", pretty))
         (etc / (spec.os_id + "_version")).write_text(spec.version + "\n")
         di = files / "usr/share/distro-info"
         di.mkdir(parents=True)
@@ -268,11 +298,12 @@ class DistroBranding:
                           (256, 256), fit="contain")
 
     def debian_logo_files(self):
-        rootfs = self.project.rootfs
+        """The Debian logos of the image, each once, by its real path inside the image
+        (vendor-logos is an alternative with an absolute link: never followed on this computer)."""
+        rootfs = Path(self.project.rootfs)
         found = set()
         for pattern in DEBIAN_LOGOS:
-            for p in glob.glob(str(rootfs / pattern)):
-                path = Path(p)
+            for path in glob_in_root(rootfs, pattern):
                 if path.suffix.lower() in IMAGE_EXT and (path.is_file() or path.is_symlink()):
                     found.add("/" + str(path.relative_to(rootfs)))
         return sorted(found)

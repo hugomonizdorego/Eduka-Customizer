@@ -1,0 +1,87 @@
+#!/bin/sh
+# disco-firstboot - the first start of an SD-card image made with D!sco (GPL-3.0-or-later).
+#
+# Runs once, as root, early at boot:
+#   * grows the system partition and its file system to the whole SD card
+#   * makes new SSH host keys and a new machine id (images ship without them)
+#   * applies settings written into sysconf.txt on the boot partition (any computer
+#     can edit it before the first start): hostname=..., root_authorized_key=...
+# Then it marks itself done and never runs again.
+
+set -u
+DONE=/var/lib/disco-firstboot.done
+SYSCONF=/boot/firmware/sysconf.txt
+[ -e "$DONE" ] && exit 0
+
+say() {
+    echo "disco-firstboot: $*"
+    command -v logger >/dev/null 2>&1 && logger -t disco-firstboot "$*"
+    return 0
+}
+
+grow_root() {
+    root=$(findmnt -no SOURCE / 2>/dev/null)
+    [ -b "$root" ] || { say "the system partition was not found"; return 0; }
+    name=$(basename "$(readlink -f "$root")")
+    part=$(cat "/sys/class/block/$name/partition" 2>/dev/null)
+    disk=$(lsblk -no PKNAME "$root" 2>/dev/null | head -n1)
+    [ -n "$part" ] && [ -n "$disk" ] || { say "cannot find the card of $root"; return 0; }
+    disk=/dev/$disk
+    # The system partition is the last one: let it end where the card ends.
+    if echo ", +" | sfdisk --force --no-reread -q -N "$part" "$disk" >/dev/null 2>&1; then
+        partx -u "$disk" 2>/dev/null || true
+        if resize2fs "$root" >/dev/null 2>&1; then
+            say "the system partition now uses the whole card"
+        else
+            say "resize2fs could not grow $root"
+        fi
+    else
+        say "the partition table of $disk was not changed"
+    fi
+}
+
+new_keys() {
+    if [ ! -s /etc/machine-id ]; then
+        if command -v systemd-machine-id-setup >/dev/null 2>&1; then
+            systemd-machine-id-setup >/dev/null 2>&1
+        elif command -v dbus-uuidgen >/dev/null 2>&1; then
+            dbus-uuidgen > /etc/machine-id
+        fi
+    fi
+    if command -v ssh-keygen >/dev/null 2>&1 && [ -d /etc/ssh ]; then
+        if ! ls /etc/ssh/ssh_host_*_key >/dev/null 2>&1; then
+            ssh-keygen -A >/dev/null 2>&1 && say "new SSH host keys"
+        fi
+    fi
+}
+
+apply_sysconf() {
+    [ -r "$SYSCONF" ] || return 0
+    tr -d '\r' < "$SYSCONF" | while IFS='=' read -r key value; do
+        case "$key" in
+            hostname)
+                case "$value" in
+                    ''|*[!a-zA-Z0-9-]*) say "hostname '$value' is not valid" ;;
+                    *)
+                        echo "$value" > /etc/hostname
+                        sed -i "s/^127\.0\.1\.1[[:space:]].*/127.0.1.1\t$value/" /etc/hosts
+                        hostname "$value" 2>/dev/null
+                        say "hostname: $value" ;;
+                esac ;;
+            root_authorized_key)
+                [ -n "$value" ] || continue
+                mkdir -p /root/.ssh && chmod 700 /root/.ssh
+                echo "$value" >> /root/.ssh/authorized_keys
+                chmod 600 /root/.ssh/authorized_keys
+                say "an SSH key for root was added" ;;
+        esac
+    done
+    # The settings are applied; do not apply them again (and do not keep the key on the card).
+    sed -i 's/^\(hostname\|root_authorized_key\)=/#\1 (applied)=/' "$SYSCONF" 2>/dev/null || true
+}
+
+grow_root
+new_keys
+apply_sysconf
+mkdir -p "$(dirname "$DONE")" && touch "$DONE"
+exit 0

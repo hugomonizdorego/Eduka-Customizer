@@ -173,12 +173,12 @@ def test_keep_only_iso(tmp_path, monkeypatch):
     (p.output / "my-1.0.iso").write_bytes(b"iso")
     (p.output / "my-1.0.iso.sha256").write_text("abc  my-1.0.iso\n")
     monkeypatch.setattr(chroot.Chroot, "force_release", lambda self: None)
-    monkeypatch.setattr(chroot, "mounts_under", lambda path: ["/x/rootfs/proc"])
-    monkeypatch.setattr(chroot, "unmount_all", lambda path: None)
+    monkeypatch.setattr(chroot, "mounts_under", lambda path, include_self=True: ["/x/rootfs/proc"])
+    monkeypatch.setattr(chroot, "unmount_all", lambda path, include_self=True: None)
     with pytest.raises(RuntimeError):
         projectfiles.keep_only_iso(p)  # still mounted: nothing is deleted
     assert (p.rootfs / "etc/hostname").exists() and (p.output / "my-1.0.iso").exists()
-    monkeypatch.setattr(chroot, "mounts_under", lambda path: [])
+    monkeypatch.setattr(chroot, "mounts_under", lambda path, include_self=True: [])
     isos, own = projectfiles.keep_only_iso(p)
     assert sorted(x.name for x in p.path.iterdir()) == ["my-1.0.iso", "my-1.0.iso.sha256", "notes.txt"]
     assert own == ["notes.txt"] and [x.name for x in isos] == ["my-1.0.iso", "my-1.0.iso.sha256"]

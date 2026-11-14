@@ -157,6 +157,9 @@ class Flatpak:
             for p in (lst, unit, script, wants):
                 if p.exists() or p.is_symlink():
                     p.unlink()
+            # Recipes are exported from this list: forget the removed apps there too.
+            self.project.state.setdefault("flatpak", {})["firstboot"] = []
+            self.project.save()
             log.info("First-boot Flatpak installation disabled")
             return
         if not self.available():

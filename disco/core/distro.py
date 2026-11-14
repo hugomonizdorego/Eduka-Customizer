@@ -101,6 +101,12 @@ def format_os_release(data):
     return "\n".join(lines) + "\n"
 
 
+def format_lsb_release(distrib_id, release, codename, description):
+    """/etc/lsb-release; scripts source it, so quotes, $ and ` are escaped like in os-release."""
+    return format_os_release({"DISTRIB_ID": distrib_id, "DISTRIB_RELEASE": release,
+                              "DISTRIB_CODENAME": codename, "DISTRIB_DESCRIPTION": description})
+
+
 def read_os_release(rootfs):
     rootfs = Path(rootfs)
     for rel in ("etc/os-release", "usr/lib/os-release"):
@@ -194,7 +200,21 @@ def detect_suite(debian_codename, debian_version, suites, codenames=None):
     return "unknown"
 
 
+def dpkg_arch(rootfs):
+    """The Debian architecture of the image as dpkg knows it (dpkg's own package), or ''."""
+    status = Path(rootfs, "var/lib/dpkg/status")
+    try:
+        text = status.read_text(errors="replace")
+    except OSError:
+        return ""
+    m = re.search(r"(?ms)^Package: dpkg\n(?:[^\n]+\n)*?Architecture: (\S+)", text)
+    return m.group(1) if m and m.group(1) != "all" else ""
+
+
 def elf_arch(rootfs):
+    arch = dpkg_arch(rootfs)
+    if arch:
+        return arch
     for rel in ("usr/bin/dpkg", "bin/sh", "usr/bin/env"):
         p = resolve_in_root(rootfs, rel)
         if not p or not p.is_file():
@@ -210,6 +230,15 @@ def elf_arch(rootfs):
         machine = struct.unpack(endian + "H", head[18:20])[0]
         if machine == 0x03 or machine == 0x3E:
             return "amd64" if head[4] == 2 else "i386"
+        if machine == 0x28:
+            # 32-bit ARM: the hard-float ABI flag tells armhf from armel.
+            try:
+                with open(p, "rb") as fh:
+                    fh.seek(36)
+                    flags = struct.unpack(endian + "I", fh.read(4))[0]
+                return "armhf" if flags & 0x400 else "armel"
+            except (OSError, struct.error):
+                return "armhf"
         return ELF_MACHINES.get(machine, "unknown")
     return ""
 
@@ -278,11 +307,14 @@ def validate(info, rootfs=None):
             raise UnsupportedDistro("This filesystem identifies itself as Ubuntu (/etc/lsb-release).")
     if not info.debian_version and not info.is_devuan:
         raise UnsupportedDistro("/etc/debian_version is missing: this is not a Debian system.")
-    if info.id not in ALLOWED_IDS and not info.is_edukasaun and "debian" not in info.id_like:
+    # Devuan derivatives often say only ID_LIKE=devuan (gnuinos, Refracta...): detect() marks them is_devuan.
+    if info.id not in ALLOWED_IDS and not info.is_edukasaun and "debian" not in info.id_like and \
+            not info.is_devuan:
         raise UnsupportedDistro(
             "'{}' is not supported. Debian, Devuan and their derivatives (such as LMDE) "
             "can be customized.".format(info.pretty_name or info.id or "Unknown system"))
-    if info.suite == "oldstable" and not settings().getbool("debian", "allow_oldstable"):
+    # 32-bit PCs have their last kernels in Debian 12: oldstable is fine for them.
+    if info.suite == "oldstable" and not settings().getbool("debian", "allow_oldstable") and info.arch != "i386":
         raise UnsupportedDistro(
             "Debian oldstable ({}) is not supported. Upgrade the base to stable, testing or sid "
             "first, or set allow_oldstable=yes in the settings.".format(info.debian_codename))

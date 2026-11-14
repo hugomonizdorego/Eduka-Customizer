@@ -85,8 +85,8 @@ def keep_only_iso(project, progress=None):
     if not (root / "project.json").is_file() or len(root.parts) < 3:
         raise RuntimeError("{} is not a project folder: nothing was deleted".format(root))
     Chroot(project.rootfs).force_release()
-    unmount_all(root)
-    left = mounts_under(root)
+    unmount_all(root, include_self=False)   # the project folder may be the mount point of a disk
+    left = mounts_under(root, include_self=False)
     if left:
         raise RuntimeError("Still mounted, nothing was deleted: {}".format(", ".join(left)))
     moved = []

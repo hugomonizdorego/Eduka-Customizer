@@ -1,0 +1,30 @@
+{
+ "name": "Raspberry Pi Lite, no desktop (Pi 3, 4, 400)",
+ "description": "A small SD-card image without a desktop for servers and electronics: SSH, Avahi (name.local), GPIO and I2C tools.",
+ "builder": {
+  "distro_name": "My Pi Server",
+  "platform": "rpi-arm64",
+  "family": "debian",
+  "suite": "stable",
+  "desktop": "",
+  "dm": "",
+  "init": "systemd",
+  "installer": "none",
+  "method": "disco"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "openssh-server",
+    "avahi-daemon",
+    "python3-gpiozero",
+    "i2c-tools",
+    "vim-tiny",
+    "tmux",
+    "ufw"
+   ],
+   "comment": "Server and electronics tools."
+  }
+ }
+}

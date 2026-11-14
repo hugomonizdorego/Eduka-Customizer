@@ -3,6 +3,7 @@
 import hashlib
 import os
 import re
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -75,12 +76,26 @@ def download(suite, filename, dest_dir, progress=None):
         return target
     url = base_url(suite) + filename
     done = part.stat().st_size if part.exists() else 0
+    if done and _sha256(part) == expected:
+        # Stopped while the checksum was verified: the file is complete (asking for more gives HTTP 416).
+        os.replace(part, target)
+        log.info("Saved %s", target)
+        return target
     headers = dict(UA)
     if done:
         headers["Range"] = "bytes={}-".format(done)
     log.info("Downloading %s", url)
     req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=120) as resp:
+    try:
+        resp = urllib.request.urlopen(req, timeout=120)
+    except urllib.error.HTTPError as e:
+        if e.code != 416 or not done:
+            raise
+        # The part file is longer than the image (or the server cannot resume): start again.
+        part.unlink()
+        done = 0
+        resp = urllib.request.urlopen(urllib.request.Request(url, headers=dict(UA)), timeout=120)
+    with resp:
         if done and resp.status != 206:
             done = 0
         total = int(resp.headers.get("Content-Length", "0")) + done

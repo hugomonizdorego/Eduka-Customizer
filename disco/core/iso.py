@@ -189,7 +189,7 @@ def extract(project, iso, progress=None):
         runner.run(["unsquashfs", "-f", "-d", project.rootfs, squash], progress=progress)
     finally:
         if mounted:
-            runner.run(["umount", "-l", mnt], quiet=True, check=False)
+            runner.run(["umount", "-l", mnt], quiet=True, check=False, cancellable=False)
         shutil.rmtree(mnt, ignore_errors=True)
 
     info = distro.detect(project.rootfs)
@@ -211,8 +211,19 @@ def extract(project, iso, progress=None):
 
 
 def load_replay(project):
+    """The xorriso boot options of the source ISO. The boot images they name are looked
+    up in this project's boot folder, so a moved or renamed project still builds."""
     p = project.bootdir / "replay.json"
     try:
-        return json.loads(p.read_text())
+        args = json.loads(p.read_text())
     except (OSError, ValueError):
         return []
+    out = []
+    for arg in args:
+        if isinstance(arg, str) and arg.startswith("--interval:local_fs:"):
+            parts = arg.split(":", 4)
+            if len(parts) == 5 and Path(parts[4]).name.startswith("boot-interval-"):
+                parts[4] = str(project.bootdir / Path(parts[4]).name)
+                arg = ":".join(parts)
+        out.append(arg)
+    return out

@@ -52,6 +52,13 @@ def _empty_dir(path):
             _rm(p)
 
 
+def chosen_kernel(project):
+    """The kernel the ISO starts: the one chosen on the Kernel page, else the newest."""
+    ks = kernels(project.rootfs)
+    wanted = project.state.get("boot", {}).get("kernel")
+    return wanted if wanted in ks else (ks[-1] if ks else None)
+
+
 def kernels(rootfs):
     """Installed kernel versions, newest last."""
     import re
@@ -116,7 +123,8 @@ def run(project, options=None):
     with chroot:
         if opts.get("old_kernels"):
             ks = kernels(rootfs)
-            old = ["linux-image-" + k for k in ks[:-1]]
+            keep = {ks[-1] if ks else None, chosen_kernel(project)}   # never the kernel chosen for the ISO
+            old = ["linux-image-" + k for k in ks if k not in keep]
             if old:
                 log.info("Removing old kernels: %s", " ".join(old))
                 chroot.run(APT + ["purge"] + old, check=False)

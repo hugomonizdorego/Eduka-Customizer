@@ -1,0 +1,38 @@
+{
+ "name": "Raspberry Pi desktop (Pi 3, 4, 400)",
+ "description": "An SD-card image for the Raspberry Pi 3/4/400 (64-bit): Xfce with LightDM, Firefox, Thonny and GPIO tools. Write it with dd or Raspberry Pi Imager.",
+ "builder": {
+  "distro_name": "My Pi Linux",
+  "platform": "rpi-arm64",
+  "family": "debian",
+  "suite": "stable",
+  "desktop": "xfce",
+  "dm": "lightdm",
+  "init": "systemd",
+  "installer": "none",
+  "method": "disco"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "firefox-esr",
+    "thonny",
+    "python3-gpiozero",
+    "i2c-tools",
+    "mousepad",
+    "ristretto",
+    "vlc"
+   ],
+   "comment": "Programs for the menu."
+  },
+  "35-remote-access.list": {
+   "title": "Remote access",
+   "packages": [
+    "openssh-server",
+    "avahi-daemon"
+   ],
+   "comment": "Log in over the network (ssh pi.local). Add your key in sysconf.txt on the boot partition."
+  }
+ }
+}

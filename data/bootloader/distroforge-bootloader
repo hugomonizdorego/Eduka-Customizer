@@ -75,11 +75,12 @@ partnum_of() {
     cat "/sys/class/block/$(basename "$(readlink -f "$1")")/partition" 2>/dev/null
 }
 
-# Kernel options that find the root file system.
+# Kernel options that find the root file system. Callers check the result: it runs in $(...),
+# where die would only leave the subshell.
 root_options() {
     uuid=$(findmnt -no UUID / 2>/dev/null)
     [ -n "$uuid" ] || uuid=$(blkid -s UUID -o value "$(dev_of /)" 2>/dev/null)
-    [ -n "$uuid" ] || die "cannot find the UUID of the root file system"
+    [ -n "$uuid" ] || { echo "distroforge-bootloader: cannot find the UUID of the root file system" >&2; return 1; }
     opts="root=UUID=$uuid ro"
     fsroot=$(findmnt -no FSROOT / 2>/dev/null)
     if [ "$(findmnt -no FSTYPE /)" = btrfs ] && [ -n "$fsroot" ] && [ "$fsroot" != / ]; then
@@ -136,8 +137,9 @@ efistub_install() {
     done
     initrd=""
     [ -e "$esp/EFI/$id/initrd.img" ] && initrd=" initrd=\\EFI\\$id\\initrd.img"
+    root=$(root_options) && [ -n "$root" ] || { say "the root file system was not found"; return 1; }
     efibootmgr -q -c -d "$disk" -p "$num" -L "$label" -l "\\EFI\\$id\\vmlinuz.efi" \
-        -u "$(root_options) $CMDLINE$initrd" || { say "efibootmgr failed"; return 1; }
+        -u "$root $CMDLINE$initrd" || { say "efibootmgr failed"; return 1; }
     say "UEFI entry '$label' starts the kernel directly (EFISTUB)"
     ACTIVE=efistub
     return 0
@@ -158,7 +160,7 @@ syslinux_config() {
     ui=menu.c32
     [ "$SYSLINUX_GRAPHICAL" = yes ] && ui=vesamenu.c32
     name=$(os_name)
-    root=$(root_options)
+    root=$(root_options) && [ -n "$root" ] || { say "the root file system was not found: syslinux.cfg not written"; return 1; }
     first=1
     {
         echo "# Written by distroforge-bootloader; it is written again after every kernel update."
@@ -212,7 +214,7 @@ syslinux_install() {
     for m in ldlinux.c32 libcom32.c32 libutil.c32 menu.c32 vesamenu.c32; do
         [ -e "$mods/$m" ] && cp -f "$mods/$m" /boot/syslinux/
     done
-    syslinux_config
+    syslinux_config || return 2
     # The partition table type (sfdisk reads it itself; lsblk needs udev).
     pt=$(sfdisk -d "$disk" 2>/dev/null | sed -n 's/^label: //p')
     [ -n "$pt" ] || pt=$(blkid -p -s PTTYPE -o value "$disk" 2>/dev/null)
@@ -313,7 +315,7 @@ refind_configure() {
         done < /boot/refind_linux.conf
         mv "$tmp" /boot/refind_linux.conf
     else
-        root=$(root_options)
+        root=$(root_options) && [ -n "$root" ] || { say "the root file system was not found"; return 1; }
         printf '"Boot with standard options" "%s %s"\n"Boot to single-user mode" "%s single"\n' \
             "$root" "$CMDLINE" "$root" > /boot/refind_linux.conf
     fi
@@ -352,11 +354,24 @@ do_install() {
 
 do_update() {
     [ "$INSTALLED" = 1 ] || exit 0
+    # Run by the kernel and initramfs hooks: a problem here must not break the package
+    # installation (a chroot or a rescue system has no EFI partition mounted, for example).
     case "$ACTIVE" in
-        efistub) efistub_files ;;
-        syslinux) [ -d /boot/syslinux ] && syslinux_config ;;
+        efistub)
+            if esp_dir >/dev/null; then
+                ( efistub_files ) || say "warning: the kernel was not copied to the EFI system partition"
+            else
+                say "warning: no EFI system partition is mounted: run 'distroforge-bootloader update' later"
+            fi ;;
+        syslinux)
+            if [ -d /boot/syslinux ]; then
+                ( syslinux_config ) || say "warning: syslinux.cfg was not written"
+            else
+                say "warning: /boot/syslinux is missing: syslinux.cfg was not written"
+            fi ;;
         *) ;;
     esac
+    exit 0
 }
 
 case "${1:-}" in

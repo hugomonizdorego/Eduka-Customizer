@@ -1,0 +1,37 @@
+{
+ "name": "ARM64 server ISO (UEFI machines)",
+ "description": "A live and installable ISO for 64-bit ARM computers with UEFI (servers, virtual machines, some laptops): no desktop, SSH.",
+ "builder": {
+  "distro_name": "My ARM Server",
+  "platform": "arm64-efi",
+  "family": "debian",
+  "suite": "stable",
+  "desktop": "",
+  "dm": "",
+  "init": "systemd",
+  "installer": "calamares",
+  "method": "disco"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "openssh-server",
+    "tmux",
+    "vim-tiny",
+    "ufw",
+    "unattended-upgrades"
+   ],
+   "comment": "Server tools."
+  },
+  "40-installer.list": {
+   "title": "Installer",
+   "on": false,
+   "packages": [
+    "calamares",
+    "calamares-settings-debian"
+   ],
+   "comment": "Calamares needs a desktop: switched off for this server ISO."
+  }
+ }
+}

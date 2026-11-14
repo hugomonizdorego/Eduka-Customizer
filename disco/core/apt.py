@@ -200,9 +200,21 @@ class Sources:
             stanzas = debian_sources(suite, **kw)
         own = "devuan.sources" if devuan else "debian.sources"
         legacy = self.rootfs / "etc/apt/sources.list"
-        if legacy.exists() and re.search(r"(?m)^\s*deb\s", legacy.read_text(errors="replace")):
-            shutil.move(str(legacy), str(legacy) + ".eduka-old")
-            legacy.write_text("# Moved to /etc/apt/sources.list.d/{} by D!sco\n".format(own))
+        if legacy.exists():
+            # Only the Debian/Devuan lines move to the new file; other repositories stay where they are.
+            text = legacy.read_text(errors="replace")
+            keep, moved = [], False
+            for line in text.splitlines():
+                m = re.match(r"^\s*(deb|deb-src)\s+(?:\[[^\]]*\]\s+)?(\S+)", line)
+                if m and DISTRO_URI.search(m.group(2)):
+                    moved = True
+                    continue
+                keep.append(line)
+            if moved:
+                shutil.copy2(str(legacy), str(legacy) + ".eduka-old")
+                others = [l for l in keep if re.match(r"^\s*(deb|deb-src)\s", l)]
+                legacy.write_text("# The Debian entries moved to /etc/apt/sources.list.d/{} (D!sco)\n{}".format(
+                    own, "\n".join(keep).strip() + "\n" if others else ""))
         for p in self.files():
             if p.suffix == ".sources" and p.name != own:
                 stz = parse_deb822(p.read_text(errors="replace"))
@@ -256,6 +268,11 @@ APT = ["apt-get", "-y", "-o", "Dpkg::Options::=--force-confdef",
        "-o", "Dpkg::Options::=--force-confold", "-o", "APT::Color=0",
        "-o", "Dpkg::Progress-Fancy=0"]
 _PKG = re.compile(r"^[a-z0-9][a-z0-9+.\-]*(:[a-z0-9]+)?([=/][A-Za-z0-9.+~:\-]+)?$")
+
+
+# Mirrors of the distribution itself (any Debian or Devuan mirror, the security archive, the CD).
+DISTRO_URI = re.compile(r"(?i)^cdrom:|(^|[/.])(debian|devuan)\.(org|net)(/|$)|/(debian|debian-security|devuan|"
+                        r"merged)/?$")
 
 
 def _check_names(packages):

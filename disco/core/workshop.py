@@ -153,6 +153,8 @@ class Workshop:
         ctrl_file = root / "DEBIAN/control"
         st = parse_deb822(ctrl_file.read_text())[0]
         tag = tag or (self.project.state.get("identity", {}).get("id") or "custom")
+        # The tag becomes part of a Debian version: only letters, digits, '.', '+' and '~'.
+        tag = re.sub(r"[^A-Za-z0-9.+~]", "", tag) or "custom"
         version = debpkg.bump_version(st["Version"], tag)
         text = ctrl_file.read_text()
         text = re.sub(r"(?m)^Version:.*$", "Version: " + version, text)

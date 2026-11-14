@@ -20,7 +20,7 @@ GRUB_KEYS = ["GRUB_DEFAULT", "GRUB_SAVEDEFAULT", "GRUB_TIMEOUT", "GRUB_TIMEOUT_S
 # id: (title, description, repository or None, packages, architectures)
 THIRD_PARTY = {
     "backports": ("Debian backports", "Newer Debian kernel for stable (official, signed for Secure Boot).",
-                  None, ["linux-image-{arch}", "linux-headers-{arch}"], None),
+                  None, ["linux-image-{flavour}", "linux-headers-{flavour}"], None),
     "liquorix": ("Liquorix", "Desktop and gaming tuned kernel (liquorix.net). Not signed for Secure Boot.",
                  {"name": "liquorix", "uri": "https://liquorix.net/debian", "suite": "{codename}",
                   "components": "main", "key": "https://liquorix.net/liquorix-keyring.gpg"},
@@ -143,7 +143,10 @@ class Kernels:
         codename = info.debian_codename or info.codename
         if not codename:
             raise RuntimeError("Unknown Debian codename of the image")
-        packages = [p.format(arch=arch) for p in packages if headers or "headers" not in p]
+        # The kernel flavour of the processor: amd64, 686-pae (i386), arm64, armmp (armhf), riscv64...
+        from disco.core import platforms
+        flavour = platforms.kernel_package(arch)[len("linux-image-"):]
+        packages = [p.format(flavour=flavour) for p in packages if headers or "headers" not in p]
         if preset == "backports":
             if info.suite in ("testing", "sid") or codename == "sid":
                 raise ValueError("Backports exist only for Debian stable")

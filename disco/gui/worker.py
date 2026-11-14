@@ -41,12 +41,15 @@ class Task(QThread):
         try:
             result = self.func(self)
         except runner.Canceled as e:
+            runner.CANCEL.clear()   # clean-up after a cancel (and the next task) must run
             self.done.emit(False, None, str(e))
             return
         except Exception as e:  # report everything to the user
+            runner.CANCEL.clear()
             get_logger().error("Task '%s' failed: %s\n%s", self.name, e, traceback.format_exc())
             self.done.emit(False, None, str(e) or e.__class__.__name__)
             return
+        runner.CANCEL.clear()
         self.done.emit(True, result, "")
 
     # Callbacks usable from core code ----------------------------------

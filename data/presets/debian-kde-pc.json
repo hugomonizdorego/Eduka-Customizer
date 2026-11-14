@@ -1,0 +1,34 @@
+{
+ "name": "Debian KDE Plasma desktop (PC 64-bit)",
+ "description": "KDE Plasma with SDDM, many settings and effects. Installer: Calamares.",
+ "builder": {
+  "distro_name": "My Linux",
+  "platform": "pc64",
+  "family": "debian",
+  "suite": "stable",
+  "desktop": "kde",
+  "dm": "sddm",
+  "init": "systemd",
+  "installer": "calamares",
+  "method": "disco"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "firefox-esr",
+    "libreoffice",
+    "libreoffice-kf5",
+    "vlc",
+    "okular",
+    "kate",
+    "ark",
+    "kcalc",
+    "partitionmanager",
+    "gwenview",
+    "spectacle"
+   ],
+   "comment": "Programs for the menu."
+  }
+ }
+}

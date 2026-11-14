@@ -750,8 +750,10 @@ class MainWindow(QMainWindow):
     def preview_keep(self):
         """End the preview and apply the same changes for real."""
         if self.preview_discard(quiet=True):
-            self.go("ReviewPage")
-            review = self.stack.currentWidget().current()
+            review = next((p for p in self.pages if p.__class__.__name__ == "ReviewPage"), None)
+            if review is None:
+                return
+            self.go("ReviewPage")   # shows it when its step is open; applying works either way
             for ch in self.pending:
                 ch["checked"] = True
             review.refresh()

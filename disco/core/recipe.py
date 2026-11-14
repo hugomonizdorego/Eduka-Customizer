@@ -290,9 +290,12 @@ def run_step(project, step, base, build=True):
 def export(project):
     """Create a recipe from the current project settings and history."""
     st = project.state
-    steps = [{"action": "identity", **{k: v for k, v in st["identity"].items()}},
-             {"action": "users", "live": _live_step(project)},
-             {"action": "language", **_language_step(st)}]
+    steps = []
+    if (st.get("identity") or {}).get("name"):
+        # A project that was never named has no identity to replay (applying it would fail).
+        steps.append({"action": "identity", **{k: v for k, v in st["identity"].items()}})
+    steps += [{"action": "users", "live": _live_step(project)},
+              {"action": "language", **_language_step(st)}]
     installs, removes = [], []
     for h in st.get("history", []):
         if h["action"] == "apt-install":

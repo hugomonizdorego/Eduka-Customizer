@@ -258,7 +258,35 @@ class DesktopManager:
             link.symlink_to(unit)
             if dm.get("greeter"):
                 self._lightdm_conf({"greeter-session": dm["greeter"]})
+        if dm_id == "greetd":
+            self.greetd_conf(self.project.state.get("desktop", {}).get("session"))
         self.project.record("display-manager", dm_id)
+
+    def greetd_conf(self, session_id=None):
+        """/etc/greetd/config.toml: tuigreet asks who logs in and starts the chosen session
+        (Debian's own file only starts a shell). The live user is logged in at once when
+        autologin is on (Users page)."""
+        r = Path(self.rootfs)
+        command = ""
+        entry = {s["id"]: s for s in sessions(r)}.get(session_id or "")
+        if entry and entry.get("exec"):
+            command = entry["exec"]
+        elif session_id:
+            command = session_id
+        command = re.sub(r"[^A-Za-z0-9 ._/=+-]", "", command).strip()
+        greeter = "tuigreet --time --remember --remember-user-session --asterisks"
+        if command:
+            greeter += " --cmd '{}'".format(command)
+        lines = ["# Written by D!sco: tuigreet starts the desktop (Desktop page).", "[terminal]", "vt = 7", "",
+                 "[default_session]", 'command = "{}"'.format(greeter), 'user = "_greetd"']
+        from disco.core.users import Users
+        live = Users(self.project).live()
+        if live.get("autologin") and command:
+            lines += ["", "# The live user starts the desktop at once.", "[initial_session]",
+                      'command = "{}"'.format(command), 'user = "{}"'.format(live["username"])]
+        conf = r / "etc/greetd/config.toml"
+        conf.parent.mkdir(parents=True, exist_ok=True)
+        conf.write_text("\n".join(lines) + "\n")
 
     def _lightdm_conf(self, values):
         p = Path(self.rootfs, "etc/lightdm/lightdm.conf.d/50-eduka-customizer.conf")
@@ -295,6 +323,9 @@ class DesktopManager:
                 cp.write(fh)
         # /etc/skel/.dmrc is honoured by several display managers.
         Path(self.rootfs, "etc/skel/.dmrc").write_text("[Desktop]\nSession={}\n".format(session_id))
+        if Path(self.rootfs, "usr/sbin/greetd").exists():
+            self.project.state.setdefault("desktop", {})["session"] = session_id
+            self.greetd_conf(session_id)
         # x-session-manager alternative for startx and fallbacks.
         entry = sess.get(session_id)
         if entry and entry["exec"]:

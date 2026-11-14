@@ -198,12 +198,13 @@ def set_titles(isodir, name):
 
         def fix(m):
             s = m.group(0)
+            s = re.sub(r"\b(?:Debian GNU/Linux |Debian )?Live system\b", lambda _m: name + " Live", s)
             s = s.replace("Debian GNU/Linux", name).replace("Debian Live", name + " Live")
-            s = re.sub(r"\bLive system\b", name + " Live", s)
             return s
+        # Replacements are functions: a title may contain backslashes, which re.sub would read as escapes.
         new = re.sub(r"(?im)^\s*(menuentry|submenu)\s+(['\"]).*?\2", fix, text)
         new = re.sub(r"(?im)^\s*menu\s+(label|title)\s.*$", fix, new)
-        new = re.sub(r'(?im)^(\s*title-text:\s*").*(")', r"\g<1>" + name + r"\2", new)
+        new = re.sub(r'(?im)^(\s*title-text:\s*").*(")', lambda m: m.group(1) + name + m.group(2), new)
         if new != text:
             f.write_text(new)
 
@@ -213,7 +214,8 @@ def set_timeout(isodir, seconds):
     for f in config_files(isodir):
         text = f.read_text(errors="replace")
         if f.parent.name in ("isolinux", "syslinux"):
-            new = re.sub(r"(?im)^(\s*timeout\s+)\d+", lambda m: m.group(1) + str(seconds * 10), text)
+            # ISOLINUX waits forever with "timeout 0": a tenth of a second is "start at once".
+            new = re.sub(r"(?im)^(\s*timeout\s+)\d+", lambda m: m.group(1) + str(max(1, seconds * 10)), text)
         else:
             new = re.sub(r"(?m)^(\s*set\s+timeout=)\S+", lambda m: m.group(1) + str(seconds), text)
         if new != text:
@@ -418,18 +420,41 @@ LABEL failsafe
 
 
 class BootGenerator:
-    """Create /isolinux, /boot/grub and an EFI image from scratch."""
+    """Create /isolinux, /boot/grub and an EFI image from scratch.
+
+    PCs (amd64, i386) get ISOLINUX for BIOS and GRUB for UEFI; ARM64, 32-bit ARM
+    and RISC-V machines start from UEFI only. GRUB's modules for another
+    processor come from the image itself (grub-efi-<arch>-bin installed there),
+    so an ARM64 ISO can be made on an Intel/AMD computer."""
 
     def __init__(self, project):
         self.project = project
         self.isodir = project.isodir
         self.work = project.cache / "efi"
+        from disco.core import distro
+        self.arch = project.state.get("distro", {}).get("arch") or distro.elf_arch(project.rootfs) or "amd64"
+
+    def efi_format(self):
+        """(GRUB platform, EFI file name) for the processor of the image, or (None, None)."""
+        from disco.core.platforms import ARCHES
+        fmt, efi_file = ARCHES.get(self.arch, ("", "", "x86_64-efi", "bootx64.efi"))[2:4]
+        return (fmt or None), (efi_file or None)
+
+    def grub_modules(self, fmt):
+        """The GRUB module directory for *fmt*: this computer's, or the image's."""
+        for base in (Path("/usr/lib/grub"), Path(self.project.rootfs, "usr/lib/grub")):
+            if (base / fmt / "normal.mod").exists():
+                return base / fmt
+        return None
 
     def tools(self):
+        x86 = self.arch in ("amd64", "i386")
         return {
-            "isolinux": first(ISOLINUX_BIN), "isohdpfx": first(ISOHDPFX),
-            "syslinux_modules": first(SYSLINUX_MODULES), "shim": first(SHIM),
-            "signed_grub": first(SIGNED_GRUB_CD), "grub_mkstandalone": runner.which("grub-mkstandalone"),
+            "isolinux": first(ISOLINUX_BIN) if x86 else None, "isohdpfx": first(ISOHDPFX) if x86 else None,
+            "syslinux_modules": first(SYSLINUX_MODULES) if x86 else None,
+            "shim": first(SHIM) if self.arch == "amd64" else None,
+            "signed_grub": first(SIGNED_GRUB_CD) if self.arch == "amd64" else None,
+            "grub_mkstandalone": runner.which("grub-mkstandalone"),
             "mkfs_vfat": runner.which("mkfs.vfat") or runner.which("mkfs.fat"),
             "mtools": runner.which("mcopy"),
         }
@@ -453,13 +478,19 @@ class BootGenerator:
         if font:
             shutil.copy2(font, grub_dir / "font.pf2")
         mods = grub_dir / "x86_64-efi"
-        if Path(GRUB_MODULES).is_dir() and not mods.exists():
+        if self.arch == "amd64" and Path(GRUB_MODULES).is_dir() and not mods.exists():
             # Used by the signed CD GRUB, which takes its prefix from the ISO.
             shutil.copytree(GRUB_MODULES, mods,
                             ignore=lambda d, names: [n for n in names if not n.endswith((".mod", ".lst"))])
         bios = self._bios(t, title, params, timeout)
         efi = self._efi(t, disk_id, secure_boot)
         if not bios and not efi:
+            if self.arch not in ("amd64", "i386"):
+                fmt = self.efi_format()[0]
+                raise RuntimeError("The {} ISO starts with UEFI only and GRUB's {} modules were not found: install "
+                                   "grub-common, mtools and dosfstools on this computer and {} in the image".format(
+                                       self.arch, fmt, "grub-efi-{}-bin".format({"armhf": "arm"}.get(self.arch,
+                                                                                                    self.arch))))
             raise RuntimeError("Neither ISOLINUX nor GRUB EFI tools are installed on this computer. "
                                "Install isolinux, syslinux-common, grub-efi-amd64-bin, mtools and "
                                "dosfstools.")
@@ -469,6 +500,8 @@ class BootGenerator:
         return bios, efi
 
     def _bios(self, t, title, params, timeout):
+        if self.arch not in ("amd64", "i386"):
+            return False  # ARM and RISC-V machines have no BIOS
         if not (t["isolinux"] and t["isohdpfx"] and t["syslinux_modules"]):
             log.warning("ISOLINUX not found: the image will not boot on legacy BIOS")
             return False
@@ -494,6 +527,10 @@ class BootGenerator:
         efi_boot.mkdir(parents=True)
         embed = self.work / "embedded.cfg"
         embed.write_text(GRUB_EMBED.format(uuid=disk_id))
+        fmt, efi_file = self.efi_format()
+        if not fmt:
+            log.warning("%s has no UEFI boot loader in GRUB: the ISO starts on BIOS only", self.arch)
+            return False
         if secure_boot and t["shim"] and t["signed_grub"]:
             log.info("Using signed shim + GRUB (Secure Boot capable)")
             shutil.copy2(t["shim"], efi_boot / "bootx64.efi")
@@ -504,13 +541,14 @@ class BootGenerator:
             debian = self.work / "EFI/debian"
             debian.mkdir(parents=True)
             shutil.copy2(embed, debian / "grub.cfg")
-        elif t["grub_mkstandalone"]:
-            log.info("Building unsigned GRUB EFI image (Secure Boot must be disabled)")
-            runner.run([t["grub_mkstandalone"], "-O", "x86_64-efi", "--locales=", "--fonts=",
-                        "--themes=", "--compress=xz", "-o", efi_boot / "bootx64.efi",
+        elif t["grub_mkstandalone"] and self.grub_modules(fmt):
+            log.info("Building an unsigned GRUB %s image (Secure Boot must be off)", fmt)
+            runner.run([t["grub_mkstandalone"], "-O", fmt, "-d", str(self.grub_modules(fmt)), "--locales=",
+                        "--fonts=", "--themes=", "--compress=xz", "-o", efi_boot / efi_file,
                         "boot/grub/grub.cfg={}".format(embed)])
         else:
-            log.warning("No GRUB EFI binaries found (grub-efi-amd64-bin or grub-efi-amd64-signed)")
+            log.warning("No GRUB %s modules found (on this computer or in the image): the ISO will not start "
+                        "on UEFI", fmt)
             return False
         # The signed CD GRUB looks for /.disk/info; keep a copy of the EFI tree on the ISO too.
         dest = self.isodir / "EFI"
@@ -521,7 +559,7 @@ class BootGenerator:
         img = self.isodir / "boot/grub/efi.img"
         if img.exists():
             img.unlink()
-        runner.run([t["mkfs_vfat"], "-C", "-n", "EDUKA_EFI", img, str(max(size_kb, 4096))], quiet=True)
+        runner.run([t["mkfs_vfat"], "-C", "-n", "DISCO_EFI", img, str(max(size_kb, 4096))], quiet=True)
         for sub in ("::/EFI", "::/EFI/boot", "::/EFI/debian"):
             if sub == "::/EFI/debian" and not (self.work / "EFI/debian").is_dir():
                 continue
@@ -545,5 +583,12 @@ class BootGenerator:
             if efi:
                 args += ["-eltorito-alt-boot"]
         if efi:
-            args += ["-e", "boot/grub/efi.img", "-no-emul-boot", "-isohybrid-gpt-basdat"]
+            args += ["-e", "boot/grub/efi.img", "-no-emul-boot"]
+            if bios:
+                args += ["-isohybrid-gpt-basdat"]
+            else:
+                # Without ISOLINUX there is no isohybrid MBR: a GPT with the EFI partition lets
+                # UEFI computers (and every ARM64/RISC-V machine) start the ISO from a USB stick.
+                args += ["-append_partition", "2", "0xef", str(self.isodir / "boot/grub/efi.img"),
+                         "-appended_part_as_gpt"]
         return args

@@ -27,34 +27,59 @@ PRESETS = [
 ]
 
 
+def _code(line):
+    """A line without its quoted strings and comment."""
+    code = re.sub(r"(['\"]).*?(?<!\\)\1", "", line)
+    return code.split("#")[0]
+
+
+def _entry_block(lines, i):
+    """(lines of the menu entry or submenu that starts at line *i*, index after it)."""
+    block, depth, started = [], 0, False
+    while i < len(lines):
+        code = _code(lines[i])
+        block.append(lines[i])
+        depth += code.count("{") - code.count("}")
+        started = started or "{" in code
+        i += 1
+        if started and depth <= 0:
+            break
+    return block, i
+
+
+def _nesting(code):
+    """How much a line of script opens (+) or closes (-) if/for/while blocks and functions."""
+    words = re.findall(r"[A-Za-z_]+|[{}]", code)
+    opened = sum(1 for w in words if w in ("if", "for", "while", "until", "{"))
+    closed = sum(1 for w in words if w in ("fi", "done", "}"))
+    return opened - closed
+
+
 def parse(text):
-    """[('text', str) | ('entry', {'kind', 'title', 'head', 'body'})] of the top level."""
+    """[('text', str) | ('entry', {'kind', 'title', 'head', 'body'})] of the top level.
+
+    Only entries at the top level can be edited; entries inside if/for blocks or
+    functions (for example the UEFI firmware entry inside 'if [ "$grub_platform" =
+    "efi" ]') stay part of the text around them, unchanged."""
     parts, buf = [], []
     lines = text.splitlines(keepends=True)
-    i = 0
+    i, nest = 0, 0
     while i < len(lines):
         m = ENTRY.match(lines[i])
-        if not m:
-            buf.append(lines[i])
-            i += 1
+        if m:
+            block, i = _entry_block(lines, i)
+            if nest > 0:
+                buf.extend(block)
+                continue
+            if buf:
+                parts.append(("text", "".join(buf)))
+                buf = []
+            parts.append(("entry", {"kind": m.group(1), "title": m.group(3).replace('\\"', '"'),
+                                    "head": block[0], "body": "".join(block[1:])}))
             continue
-        if buf:
-            parts.append(("text", "".join(buf)))
-            buf = []
-        block, depth, started = [], 0, False
-        while i < len(lines):
-            line = lines[i]
-            block.append(line)
-            code = re.sub(r"(['\"]).*?(?<!\\)\1", "", line)
-            code = code.split("#")[0]
-            depth += code.count("{") - code.count("}")
-            started = started or "{" in code
-            i += 1
-            if started and depth <= 0:
-                break
-        head = block[0]
-        parts.append(("entry", {"kind": m.group(1), "title": m.group(3).replace('\\"', '"'), "head": head,
-                                "body": "".join(block[1:])}))
+        nest = max(0, nest + _nesting(_code(lines[i])))
+        buf.append(lines[i])
+        i += 1
     if buf:
         parts.append(("text", "".join(buf)))
     return parts

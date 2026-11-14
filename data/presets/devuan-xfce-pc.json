@@ -1,0 +1,35 @@
+{
+ "name": "Devuan Xfce desktop without systemd (PC 64-bit)",
+ "description": "Devuan (Debian without systemd), SysVinit and elogind, Xfce with LightDM. Installer: Calamares.",
+ "builder": {
+  "distro_name": "My Linux",
+  "platform": "pc64",
+  "family": "devuan",
+  "suite": "stable",
+  "desktop": "xfce",
+  "dm": "lightdm",
+  "init": "sysvinit",
+  "installer": "calamares",
+  "method": "disco"
+ },
+ "lists": {
+  "30-applications.list": {
+   "title": "Applications",
+   "packages": [
+    "firefox-esr",
+    "libreoffice",
+    "vlc",
+    "gimp",
+    "evince",
+    "file-roller",
+    "gnome-calculator",
+    "synaptic",
+    "gparted",
+    "mousepad",
+    "ristretto",
+    "atril"
+   ],
+   "comment": "Programs for the menu."
+  }
+ }
+}
